@@ -1,4 +1,8 @@
-// Museum photographs are linked to their originals and opened on demand.
+// Historical accounts and museum photographs are linked to their originals and opened on demand.
+const buildingChronicle = ["沪江大学建筑简史", "https://iso.usst.edu.cn/2008/0529/c1109a9573/page.htm"];
+const campusHistories = ["沪江大学历史建筑故事", "https://iso.usst.edu.cn/2008/0529/c1109a9576/page.htm"];
+const residenceByOutline = "住宅名后的序号供导览定位。旧图没有逐户列出门牌，房屋外观依据本处轮廓和同期同类住宅推定。";
+const residenceByGroup = "住宅名后的序号供导览定位。旧图和修缮图只能比对到住宅群，单栋外观参照同组住宅，附屋高度与背面仍是估计。";
 const buildingRecords = {
   101: {
     observed: "1917年开业，老图将其置于校门旁。旧照可见两层主体、坡顶上的小窗和立面贯通的水平线脚。",
@@ -20,21 +24,28 @@ const buildingRecords = {
     observed: "图例103标作门口学校，校门进校园后在主路一侧，接近幼稚园。",
     inferred: "平面可定位。单层、矩形窗和门面方向暂按小学校舍推定。",
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [buildingChronicle],
   },
   104: {
     observed: "1924年思乔堂建成。图例104标作幼稚园，长边与门口学校同处一组院落。",
     inferred: "采用图中长条占地，层数、采光窗数量和外墙用材尚缺同期照片。",
-    source: "https://iso.usst.edu.cn/2008/0529/c1109a9573/page.htm",
+    source: buildingChronicle[1],
+    links: [
+      ["思乔堂教师会议 · 1929年浸礼会年报（原书187页）",
+        "https://s3.amazonaws.com/media2.sbhla.org/annuals/SBC_Annual_1929.pdf#page=196"],
+    ],
   },
   105: {
     observed: "老图中英文分别标作西操场和 Play Shed，场地位于幼稚园旁。",
     inferred: "按英文图例暂作有顶活动棚，设开敞柱间；是否四面敞开、柱距和屋面形式待考。",
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [buildingChronicle],
   },
   111: {
     observed: "图上独立的中学部膳厅紧靠中学部场地，长轴与大学膳堂不同。",
     inferred: "未取得可识别为本栋的同期照片，层数与门窗依据用膳建筑类型推定。",
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [buildingChronicle],
   },
   112: {
     observed:
@@ -58,6 +69,7 @@ const buildingRecords = {
     inferred: "依本栋照片设置主立面。窗格、凸窗进深与檐部尺寸为推定。",
     source: "https://buildings.usst.edu.cn/2018/1003/c882a30406/page.htm",
     links: [
+      ["附中主任记礼堂筹建", "https://buildings.usst.edu.cn/2018/1004/c882a30411/page.htm"],
       [
         "思雷堂旧照",
         "https://buildings.usst.edu.cn/_upload/article/images/48/3b/a337d1b9495abb0bb8a85e0ca686/89cbdd9d-c7df-448f-82fc-9f6e70e48753.png",
@@ -73,6 +85,7 @@ const buildingRecords = {
     inferred: "梯段宽度、踏步数与另一端的开窗为估算，门廊方向参考图上小凸部。",
     source: "https://buildings.usst.edu.cn/2018/1004/c882a30411/page.htm",
     links: [
+      buildingChronicle,
       [
         "中学部礼堂旧照",
         "https://buildings.usst.edu.cn/_upload/article/images/5b/8e/c16d42ff4fa5bce5e8edf034e7d6/47b04763-54f0-46ab-acb7-379fcf2279f9.png",
@@ -122,6 +135,7 @@ const buildingRecords = {
     inferred: "沿图中十字轮廓安排主体，后翼屋面和窗列按用途推定。",
     source: "https://www.usst.edu.cn/2022/0726/c999a47075/page.htm",
     links: [
+      campusHistories,
       [
         "艾德蒙堂旧照",
         "https://www.usst.edu.cn/_upload/article/images/0a/bb/3835bb0d46cbb886916574756cb9/93512afd-7d67-45da-b231-98458b3869c5.jpg",
@@ -136,6 +150,7 @@ const buildingRecords = {
     observed: "图例133为温室，位于科学馆背侧道路外，和江岸生物园分开。",
     inferred: "玻璃墙面、坡顶与格架体现园艺用途。框架间距、玻璃色泽和实际材料待考。",
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["科学馆与生物部", "https://buildings.usst.edu.cn/2018/1002/c882a30388/page.htm"]],
   },
   141: {
     observed:
@@ -163,6 +178,7 @@ const buildingRecords = {
     inferred: "入口凸部的深度依图估算，背面窗数与屋面色调待考。1948年动工的扩建另有年代记录。",
     source: "https://buildings.usst.edu.cn/2018/1002/c882a30389/page.htm",
     links: [
+      campusHistories,
       [
         "原馆旧照",
         "https://buildings.usst.edu.cn/_upload/article/images/f8/a0/98595bae4ef68001aeab3c456bde/ad271e67-f725-430f-a7dc-aa962e4e7fe1.png",
@@ -188,6 +204,7 @@ const buildingRecords = {
     inferred: "水塔及邻屋遮住部分立面。层数、分间和侧窗按早期宿舍类型推定。",
     source: "https://buildings.usst.edu.cn/2018/1002/c882a30390/page.htm",
     links: [
+      buildingChronicle,
       [
         "1934年鸟瞰照片（第11页）",
         "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
@@ -200,6 +217,7 @@ const buildingRecords = {
     inferred: "屋脊、烟囱尺寸及背立面窗列由旧照推定。四层楼的最上层融入坡屋顶。",
     source: "https://buildings.usst.edu.cn/2018/1001/c882a30383/page.htm",
     links: [
+      campusHistories,
       [
         "风灾前旧照",
         "https://buildings.usst.edu.cn/_upload/article/images/12/4e/c747f0144e27bdd67cc056d1e789/5d711b2b-9c87-4432-a3af-8fc733335bb9.png",
@@ -239,6 +257,7 @@ const buildingRecords = {
     observed: "电房占地为图上识别度较高的横向后勤用房，邻近通往体育馆的道路。",
     inferred: "设备开口、墙体高度和顶面按单层机房推定。",
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["1923年《申报》校庆报道", "https://zh.wikisource.org/zh-hans/申報/1923/06/21#滬江之畢業禮及紀念會"]],
   },
   156: {
     observed: "图例156位于电房与油漆间之间，标作煤气房。",
@@ -277,7 +296,7 @@ const buildingRecords = {
   162: {
     observed: "1922年秋建成。图上泳池沿图面横向紧靠东堂，体育馆的球场在池畔另一方向。",
     inferred: "只表现池体、水面与池沿，池深、栏杆样式和池岸材料缺少现场尺寸。",
-    source: "https://iso.usst.edu.cn/2008/0529/c1109a9573/page.htm",
+    source: buildingChronicle[1],
     links: [
       [
         "1934年鸟瞰照片（第11页）",
@@ -309,6 +328,7 @@ const buildingRecords = {
     observed: "图例164标出大学印刷所，在游泳池附近。",
     inferred: "编号遮挡足迹，面积、层数与采光窗均作近似表现。",
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [buildingChronicle],
   },
   165: {
     observed: "图例165为工友膳厅，位于东堂近旁、泳池的另一侧。",
@@ -321,6 +341,7 @@ const buildingRecords = {
     inferred: "窗券曲率、柱头纹样及廊深没有测绘尺寸。取战前坡顶形制。",
     source: "https://buildings.usst.edu.cn/2018/1002/c882a30391/page.htm",
     links: [
+      buildingChronicle,
       [
         "思裴堂旧照",
         "https://buildings.usst.edu.cn/_upload/article/images/b3/ff/b7af718f4bbba66ac8f276f299c2/db525b6a-293f-48f4-8e6a-40283435c6b2.jpg",
@@ -374,6 +395,7 @@ const buildingRecords = {
     inferred: "道宽、铺面和草地状态按运动场用途推定。",
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [
+      buildingChronicle,
       [
         "1934年鸟瞰照片（第11页）",
         "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
@@ -384,12 +406,15 @@ const buildingRecords = {
     observed: "1937年图例标出生物园，位于大学区与江岸之间。",
     inferred: "苗床、步径和植物品种为环境补景。",
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [campusHistories, ["沪江生物系与郑章成", "https://buildings.usst.edu.cn/2018/1002/c882a30388/page.htm"]],
   },
   182: {
     observed: "1937年图中可辨黄浦江岸与校园的相对位置。",
     inferred: "岸线高差、水位与对岸树木为环境补景。",
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [
+      ["江边的思晏堂奠基礼", "https://buildings.usst.edu.cn/2018/1001/c882a30383/page.htm"],
+      buildingChronicle,
       [
         "1934年鸟瞰照片（第11页）",
         "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
@@ -414,49 +439,49 @@ const buildingRecords = {
   },
   200: {
     observed: "最靠西的一处狭长合住房基，图中保留分户标记。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   201: {
     observed: "接近西侧边路的一处横向长条住宅。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
-    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+    links: [buildingChronicle, ["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   202: {
     observed: "沿弯路略有偏转的窄住宅，图中线条较淡。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   203: {
     observed: "前排主体较宽，后部较窄并居中接出。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
-    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+    links: [buildingChronicle, ["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   204: {
     observed: "主块后角多出一个较小的矩形。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   205: {
     observed: "后段朝一侧收窄，临路一端较宽。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
-    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+    links: [["住宅区里的梅佩礼故居", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   206: {
     observed: "后排较窄的一翼与临路主体错开。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   207: {
     observed: "后部带有折角窄翼，转折沿图描取。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
@@ -475,7 +500,7 @@ const buildingRecords = {
   },
   209: {
     observed: "路弯旁独立，多处外墙有退进。修缮图能比对这里连续四宅和路口另三宅的布局。",
-    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    inferred: residenceByGroup,
     source: "https://buildings.usst.edu.cn/2018/1003/c882a30403/page.htm",
     links: [
       [
@@ -487,7 +512,7 @@ const buildingRecords = {
   },
   210: {
     observed: "靠曲路一端的主体接两段错位小翼。修缮图能比对这里连续四宅和路口另三宅的布局。",
-    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    inferred: residenceByGroup,
     source: "https://buildings.usst.edu.cn/2018/1003/c882a30402/page.htm",
     links: [
       [
@@ -499,7 +524,7 @@ const buildingRecords = {
   },
   211: {
     observed: "前后宽度不同，后段折入一侧。修缮图能比对这里连续四宅和路口另三宅的布局。",
-    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    inferred: residenceByGroup,
     source: "https://buildings.usst.edu.cn/2018/1003/c882a30401/page.htm",
     links: [
       [
@@ -511,7 +536,7 @@ const buildingRecords = {
   },
   212: {
     observed: "靠三岔路的一所，后部有窄翼与凹角。修缮图能比对这里连续四宅和路口另三宅的布局。",
-    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    inferred: residenceByGroup,
     source: "https://buildings.usst.edu.cn/2018/1003/c882a30400/page.htm",
     links: [
       [
@@ -523,31 +548,31 @@ const buildingRecords = {
   },
   213: {
     observed: "临路一段较宽，背后以短颈接窄翼。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   214: {
     observed: "靠路住宅主块上接窄长后段。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   215: {
     observed: "临路主体与细长后翼组合。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   216: {
     observed: "紧邻大学部后勤区，街面宽、背后窄。",
-    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    inferred: residenceByOutline,
     source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
     links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
   },
   217: {
     observed: "靠路口的一所，主屋一侧伸出折角侧翼。修缮图能比对这里连续四宅和路口另三宅的布局。",
-    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    inferred: residenceByGroup,
     source: "https://buildings.usst.edu.cn/2018/1003/c882a30399/page.htm",
     links: [
       [
@@ -559,7 +584,7 @@ const buildingRecords = {
   },
   218: {
     observed: "主块与两段边翼围出向道路开口的小院。修缮图能比对这里连续四宅和路口另三宅的布局。",
-    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    inferred: residenceByGroup,
     source: "https://buildings.usst.edu.cn/2018/1003/c882a30398/page.htm",
     links: [
       [
@@ -571,7 +596,7 @@ const buildingRecords = {
   },
   219: {
     observed: "一侧形成较长侧翼，图上可辨数次凹凸。修缮图能比对这里连续四宅和路口另三宅的布局。",
-    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    inferred: residenceByGroup,
     source: "https://buildings.usst.edu.cn/2018/1003/c882a30397/page.htm",
     links: [
       [

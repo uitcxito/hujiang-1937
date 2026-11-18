@@ -3,9 +3,9 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 
-async function openFromGuide(page, name) {
+async function openFromGuide(page, name, query = name) {
   await page.click("#guide");
-  await page.fill("#placeQuery", name);
+  await page.fill("#placeQuery", query);
   await page.locator("#placeList button").first().click();
   assert.equal(await page.textContent("#placeTitle"), name);
 }
@@ -41,12 +41,31 @@ async function check() {
     await page.waitForFunction(() => window.hujiang, undefined, { timeout: 60000 });
     const card = page.locator("#placeCard");
     const summary = card.locator("summary");
+    const entries = await page.evaluate(() => hujiang.sites.map((site) => {
+      hujiang.focus(site.id);
+      const lead = document.querySelector("#placeStory").textContent;
+      const anecdote = document.querySelector("#placeAnecdote");
+      return {
+        lead,
+        matches: lead === site.story && anecdote.textContent === site.anecdote &&
+          anecdote.hidden === !site.anecdote && document.querySelector("#placeTitle").textContent === site.name,
+      };
+    }));
+    assert.equal(entries.length, 60);
+    assert(entries.every((entry) => entry.lead && entry.matches));
+    assert.equal(new Set(entries.map((entry) => entry.lead)).size, entries.length);
+
+    await openFromGuide(page, "麦氏医院", "普济医院");
+    assert.match(await page.textContent("#placeAnecdote"), /徐章垿/);
     const name = "思乔堂 · 幼稚园";
-    await openFromGuide(page, name);
+    await openFromGuide(page, name, "georgia hall");
+    assert.match(await page.textContent("#placeStory"), /乔治亚州的浸礼会妇女/);
+    assert.match(await page.textContent("#placeAnecdote"), /小学教师/);
     const closed = await card.evaluate(measureShield);
     await summary.focus();
     await page.keyboard.press("Enter");
     const open = await card.evaluate(measureShield);
+    assert.match(await page.getByRole("link", { name: /思乔堂教师会议/ }).getAttribute("href"), /#page=196$/);
     assert(open.box.height > closed.box.height);
     assert.equal(open.box.width, 360);
     for (const edge of ["crown", "tip"]) {
@@ -88,6 +107,8 @@ async function check() {
       if (place === "门口学校 · 小学部") {
         assert.equal(await page.textContent("#typeline"), "沪江校园 · 1937");
         assert(await page.locator("#sourceLink").isHidden());
+        assert(await page.locator("#placeAnecdote").isHidden());
+        assert.equal(await page.textContent("#placeAnecdote"), "");
       }
       await page.locator("#mapSource").click({ trial: true });
       await card.locator(".close").click({ trial: true });
@@ -99,7 +120,7 @@ async function check() {
       }));
     }
     assert.deepEqual(errors, []);
-    console.log("Shield shape, three entry points, keyboard disclosure, mobile scrolling and offline landings passed.");
+    console.log("60 place introductions, optional stories, historic name lookup, shield shape and offline desktop/mobile interactions passed.");
   } finally {
     await browser.close();
   }

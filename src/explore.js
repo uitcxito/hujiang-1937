@@ -237,6 +237,9 @@ function explore() {
     el("typeline").textContent = s.year ? s.year + " · 沪江校舍" : "沪江校园 · 1937";
     el("placeTitle").textContent = s.name;
     el("placeStory").textContent = s.story;
+    const anecdote = el("placeAnecdote");
+    anecdote.textContent = s.anecdote;
+    anecdote.hidden = !s.anecdote;
     const record = s.record;
     el("evidence").textContent = record.observed;
     el("inference").textContent = "复原推定 · " + record.inferred;
@@ -590,10 +593,10 @@ function explore() {
     dirty = true;
   };
   function list() {
-    const q = el("placeQuery").value.trim();
+    const q = el("placeQuery").value.trim().toLowerCase();
     el("placeList").replaceChildren();
     for (const s of [gate, ...sites.filter((s) => s !== gate)]) {
-      if (![s.name, ...(s.aliases || [])].some((name) => name.includes(q))) continue;
+      if (![s.name, ...(s.aliases || [])].some((name) => name.toLowerCase().includes(q))) continue;
       const b = document.createElement("button");
       b.textContent = s.name;
       const small = document.createElement("small");
