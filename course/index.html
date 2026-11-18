@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>沪江大学 · 校园源码漫游</title>
+
+  <!-- Google Fonts: Bricolage Grotesque · DM Sans · JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!--
+    CUSTOMIZE PER COURSE — change only the three accent variables below.
+    Options:
+      vermillion  #D94F30 / #C4432A / #FDEEE9 / #E8836C  (default)
+      coral       #E06B56 / #C85A47 / #FDECEA / #E89585
+      teal        #2A7B9B / #1F6280 / #E4F2F7 / #5A9DB8
+      amber       #D4A843 / #BF9530 / #FDF5E0 / #E0C070
+      forest      #2D8B55 / #226B41 / #E8F5EE / #5AAD7A
+  -->
+  <style>
+    :root {
+      --color-accent:       #C4432A;
+      --color-accent-hover: #9B3724;
+      --color-accent-light: #FDEEE9;
+      --color-accent-muted: #E8836C;
+    }
+  </style>
+
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+  <nav class="nav" id="nav">
+    <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="nav-inner">
+      <span class="nav-title">沪江大学 · 校园源码漫游</span>
+      <div class="nav-dots" id="nav-dots" role="group" aria-label="课程目录">
+        <!--
+          One <button> per module. Replace MODULE_N_NAME with the actual module title.
+
+          <button class="nav-dot" data-target="module-1" data-tooltip="MODULE_1_NAME" role="tab" aria-label="Module 1: MODULE_1_NAME"></button>
+          <button class="nav-dot" data-target="module-2" data-tooltip="MODULE_2_NAME" role="tab" aria-label="Module 2: MODULE_2_NAME"></button>
+          ...
+        -->
+        <button class="nav-dot" data-target="module-1" data-tooltip="在导览里找到水塔" aria-label="第1课　在导览里找到水塔"></button>
+        <button class="nav-dot" data-target="module-2" data-tooltip="让老图上的一点落地" aria-label="第2课　让老图上的一点落地"></button>
+        <button class="nav-dot" data-target="module-3" data-tooltip="把水塔一层层搭起来" aria-label="第3课　把水塔一层层搭起来"></button>
+        <button class="nav-dot" data-target="module-4" data-tooltip="飞过树冠要多高" aria-label="第4课　飞过树冠要多高"></button>
+        <button class="nav-dot" data-target="module-5" data-tooltip="把校园装进一个网页" aria-label="第5课　把校园装进一个网页"></button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <!-- modules/*.html content is assembled here by build.sh -->
+<section class="module" id="module-1" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header"><span style="font-weight:700;letter-spacing:.14em;color:var(--color-accent)">校园源码漫游　/　01</span>
+      <h1 class="module-title">在导览里找到水塔</h1>
+      <p class="module-subtitle">在 1937 年初夏的校园里，打开「校园导览」，搜“水塔”，再点结果。镜头转向塔身的同时，建筑介绍也换了。两处为什么能对上？</p>
+    </header>
+    <figure style="margin:1.2rem 0"><img src="images/tower.jpg" alt="项目实景｜水塔、东堂与思晏堂。试着从这组建筑中辨认塔顶的齿形轮廓。" style="display:block;width:100%;border-radius:12px"><figcaption style="margin-top:.6rem;color:var(--color-text-secondary)">项目实景｜水塔、东堂与思晏堂。试着从这组建筑中辨认塔顶的齿形轮廓。</figcaption>
+    </figure>
+    <section class="screen">
+      <h2 class="screen-heading">一次点击，三个角色</h2>
+      <p>把导览当作一叠索引卡。每处地点都有一条<span tabindex="0" class="term" data-definition="把有关同一处地点的名字、位置等信息放在一起。">记录</span>。下面把程序的三个动作写成对话，逐条点开就能跟着这一条记录走。</p>
+      <div class="chat-window" id="tower-chat">
+        <div class="chat-messages" aria-live="polite">
+          <div class="chat-message" data-sender="actor0" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-1)">导</div>
+            <div class="chat-bubble"><strong class="chat-sender">导览列表</strong>
+              <p>输入“水塔”后，我比对地点的名称和别名。点中结果，我就把这一条地点记录交给 focus。</p>
+            </div>
+          </div>
+          <div class="chat-message" data-sender="actor1" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-2)">镜</div>
+            <div class="chat-bubble"><strong class="chat-sender">取景逻辑 · focus</strong>
+              <p>我用地点的位置和取景参数对准水塔，切到鸟瞰，再把同一条记录交给 card。</p>
+            </div>
+          </div>
+          <div class="chat-message" data-sender="actor2" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-3)">卡</div>
+            <div class="chat-bubble"><strong class="chat-sender">建筑卡片 · card</strong>
+              <p>我填上名称与故事。展开“老照片与复原依据”，可以分别读到旧照可见的特征和复原者的推定。</p>
+            </div>
+          </div>
+        </div>
+        <div class="chat-typing" style="display:none"><span class="chat-avatar"></span> 正在交接…</div>
+        <div class="chat-controls">
+          <button class="btn chat-next-btn" onclick="this.disabled=true;setTimeout(()=>this.disabled=false,850)">看下一条消息</button>
+          <button class="btn chat-reset-btn" onclick="this.closest('.chat-window').querySelector('.chat-next-btn').disabled && event.stopImmediatePropagation()">从头看</button>
+        </div>
+      </div>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">卡片上的两种说法</h2>
+      <div class="translation-block">
+        <div class="translation-code"><span class="translation-label">src/explore.js · 236–240</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code>    el(&quot;placeTitle&quot;).textContent = s.name;
+    el(&quot;placeStory&quot;).textContent = s.story;
+    <span class="code-keyword">const</span> record = s.record;
+    el(&quot;evidence&quot;).textContent = record.observed;
+    el(&quot;inference&quot;).textContent = &quot;复原推定 · &quot; + record.inferred;</code></pre>
+        </div>
+        <div class="translation-english"><span class="translation-label">逐段读懂</span>
+          <p class="tl">先把地点的名字和故事写进卡片。</p>
+          <p class="tl">从同一地点取出史料记录，把 observed 填入依据栏，把 inferred 加上“复原推定”后填入另一栏。</p>
+        </div>
+      </div>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">检验复原说明</strong>
+          <p>水塔旧照可辨认上段大片实墙，确切色调仍待考。若补入新照片，先判断它支持哪一条描述，再修改对应字段。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">换个情境试试</h2>
+      <div class="quiz-container" id="quiz-1-0">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="筛选和取景已经找到水塔。沿卡片的数据来源回查编号，可以缩小文字错配的范围。" data-explanation-wrong="筛选和取景已经找到水塔。沿卡片的数据来源回查编号，可以缩小文字错配的范围。">
+          <h3 class="quiz-question">能搜到水塔，取景也正确，但“复原推定”显示了别栋建筑的文字。先查哪里？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>列表按名称筛选的条件</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>水塔编号关联的史料记录及卡片取值</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-1-0')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-1-0')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-1-1">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="搜索会一起检查名称和别名，观察距离只在选中结果后参与取景。" data-explanation-wrong="搜索会一起检查名称和别名，观察距离只在选中结果后参与取景。">
+          <h3 class="quiz-question">用旧称搜不到一栋楼，输入现名就能定位。优先核对什么？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>地点的别名列表</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>镜头的观察距离</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-1-1')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-1-1')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-1-2">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="截图呈现了复原者的颜色选择。要把推定升级为依据，需要独立史料。" data-explanation-wrong="截图呈现了复原者的颜色选择。要把推定升级为依据，需要独立史料。">
+          <h3 class="quiz-question">想确认水塔的确切颜色，哪项证据更合适？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>模型截图</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>能辨别面层色彩且年代相符的史料</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-1-2')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-1-2')">重试</button>
+      </div>
+    </section>
+  </div>
+</section>
+<section class="module" id="module-2" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header"><span style="font-weight:700;letter-spacing:.14em;color:var(--color-accent)">校园源码漫游　/　02</span>
+      <h2 class="module-title">让老图上的一点落地</h2>
+      <p class="module-subtitle">一张图可以放大打印，图上的一厘米却不能直接当作校园里的一米。要把水塔放回原位，先给老图配一把比例尺。</p>
+    </header>
+    <figure style="margin:1.2rem 0"><img src="images/layout.jpg" alt="项目布局校核图｜对照道路与建筑的相对位置，比单看一栋楼更容易发现整体偏移。" style="display:block;width:100%;border-radius:12px"><figcaption style="margin-top:.6rem;color:var(--color-text-secondary)">项目布局校核图｜对照道路与建筑的相对位置，比单看一栋楼更容易发现整体偏移。</figcaption>
+    </figure>
+    <section class="screen">
+      <h2 class="screen-heading">从纸面到校园</h2>
+      <p>原图统一为 1550 <span tabindex="0" class="term" data-definition="数字图像由许多小格组成，一格就是一个像素。">像素</span>宽。项目按四分之一英里跑道的描线长度估算，每个像素约合 0.4826 米。X 向图右，Z 向图下。</p>
+      <div class="flow-animation" data-steps="[{&quot;highlight&quot;:&quot;flow-actor-1&quot;,&quot;label&quot;:&quot;水塔在图纸上的点是 (995, 187)。&quot;},{&quot;highlight&quot;:&quot;flow-actor-2&quot;,&quot;label&quot;:&quot;分别减去 780 和 370，得到 (215, −183)。&quot;,&quot;packet&quot;:true,&quot;from&quot;:&quot;actor-1&quot;,&quot;to&quot;:&quot;actor-2&quot;},{&quot;highlight&quot;:&quot;flow-actor-3&quot;,&quot;label&quot;:&quot;两项都乘 0.4826，得到约 (103.76, −88.32) 米。&quot;,&quot;packet&quot;:true,&quot;from&quot;:&quot;actor-2&quot;,&quot;to&quot;:&quot;actor-3&quot;}]">
+        <div class="flow-actors">
+          <div class="flow-actor" id="flow-actor-1"><span class="flow-actor-icon">1</span>图上描点</div>
+          <div class="flow-actor" id="flow-actor-2"><span class="flow-actor-icon">2</span>平移原点</div>
+          <div class="flow-actor" id="flow-actor-3"><span class="flow-actor-icon">3</span>换算米数</div>
+        </div>
+        <div class="flow-packet">
+        </div>
+        <p aria-live="polite" class="flow-step-label">点下一步，跟着水塔的位置从图纸进入校园。</p>
+        <div class="flow-controls">
+          <button class="btn flow-next-btn">下一步</button>
+          <button class="btn flow-reset-btn">重新换算</button>
+        </div>
+      </div>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">读懂两次减法</h2>
+      <div class="translation-block">
+        <div class="translation-code"><span class="translation-label">src/atlas.js · 5–8</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code><span class="code-keyword">const</span> SCALE = 0.4826;
+<span class="code-keyword">function</span> point(u, v) {
+  <span class="code-keyword">return</span> [(u - 780) * SCALE, (v - 370) * SCALE];
+}</code></pre>
+        </div>
+        <div class="translation-english"><span class="translation-label">逐段读懂</span>
+          <p class="tl">SCALE 保存每个像素对应的米数。point 收下图上横、纵两个读数。</p>
+          <p class="tl">先从读数里扣掉选定原点的位置，再乘比例。方括号把两个结果一起交回。</p>
+        </div>
+      </div>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">用一个点区分两种误差</strong>
+          <p>若所有楼之间的距离都偏大，检查比例。若间距吻合、整片校园却平移了一段，检查原点。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">换个情境试试</h2>
+      <div class="quiz-container" id="quiz-2-0">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="像素数乘每像素的米数，20 × 0.4826 约为 9.65。" data-explanation-wrong="像素数乘每像素的米数，20 × 0.4826 约为 9.65。">
+          <h3 class="quiz-question">图上两栋楼相距 20 像素，场景里应相距多远？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>约 9.65 米</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>约 41.44 米</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-2-0')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-2-0')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-2-1">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="一个地点偏移时先检查局部输入。全局比例会同时影响许多地点。" data-explanation-wrong="一个地点偏移时先检查局部输入。全局比例会同时影响许多地点。">
+          <h3 class="quiz-question">只有水塔偏东，跑道和邻楼都对得上。先核对哪项？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>全校园的比例</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>水塔自己的横向描点读数</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-2-1')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-2-1')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-2-2">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="图纸的向下方向对应 Z 增大。塔高需要单独给出。" data-explanation-wrong="图纸的向下方向对应 Z 增大。塔高需要单独给出。">
+          <h3 class="quiz-question">沿图纸直向下走十个像素，哪个量增大？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>表示高度的 Y</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>沿图面纵向的 Z</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-2-2')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-2-2')">重试</button>
+      </div>
+    </section>
+  </div>
+</section>
+<section class="module" id="module-3" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header"><span style="font-weight:700;letter-spacing:.14em;color:var(--color-accent)">校园源码漫游　/　03</span>
+      <h2 class="module-title">把水塔一层层搭起来</h2>
+      <p class="module-subtitle">地点记录只写着塔的位置、宽度和高度。镜头里看到的砖塔、水箱和基座，是程序按这些尺寸搭出来的。</p>
+    </header>
+    <section class="screen">
+      <h2 class="screen-heading">看一眼水塔的剖面</h2>
+      <div style="display:flex;gap:2rem;align-items:center;flex-wrap:wrap">
+        <div aria-label="塔身比例示意" style="width:90px;text-align:center;margin:1rem">
+          <div style="height:63px;background:#b9aa9a;display:grid;place-items:center">水箱</div>
+          <div style="height:137px;background:#915640;color:white;display:grid;place-items:center">砖身</div>
+          <div style="height:10px;background:#77716a">
+          </div>
+        </div>
+        <p style="flex:1;min-width:12em">把模型想成叠起来的积木。水塔编号 154 对应 makeTower。它读入宽 w、高 h，以总高的 68.5% 为分界，下方用砖，上方换用浅色。</p>
+      </div>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">积木放在中心点</h2>
+      <div class="translation-block">
+        <div class="translation-code"><span class="translation-label">src/halls.js · 441–446</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code><span class="code-keyword">function</span> makeTower(s, g) {
+  <span class="code-keyword">const</span> { w, h } = s,
+    shoulder = h * 0.685;
+  box(g, 0, shoulder / 2, 0, w, shoulder, w, brick);
+  box(g, 0, (h + shoulder) / 2, 0, w, h - shoulder, w, std(0xb9aa9a));
+  box(g, 0, 0.25, 0, w + 0.38, 0.5, w + 0.38, stone);</code></pre>
+        </div>
+        <div class="translation-english"><span class="translation-label">逐段读懂</span>
+          <p class="tl">从地点记录 s 取出宽和高，算出两段塔身交接的高度 shoulder。</p>
+          <p class="tl">第一个 box 建砖身，中心放在砖身高度的一半。第二个放在交界与塔顶的正中，两段恰好相接。</p>
+          <p class="tl">第三个方块只有半米高，底面略宽，构成基座。</p>
+        </div>
+      </div>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">把尺寸和外观分开核对</strong>
+          <p>图上水塔宽 13 像素，换算后约 6.27 米。记录给模型的高度是 21 米。这个数可以用来画塔，史料卡仍注明塔高待考。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">同一面墙怎样用四次？</h2>
+      <p>在塔芯外面，<span tabindex="0" class="term" data-definition="让同一组操作按给定次数重复执行。">循环</span>让墙面每次转过四分之一圈。四面都做出窗和齿形女儿墙，仅第一面加木门。要把门移到另一面，就应先检查决定哪面加门的条件。</p>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">换个情境试试</h2>
+      <div class="quiz-container" id="quiz-3-0">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="门属于重复搭建的墙面。是否只在某一面建门由循环内的条件控制。" data-explanation-wrong="门属于重复搭建的墙面。是否只在某一面建门由循环内的条件控制。">
+          <h3 class="quiz-question">水塔在正确位置，但所有立面都多了一扇门。先查哪里？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>放置门时对墙面序号的判断</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>水塔在老图上的编号</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-3-0')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-3-0')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-3-1">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="下段缩短，上段随之变长。上下两段共用的塔顶高度仍由 h 决定。" data-explanation-wrong="下段缩短，上段随之变长。上下两段共用的塔顶高度仍由 h 决定。">
+          <h3 class="quiz-question">希望浅色水箱占比更大，但总塔高不变。该改什么？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>提高地点记录的塔高</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>降低两段交界占总高的比例</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-3-1')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-3-1')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-3-2">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="方块按中心摆放。两段接缝取决于各自的中心位置和半高。" data-explanation-wrong="方块按中心摆放。两段接缝取决于各自的中心位置和半高。">
+          <h3 class="quiz-question">抬高砖身后，中间出现一条空缝。先比对哪两个量？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>基座颜色与砖墙颜色</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>下段顶部高度与上段底部高度</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-3-2')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-3-2')">重试</button>
+      </div>
+    </section>
+  </div>
+</section>
+<section class="module" id="module-4" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header"><span style="font-weight:700;letter-spacing:.14em;color:var(--color-accent)">校园源码漫游　/　04</span>
+      <h2 class="module-title">飞过树冠要多高</h2>
+      <p class="module-subtitle">按 F 起飞，向树冠靠近，再尝试下降。要解释镜头为什么停住，可以把校园想成一张每格都标着最高障碍的方格纸。</p>
+    </header>
+    <figure style="margin:1.2rem 0"><img src="images/flight.jpg" alt="项目实景｜无人机俯瞰大学区。屋面、烟囱和树冠都会参与最低飞行高度的计算。" style="display:block;width:100%;border-radius:12px"><figcaption style="margin-top:.6rem;color:var(--color-text-secondary)">项目实景｜无人机俯瞰大学区。屋面、烟囱和树冠都会参与最低飞行高度的计算。</figcaption>
+    </figure>
+    <section class="screen">
+      <h2 class="screen-heading">在起飞前登记障碍</h2>
+      <p>程序先把建筑各部分占据的范围和树冠覆盖的范围写进<span tabindex="0" class="term" data-definition="按地面位置分格，保存每格里最高障碍的位置。">高度表</span>。同一格重叠着几件东西时，保留最高值。移动时只需查脚下那一格。</p>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">哪条下限更高？</h2>
+      <div class="translation-block">
+        <div class="translation-code"><span class="translation-label">src/flight.js · 41–44</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code>  <span class="code-keyword">function</span> floor(x, z) {
+    <span class="code-keyword">const</span> i = (Math.floor(z) - bounds.min.y) * width + Math.floor(x) - bounds.min.x;
+    <span class="code-keyword">return</span> Math.max(flightSurface(x, z) + 1.5, heights[i] + 0.75);
+  }</code></pre>
+        </div>
+        <div class="translation-english"><span class="translation-label">逐段读懂</span>
+          <p class="tl">把横纵位置向下取整，换成表里某一格的序号 i。</p>
+          <p class="tl">先算地面或水面以上 1.5 米，再算障碍顶部以上 0.75 米。取两者较高的值，作为这里的飞行下限。</p>
+        </div>
+      </div>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">算一格试试</strong>
+          <p>若地面标高为 2 米，树顶标高为 12 米，两条下限就是 3.5 和 12.75 米。继续按下降键，镜头也应停在 12.75 米或更高处。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">一大步拆成几小步</h2>
+      <p>水平移动被拆成每步最多约半米的小段，每段依次查看 X、Z 方向能否通过。这样即使一次要飞很远，中间经过的矮墙也有机会被检查到。</p>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">换个情境试试</h2>
+      <div class="quiz-container" id="quiz-4-0">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="地面和水面共同提供基础下限，空格也有最低高度。" data-explanation-wrong="地面和水面共同提供基础下限，空格也有最低高度。">
+          <h3 class="quiz-question">江面上空没有楼也没有树，下降时应在哪里停？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>江面或当地地面较高者以上至少 1.5 米</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>等到遇上屋顶才停</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-4-0')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-4-0')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-4-1">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="只按登记顺序覆盖，矮物体就可能抹掉同格内的高障碍。" data-explanation-wrong="只按登记顺序覆盖，矮物体就可能抹掉同格内的高障碍。">
+          <h3 class="quiz-question">同一格既有矮屋又有高树。写入哪一个高度？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>最后登记的物体</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>两者顶部的较高值</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-4-1')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-4-1')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-4-2">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="只查终点可能跨过整条窄墙。应检查实际步长和经过各格时的高度判断。" data-explanation-wrong="只查终点可能跨过整条窄墙。应检查实际步长和经过各格时的高度判断。">
+          <h3 class="quiz-question">只在快速横移时穿过一条窄墙，先验证什么？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>移动途中是否分段检查经过的位置</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>卡片是否收录了墙的照片</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-4-2')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-4-2')">重试</button>
+      </div>
+    </section>
+  </div>
+</section>
+<section class="module" id="module-5" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header"><span style="font-weight:700;letter-spacing:.14em;color:var(--color-accent)">校园源码漫游　/　05</span>
+      <h2 class="module-title">把校园装进一个网页</h2>
+      <p class="module-subtitle">你改好了水塔卡片，在自己的电脑上也看到了新文字。为什么把 hujiang.html 发给别人，他们却还读到旧版？</p>
+    </header>
+    <section class="screen">
+      <h2 class="screen-heading">工作底稿和发行本</h2>
+      <div class="flow-steps">
+        <div class="flow-step"><strong>index.html</strong>
+          <p>开发入口，按顺序引用样式、绘图工具、素材和校园代码。</p>
+        </div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>build.cjs</strong>
+          <p>像装订一本图册，把引用的本地文件读出来，嵌进网页。</p>
+        </div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>hujiang.html</strong>
+          <p>可单独复制的漫游页面，内容对应上次装订时的版本。</p>
+        </div>
+      </div>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">程序从哪里开始装订？</h2>
+      <div class="translation-block">
+        <div class="translation-code"><span class="translation-label">build.cjs · 2–5</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code><span class="code-keyword">const</span> fs = require(&quot;node:fs&quot;);
+<span class="code-keyword">const</span> path = require(&quot;node:path&quot;);
+<span class="code-keyword">const</span> read = (file) =&gt; fs.readFileSync(path.join(__dirname, file), &quot;utf8&quot;);
+<span class="code-keyword">let</span> html = read(&quot;index.html&quot;);</code></pre>
+        </div>
+        <div class="translation-english"><span class="translation-label">逐段读懂</span>
+          <p class="tl">fs 负责读写文件，path 负责拼接文件路径。两者都由运行这个工具的 Node.js 提供。</p>
+          <p class="tl">read 按构建脚本所在目录寻找文件，用 UTF-8 读成文字。第一份读进来的是 index.html。</p>
+        </div>
+      </div>
+      <p>接下来的两次替换把样式和脚本分别嵌入页面，最后写出 hujiang.html。纹理和录音本身已经装在素材脚本里，也会随它们一起进入发行本。</p>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">怎样验收一次交付？</h2>
+      <p>在项目目录运行 <code>node build.cjs</code> 完成<span tabindex="0" class="term" data-definition="根据当前源码和素材重新生成可交付的文件。">构建</span>。把新生成的 hujiang.html 单独放进空文件夹，断网打开，定位到水塔并展开卡片，核对刚修改的那一句。</p>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">判断故障在哪一侧</strong>
+          <p>若开发入口和发行本表现不同，先查是否重新构建并复制了新文件。若两个入口都显示旧文字，回到地点编号和卡片取值。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">换个情境试试</h2>
+      <div class="quiz-container" id="quiz-5-0">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="改名不会把被引用的文件装进页面。构建脚本才会读取并嵌入依赖。" data-explanation-wrong="改名不会把被引用的文件装进页面。构建脚本才会读取并嵌入依赖。">
+          <h3 class="quiz-question">只拷走根目录的 index.html 后，页面缺少校园画面。怎么交付？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>复制重新生成的 hujiang.html</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>把 index.html 改名为 hujiang.html</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-5-0')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-5-0')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-5-1">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="漫游代码和素材在本地，查看档案馆的原始网页需要连接外部站点。" data-explanation-wrong="漫游代码和素材在本地，查看档案馆的原始网页需要连接外部站点。">
+          <h3 class="quiz-question">断网时校园正常，但点击档案馆原图失败。怎样理解？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>建筑模型未完整嵌入</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>原图链接仍通往档案馆网站</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-5-1')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-5-1')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-5-2">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="每次构建都会从开发入口及其引用文件重新生成发行本。" data-explanation-wrong="每次构建都会从开发入口及其引用文件重新生成发行本。">
+          <h3 class="quiz-question">想让下一次构建仍保留卡片的新说明，应改哪一份？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>只改上次导出的单文件</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>修改对应源码，再重新生成单文件</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-5-2')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-5-2')">重试</button>
+      </div>
+    </section>
+  </div>
+</section>
+  </main>
+
+</body>
+</html>

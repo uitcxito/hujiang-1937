@@ -1,0 +1,76 @@
+<section class="module" id="module-4" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header"><span style="font-weight:700;letter-spacing:.14em;color:var(--color-accent)">校园源码漫游　/　04</span>
+      <h2 class="module-title">飞过树冠要多高</h2>
+      <p class="module-subtitle">按 F 起飞，向树冠靠近，再尝试下降。要解释镜头为什么停住，可以把校园想成一张每格都标着最高障碍的方格纸。</p>
+    </header>
+    <figure style="margin:1.2rem 0"><img src="images/flight.jpg" alt="项目实景｜无人机俯瞰大学区。屋面、烟囱和树冠都会参与最低飞行高度的计算。" style="display:block;width:100%;border-radius:12px"><figcaption style="margin-top:.6rem;color:var(--color-text-secondary)">项目实景｜无人机俯瞰大学区。屋面、烟囱和树冠都会参与最低飞行高度的计算。</figcaption>
+    </figure>
+    <section class="screen">
+      <h2 class="screen-heading">在起飞前登记障碍</h2>
+      <p>程序先把建筑各部分占据的范围和树冠覆盖的范围写进<span tabindex="0" class="term" data-definition="按地面位置分格，保存每格里最高障碍的位置。">高度表</span>。同一格重叠着几件东西时，保留最高值。移动时只需查脚下那一格。</p>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">哪条下限更高？</h2>
+      <div class="translation-block">
+        <div class="translation-code"><span class="translation-label">src/flight.js · 41–44</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code>  <span class="code-keyword">function</span> floor(x, z) {
+    <span class="code-keyword">const</span> i = (Math.floor(z) - bounds.min.y) * width + Math.floor(x) - bounds.min.x;
+    <span class="code-keyword">return</span> Math.max(flightSurface(x, z) + 1.5, heights[i] + 0.75);
+  }</code></pre>
+        </div>
+        <div class="translation-english"><span class="translation-label">逐段读懂</span>
+          <p class="tl">把横纵位置向下取整，换成表里某一格的序号 i。</p>
+          <p class="tl">先算地面或水面以上 1.5 米，再算障碍顶部以上 0.75 米。取两者较高的值，作为这里的飞行下限。</p>
+        </div>
+      </div>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">算一格试试</strong>
+          <p>若地面标高为 2 米，树顶标高为 12 米，两条下限就是 3.5 和 12.75 米。继续按下降键，镜头也应停在 12.75 米或更高处。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">一大步拆成几小步</h2>
+      <p>水平移动被拆成每步最多约半米的小段，每段依次查看 X、Z 方向能否通过。这样即使一次要飞很远，中间经过的矮墙也有机会被检查到。</p>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">换个情境试试</h2>
+      <div class="quiz-container" id="quiz-4-0">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="地面和水面共同提供基础下限，空格也有最低高度。" data-explanation-wrong="地面和水面共同提供基础下限，空格也有最低高度。">
+          <h3 class="quiz-question">江面上空没有楼也没有树，下降时应在哪里停？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>江面或当地地面较高者以上至少 1.5 米</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>等到遇上屋顶才停</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-4-0')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-4-0')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-4-1">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="只按登记顺序覆盖，矮物体就可能抹掉同格内的高障碍。" data-explanation-wrong="只按登记顺序覆盖，矮物体就可能抹掉同格内的高障碍。">
+          <h3 class="quiz-question">同一格既有矮屋又有高树。写入哪一个高度？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>最后登记的物体</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>两者顶部的较高值</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-4-1')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-4-1')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-4-2">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="只查终点可能跨过整条窄墙。应检查实际步长和经过各格时的高度判断。" data-explanation-wrong="只查终点可能跨过整条窄墙。应检查实际步长和经过各格时的高度判断。">
+          <h3 class="quiz-question">只在快速横移时穿过一条窄墙，先验证什么？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>移动途中是否分段检查经过的位置</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>卡片是否收录了墙的照片</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-4-2')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-4-2')">重试</button>
+      </div>
+    </section>
+  </div>
+</section>

@@ -1,0 +1,85 @@
+<section class="module" id="module-3" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header"><span style="font-weight:700;letter-spacing:.14em;color:var(--color-accent)">校园源码漫游　/　03</span>
+      <h2 class="module-title">把水塔一层层搭起来</h2>
+      <p class="module-subtitle">地点记录只写着塔的位置、宽度和高度。镜头里看到的砖塔、水箱和基座，是程序按这些尺寸搭出来的。</p>
+    </header>
+    <section class="screen">
+      <h2 class="screen-heading">看一眼水塔的剖面</h2>
+      <div style="display:flex;gap:2rem;align-items:center;flex-wrap:wrap">
+        <div aria-label="塔身比例示意" style="width:90px;text-align:center;margin:1rem">
+          <div style="height:63px;background:#b9aa9a;display:grid;place-items:center">水箱</div>
+          <div style="height:137px;background:#915640;color:white;display:grid;place-items:center">砖身</div>
+          <div style="height:10px;background:#77716a">
+          </div>
+        </div>
+        <p style="flex:1;min-width:12em">把模型想成叠起来的积木。水塔编号 154 对应 makeTower。它读入宽 w、高 h，以总高的 68.5% 为分界，下方用砖，上方换用浅色。</p>
+      </div>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">积木放在中心点</h2>
+      <div class="translation-block">
+        <div class="translation-code"><span class="translation-label">src/halls.js · 441–446</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code><span class="code-keyword">function</span> makeTower(s, g) {
+  <span class="code-keyword">const</span> { w, h } = s,
+    shoulder = h * 0.685;
+  box(g, 0, shoulder / 2, 0, w, shoulder, w, brick);
+  box(g, 0, (h + shoulder) / 2, 0, w, h - shoulder, w, std(0xb9aa9a));
+  box(g, 0, 0.25, 0, w + 0.38, 0.5, w + 0.38, stone);</code></pre>
+        </div>
+        <div class="translation-english"><span class="translation-label">逐段读懂</span>
+          <p class="tl">从地点记录 s 取出宽和高，算出两段塔身交接的高度 shoulder。</p>
+          <p class="tl">第一个 box 建砖身，中心放在砖身高度的一半。第二个放在交界与塔顶的正中，两段恰好相接。</p>
+          <p class="tl">第三个方块只有半米高，底面略宽，构成基座。</p>
+        </div>
+      </div>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">把尺寸和外观分开核对</strong>
+          <p>图上水塔宽 13 像素，换算后约 6.27 米。记录给模型的高度是 21 米。这个数可以用来画塔，史料卡仍注明塔高待考。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">同一面墙怎样用四次？</h2>
+      <p>在塔芯外面，<span tabindex="0" class="term" data-definition="让同一组操作按给定次数重复执行。">循环</span>让墙面每次转过四分之一圈。四面都做出窗和齿形女儿墙，仅第一面加木门。要把门移到另一面，就应先检查决定哪面加门的条件。</p>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">换个情境试试</h2>
+      <div class="quiz-container" id="quiz-3-0">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="门属于重复搭建的墙面。是否只在某一面建门由循环内的条件控制。" data-explanation-wrong="门属于重复搭建的墙面。是否只在某一面建门由循环内的条件控制。">
+          <h3 class="quiz-question">水塔在正确位置，但所有立面都多了一扇门。先查哪里？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>放置门时对墙面序号的判断</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>水塔在老图上的编号</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-3-0')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-3-0')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-3-1">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="下段缩短，上段随之变长。上下两段共用的塔顶高度仍由 h 决定。" data-explanation-wrong="下段缩短，上段随之变长。上下两段共用的塔顶高度仍由 h 决定。">
+          <h3 class="quiz-question">希望浅色水箱占比更大，但总塔高不变。该改什么？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>提高地点记录的塔高</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>降低两段交界占总高的比例</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-3-1')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-3-1')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-3-2">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="方块按中心摆放。两段接缝取决于各自的中心位置和半高。" data-explanation-wrong="方块按中心摆放。两段接缝取决于各自的中心位置和半高。">
+          <h3 class="quiz-question">抬高砖身后，中间出现一条空缝。先比对哪两个量？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>基座颜色与砖墙颜色</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>下段顶部高度与上段底部高度</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-3-2')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-3-2')">重试</button>
+      </div>
+    </section>
+  </div>
+</section>

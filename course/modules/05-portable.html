@@ -1,0 +1,85 @@
+<section class="module" id="module-5" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header"><span style="font-weight:700;letter-spacing:.14em;color:var(--color-accent)">校园源码漫游　/　05</span>
+      <h2 class="module-title">把校园装进一个网页</h2>
+      <p class="module-subtitle">你改好了水塔卡片，在自己的电脑上也看到了新文字。为什么把 hujiang.html 发给别人，他们却还读到旧版？</p>
+    </header>
+    <section class="screen">
+      <h2 class="screen-heading">工作底稿和发行本</h2>
+      <div class="flow-steps">
+        <div class="flow-step"><strong>index.html</strong>
+          <p>开发入口，按顺序引用样式、绘图工具、素材和校园代码。</p>
+        </div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>build.cjs</strong>
+          <p>像装订一本图册，把引用的本地文件读出来，嵌进网页。</p>
+        </div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>hujiang.html</strong>
+          <p>可单独复制的漫游页面，内容对应上次装订时的版本。</p>
+        </div>
+      </div>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">程序从哪里开始装订？</h2>
+      <div class="translation-block">
+        <div class="translation-code"><span class="translation-label">build.cjs · 2–5</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code><span class="code-keyword">const</span> fs = require(&quot;node:fs&quot;);
+<span class="code-keyword">const</span> path = require(&quot;node:path&quot;);
+<span class="code-keyword">const</span> read = (file) =&gt; fs.readFileSync(path.join(__dirname, file), &quot;utf8&quot;);
+<span class="code-keyword">let</span> html = read(&quot;index.html&quot;);</code></pre>
+        </div>
+        <div class="translation-english"><span class="translation-label">逐段读懂</span>
+          <p class="tl">fs 负责读写文件，path 负责拼接文件路径。两者都由运行这个工具的 Node.js 提供。</p>
+          <p class="tl">read 按构建脚本所在目录寻找文件，用 UTF-8 读成文字。第一份读进来的是 index.html。</p>
+        </div>
+      </div>
+      <p>接下来的两次替换把样式和脚本分别嵌入页面，最后写出 hujiang.html。纹理和录音本身已经装在素材脚本里，也会随它们一起进入发行本。</p>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">怎样验收一次交付？</h2>
+      <p>在项目目录运行 <code>node build.cjs</code> 完成<span tabindex="0" class="term" data-definition="根据当前源码和素材重新生成可交付的文件。">构建</span>。把新生成的 hujiang.html 单独放进空文件夹，断网打开，定位到水塔并展开卡片，核对刚修改的那一句。</p>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">判断故障在哪一侧</strong>
+          <p>若开发入口和发行本表现不同，先查是否重新构建并复制了新文件。若两个入口都显示旧文字，回到地点编号和卡片取值。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">换个情境试试</h2>
+      <div class="quiz-container" id="quiz-5-0">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="改名不会把被引用的文件装进页面。构建脚本才会读取并嵌入依赖。" data-explanation-wrong="改名不会把被引用的文件装进页面。构建脚本才会读取并嵌入依赖。">
+          <h3 class="quiz-question">只拷走根目录的 index.html 后，页面缺少校园画面。怎么交付？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>复制重新生成的 hujiang.html</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>把 index.html 改名为 hujiang.html</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-5-0')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-5-0')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-5-1">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="漫游代码和素材在本地，查看档案馆的原始网页需要连接外部站点。" data-explanation-wrong="漫游代码和素材在本地，查看档案馆的原始网页需要连接外部站点。">
+          <h3 class="quiz-question">断网时校园正常，但点击档案馆原图失败。怎样理解？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>建筑模型未完整嵌入</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>原图链接仍通往档案馆网站</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-5-1')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-5-1')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-5-2">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="每次构建都会从开发入口及其引用文件重新生成发行本。" data-explanation-wrong="每次构建都会从开发入口及其引用文件重新生成发行本。">
+          <h3 class="quiz-question">想让下一次构建仍保留卡片的新说明，应改哪一份？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>只改上次导出的单文件</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>修改对应源码，再重新生成单文件</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-5-2')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-5-2')">重试</button>
+      </div>
+    </section>
+  </div>
+</section>

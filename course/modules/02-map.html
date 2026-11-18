@@ -1,0 +1,86 @@
+<section class="module" id="module-2" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header"><span style="font-weight:700;letter-spacing:.14em;color:var(--color-accent)">校园源码漫游　/　02</span>
+      <h2 class="module-title">让老图上的一点落地</h2>
+      <p class="module-subtitle">一张图可以放大打印，图上的一厘米却不能直接当作校园里的一米。要把水塔放回原位，先给老图配一把比例尺。</p>
+    </header>
+    <figure style="margin:1.2rem 0"><img src="images/layout.jpg" alt="项目布局校核图｜对照道路与建筑的相对位置，比单看一栋楼更容易发现整体偏移。" style="display:block;width:100%;border-radius:12px"><figcaption style="margin-top:.6rem;color:var(--color-text-secondary)">项目布局校核图｜对照道路与建筑的相对位置，比单看一栋楼更容易发现整体偏移。</figcaption>
+    </figure>
+    <section class="screen">
+      <h2 class="screen-heading">从纸面到校园</h2>
+      <p>原图统一为 1550 <span tabindex="0" class="term" data-definition="数字图像由许多小格组成，一格就是一个像素。">像素</span>宽。项目按四分之一英里跑道的描线长度估算，每个像素约合 0.4826 米。X 向图右，Z 向图下。</p>
+      <div class="flow-animation" data-steps="[{&quot;highlight&quot;:&quot;flow-actor-1&quot;,&quot;label&quot;:&quot;水塔在图纸上的点是 (995, 187)。&quot;},{&quot;highlight&quot;:&quot;flow-actor-2&quot;,&quot;label&quot;:&quot;分别减去 780 和 370，得到 (215, −183)。&quot;,&quot;packet&quot;:true,&quot;from&quot;:&quot;actor-1&quot;,&quot;to&quot;:&quot;actor-2&quot;},{&quot;highlight&quot;:&quot;flow-actor-3&quot;,&quot;label&quot;:&quot;两项都乘 0.4826，得到约 (103.76, −88.32) 米。&quot;,&quot;packet&quot;:true,&quot;from&quot;:&quot;actor-2&quot;,&quot;to&quot;:&quot;actor-3&quot;}]">
+        <div class="flow-actors">
+          <div class="flow-actor" id="flow-actor-1"><span class="flow-actor-icon">1</span>图上描点</div>
+          <div class="flow-actor" id="flow-actor-2"><span class="flow-actor-icon">2</span>平移原点</div>
+          <div class="flow-actor" id="flow-actor-3"><span class="flow-actor-icon">3</span>换算米数</div>
+        </div>
+        <div class="flow-packet">
+        </div>
+        <p aria-live="polite" class="flow-step-label">点下一步，跟着水塔的位置从图纸进入校园。</p>
+        <div class="flow-controls">
+          <button class="btn flow-next-btn">下一步</button>
+          <button class="btn flow-reset-btn">重新换算</button>
+        </div>
+      </div>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">读懂两次减法</h2>
+      <div class="translation-block">
+        <div class="translation-code"><span class="translation-label">src/atlas.js · 5–8</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code><span class="code-keyword">const</span> SCALE = 0.4826;
+<span class="code-keyword">function</span> point(u, v) {
+  <span class="code-keyword">return</span> [(u - 780) * SCALE, (v - 370) * SCALE];
+}</code></pre>
+        </div>
+        <div class="translation-english"><span class="translation-label">逐段读懂</span>
+          <p class="tl">SCALE 保存每个像素对应的米数。point 收下图上横、纵两个读数。</p>
+          <p class="tl">先从读数里扣掉选定原点的位置，再乘比例。方括号把两个结果一起交回。</p>
+        </div>
+      </div>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">用一个点区分两种误差</strong>
+          <p>若所有楼之间的距离都偏大，检查比例。若间距吻合、整片校园却平移了一段，检查原点。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">换个情境试试</h2>
+      <div class="quiz-container" id="quiz-2-0">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="像素数乘每像素的米数，20 × 0.4826 约为 9.65。" data-explanation-wrong="像素数乘每像素的米数，20 × 0.4826 约为 9.65。">
+          <h3 class="quiz-question">图上两栋楼相距 20 像素，场景里应相距多远？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>约 9.65 米</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>约 41.44 米</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-2-0')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-2-0')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-2-1">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="一个地点偏移时先检查局部输入。全局比例会同时影响许多地点。" data-explanation-wrong="一个地点偏移时先检查局部输入。全局比例会同时影响许多地点。">
+          <h3 class="quiz-question">只有水塔偏东，跑道和邻楼都对得上。先核对哪项？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>全校园的比例</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>水塔自己的横向描点读数</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-2-1')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-2-1')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-2-2">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="图纸的向下方向对应 Z 增大。塔高需要单独给出。" data-explanation-wrong="图纸的向下方向对应 Z 增大。塔高需要单独给出。">
+          <h3 class="quiz-question">沿图纸直向下走十个像素，哪个量增大？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>表示高度的 Y</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>沿图面纵向的 Z</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-2-2')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-2-2')">重试</button>
+      </div>
+    </section>
+  </div>
+</section>

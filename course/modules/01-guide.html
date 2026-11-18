@@ -1,0 +1,100 @@
+<section class="module" id="module-1" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header"><span style="font-weight:700;letter-spacing:.14em;color:var(--color-accent)">校园源码漫游　/　01</span>
+      <h1 class="module-title">在导览里找到水塔</h1>
+      <p class="module-subtitle">在 1937 年初夏的校园里，打开「校园导览」，搜“水塔”，再点结果。镜头转向塔身的同时，建筑介绍也换了。两处为什么能对上？</p>
+    </header>
+    <figure style="margin:1.2rem 0"><img src="images/tower.jpg" alt="项目实景｜水塔、东堂与思晏堂。试着从这组建筑中辨认塔顶的齿形轮廓。" style="display:block;width:100%;border-radius:12px"><figcaption style="margin-top:.6rem;color:var(--color-text-secondary)">项目实景｜水塔、东堂与思晏堂。试着从这组建筑中辨认塔顶的齿形轮廓。</figcaption>
+    </figure>
+    <section class="screen">
+      <h2 class="screen-heading">一次点击，三个角色</h2>
+      <p>把导览当作一叠索引卡。每处地点都有一条<span tabindex="0" class="term" data-definition="把有关同一处地点的名字、位置等信息放在一起。">记录</span>。下面把程序的三个动作写成对话，逐条点开就能跟着这一条记录走。</p>
+      <div class="chat-window" id="tower-chat">
+        <div class="chat-messages" aria-live="polite">
+          <div class="chat-message" data-sender="actor0" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-1)">导</div>
+            <div class="chat-bubble"><strong class="chat-sender">导览列表</strong>
+              <p>输入“水塔”后，我比对地点的名称和别名。点中结果，我就把这一条地点记录交给 focus。</p>
+            </div>
+          </div>
+          <div class="chat-message" data-sender="actor1" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-2)">镜</div>
+            <div class="chat-bubble"><strong class="chat-sender">取景逻辑 · focus</strong>
+              <p>我用地点的位置和取景参数对准水塔，切到鸟瞰，再把同一条记录交给 card。</p>
+            </div>
+          </div>
+          <div class="chat-message" data-sender="actor2" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-3)">卡</div>
+            <div class="chat-bubble"><strong class="chat-sender">建筑卡片 · card</strong>
+              <p>我填上名称与故事。展开“老照片与复原依据”，可以分别读到旧照可见的特征和复原者的推定。</p>
+            </div>
+          </div>
+        </div>
+        <div class="chat-typing" style="display:none"><span class="chat-avatar"></span> 正在交接…</div>
+        <div class="chat-controls">
+          <button class="btn chat-next-btn" onclick="this.disabled=true;setTimeout(()=>this.disabled=false,850)">看下一条消息</button>
+          <button class="btn chat-reset-btn" onclick="this.closest('.chat-window').querySelector('.chat-next-btn').disabled && event.stopImmediatePropagation()">从头看</button>
+        </div>
+      </div>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">卡片上的两种说法</h2>
+      <div class="translation-block">
+        <div class="translation-code"><span class="translation-label">src/explore.js · 236–240</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code>    el(&quot;placeTitle&quot;).textContent = s.name;
+    el(&quot;placeStory&quot;).textContent = s.story;
+    <span class="code-keyword">const</span> record = s.record;
+    el(&quot;evidence&quot;).textContent = record.observed;
+    el(&quot;inference&quot;).textContent = &quot;复原推定 · &quot; + record.inferred;</code></pre>
+        </div>
+        <div class="translation-english"><span class="translation-label">逐段读懂</span>
+          <p class="tl">先把地点的名字和故事写进卡片。</p>
+          <p class="tl">从同一地点取出史料记录，把 observed 填入依据栏，把 inferred 加上“复原推定”后填入另一栏。</p>
+        </div>
+      </div>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">检验复原说明</strong>
+          <p>水塔旧照可辨认上段大片实墙，确切色调仍待考。若补入新照片，先判断它支持哪一条描述，再修改对应字段。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="screen">
+      <h2 class="screen-heading">换个情境试试</h2>
+      <div class="quiz-container" id="quiz-1-0">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="筛选和取景已经找到水塔。沿卡片的数据来源回查编号，可以缩小文字错配的范围。" data-explanation-wrong="筛选和取景已经找到水塔。沿卡片的数据来源回查编号，可以缩小文字错配的范围。">
+          <h3 class="quiz-question">能搜到水塔，取景也正确，但“复原推定”显示了别栋建筑的文字。先查哪里？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>列表按名称筛选的条件</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>水塔编号关联的史料记录及卡片取值</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-1-0')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-1-0')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-1-1">
+        <div class="quiz-question-block" data-correct="0" data-explanation-right="搜索会一起检查名称和别名，观察距离只在选中结果后参与取景。" data-explanation-wrong="搜索会一起检查名称和别名，观察距离只在选中结果后参与取景。">
+          <h3 class="quiz-question">用旧称搜不到一栋楼，输入现名就能定位。优先核对什么？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>地点的别名列表</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>镜头的观察距离</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-1-1')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-1-1')">重试</button>
+      </div>
+      <div class="quiz-container" id="quiz-1-2">
+        <div class="quiz-question-block" data-correct="1" data-explanation-right="截图呈现了复原者的颜色选择。要把推定升级为依据，需要独立史料。" data-explanation-wrong="截图呈现了复原者的颜色选择。要把推定升级为依据，需要独立史料。">
+          <h3 class="quiz-question">想确认水塔的确切颜色，哪项证据更合适？</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="0" onclick="selectOption(this)"><span class="quiz-option-radio"></span>模型截图</button>
+            <button class="quiz-option" data-value="1" onclick="selectOption(this)"><span class="quiz-option-radio"></span>能辨别面层色彩且年代相符的史料</button>
+          </div>
+          <div aria-live="polite" class="quiz-feedback">
+          </div>
+        </div>
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-1-2')">核对答案</button> <button class="quiz-reset-btn" onclick="resetQuiz('quiz-1-2')">重试</button>
+      </div>
+    </section>
+  </div>
+</section>
