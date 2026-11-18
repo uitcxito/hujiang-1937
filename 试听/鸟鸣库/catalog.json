@@ -1,0 +1,300 @@
+{
+  "audioFormat": "48 kHz mono FLAC, 16 bit",
+  "processing": "原声截句、频带整理、轻度稳态降噪、音量校准和片段首尾淡化。",
+  "clips": [
+    {
+      "id": "bulbul-1",
+      "file": "bulbul-1.flac",
+      "species": "白头鹎",
+      "scientificName": "Pycnonotus sinensis",
+      "placement": "树冠",
+      "durationSeconds": 0.95,
+      "recordist": "Gao Lezhe",
+      "attribution": "(c) Gao Lezhe, some rights reserved (CC BY)",
+      "location": "上海杨浦",
+      "date": "2025-02-16",
+      "observation": "https://www.inaturalist.org/observations/270135658",
+      "originalAudio": "https://static.inaturalist.org/sounds/1372789.m4a?1744526758",
+      "soundId": 1372789,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        0.28,
+        1.23
+      ]
+    },
+    {
+      "id": "bulbul-2",
+      "file": "bulbul-2.flac",
+      "species": "白头鹎",
+      "scientificName": "Pycnonotus sinensis",
+      "placement": "树冠",
+      "durationSeconds": 3.25,
+      "recordist": "Wang.QG",
+      "attribution": "(c) Wang.QG, some rights reserved (CC BY)",
+      "location": "上海南汇东滩",
+      "date": "2025-05-02",
+      "observation": "https://www.inaturalist.org/observations/277759738",
+      "originalAudio": "https://static.inaturalist.org/sounds/1434919.wav?1746203451",
+      "soundId": 1434919,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        1.32,
+        4.57
+      ]
+    },
+    {
+      "id": "blackbird-1",
+      "file": "blackbird-1.flac",
+      "species": "乌鸫",
+      "scientificName": "Turdus mandarinus",
+      "placement": "林缘",
+      "durationSeconds": 2.94,
+      "recordist": "Yi CHEN",
+      "attribution": "(c) Yi CHEN, some rights reserved (CC BY)",
+      "location": "上海",
+      "date": "2024-04-04",
+      "observation": "https://www.inaturalist.org/observations/205281613",
+      "originalAudio": "https://static.inaturalist.org/sounds/952324.m4a?1712176856",
+      "soundId": 952324,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        0,
+        2.94
+      ]
+    },
+    {
+      "id": "blackbird-2",
+      "file": "blackbird-2.flac",
+      "species": "乌鸫",
+      "scientificName": "Turdus mandarinus",
+      "placement": "林缘",
+      "durationSeconds": 2.91,
+      "recordist": "Yi CHEN",
+      "attribution": "(c) Yi CHEN, some rights reserved (CC BY)",
+      "location": "上海浦东",
+      "date": "2025-05-28",
+      "observation": "https://www.inaturalist.org/observations/285004987",
+      "originalAudio": "https://static.inaturalist.org/sounds/1491173.m4a?1748490559",
+      "soundId": 1491173,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        0.04,
+        2.95
+      ]
+    },
+    {
+      "id": "sparrow-1",
+      "file": "sparrow-1.flac",
+      "species": "树麻雀",
+      "scientificName": "Passer montanus",
+      "placement": "林道旁",
+      "durationSeconds": 3.44,
+      "recordist": "TonyT",
+      "attribution": "(c) Tony Tong, some rights reserved (CC BY)",
+      "location": "安徽黟县",
+      "date": "2023-06-27",
+      "observation": "https://www.inaturalist.org/observations/169747914",
+      "originalAudio": "https://static.inaturalist.org/sounds/752889.m4a?1687863529",
+      "soundId": 752889,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        0.02,
+        3.46
+      ]
+    },
+    {
+      "id": "sparrow-2",
+      "file": "sparrow-2.flac",
+      "species": "树麻雀",
+      "scientificName": "Passer montanus",
+      "placement": "林道旁",
+      "durationSeconds": 2.21,
+      "recordist": "Zinogre",
+      "attribution": "(c) Zinogre, some rights reserved (CC BY)",
+      "location": "河南郑州",
+      "date": "2020-12-06",
+      "observation": "https://www.inaturalist.org/observations/66160931",
+      "originalAudio": "https://static.inaturalist.org/sounds/152482.m4a?1607211505",
+      "soundId": 152482,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        7.97,
+        10.18
+      ]
+    },
+    {
+      "id": "dove-1",
+      "file": "dove-1.flac",
+      "species": "珠颈斑鸠",
+      "scientificName": "Spilopelia chinensis",
+      "placement": "远处树梢",
+      "durationSeconds": 1.88,
+      "recordist": "MIMI",
+      "attribution": "(c) MIMI, some rights reserved (CC BY)",
+      "location": "台南",
+      "date": "2026-09-28",
+      "observation": "https://www.inaturalist.org/observations/404084929",
+      "originalAudio": "https://static.inaturalist.org/sounds/2176090.wav?1790564420",
+      "soundId": 2176090,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        0.22,
+        2.1
+      ]
+    },
+    {
+      "id": "dove-2",
+      "file": "dove-2.flac",
+      "species": "珠颈斑鸠",
+      "scientificName": "Spilopelia chinensis",
+      "placement": "远处树梢",
+      "durationSeconds": 2.04,
+      "recordist": "MIMI",
+      "attribution": "(c) MIMI, some rights reserved (CC BY)",
+      "location": "台南",
+      "date": "2026-07-05",
+      "observation": "https://www.inaturalist.org/observations/378194058",
+      "originalAudio": "https://static.inaturalist.org/sounds/2056938.wav?1783201084",
+      "soundId": 2056938,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        0.68,
+        2.72
+      ]
+    },
+    {
+      "id": "whiteeye-1",
+      "file": "whiteeye-1.flac",
+      "species": "暗绿绣眼鸟",
+      "scientificName": "Zosterops simplex",
+      "placement": "树冠",
+      "durationSeconds": 3.82,
+      "recordist": "Kalvin Chan",
+      "attribution": "no rights reserved",
+      "location": "香港大榄",
+      "date": "2026-02-02",
+      "observation": "https://www.inaturalist.org/observations/339380515",
+      "originalAudio": "https://static.inaturalist.org/sounds/1772557.wav?1771557320",
+      "soundId": 1772557,
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "excerptSeconds": [
+        3.15,
+        6.97
+      ]
+    },
+    {
+      "id": "whiteeye-2",
+      "file": "whiteeye-2.flac",
+      "species": "暗绿绣眼鸟",
+      "scientificName": "Zosterops simplex",
+      "placement": "树冠",
+      "durationSeconds": 1.96,
+      "recordist": "Eric Knight",
+      "attribution": "(c) Eric Knight, some rights reserved (CC BY)",
+      "location": "香港钢线湾",
+      "date": "2024-10-09",
+      "observation": "https://www.inaturalist.org/observations/248318864",
+      "originalAudio": "https://static.inaturalist.org/sounds/1234187.wav?1729449230",
+      "soundId": 1234187,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        0.38,
+        2.34
+      ]
+    },
+    {
+      "id": "parrotbill-1",
+      "file": "parrotbill-1.flac",
+      "species": "棕头鸦雀",
+      "scientificName": "Suthora webbiana",
+      "placement": "灌丛",
+      "durationSeconds": 2.79,
+      "recordist": "Jono",
+      "attribution": "(c) Jono, some rights reserved (CC BY)",
+      "location": "台湾",
+      "date": "2024-08-07",
+      "observation": "https://www.inaturalist.org/observations/234266322",
+      "originalAudio": "https://static.inaturalist.org/sounds/1155013.wav?1723004871",
+      "soundId": 1155013,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        1.98,
+        4.77
+      ]
+    },
+    {
+      "id": "parrotbill-2",
+      "file": "parrotbill-2.flac",
+      "species": "棕头鸦雀",
+      "scientificName": "Suthora webbiana",
+      "placement": "灌丛",
+      "durationSeconds": 2.38,
+      "recordist": "Zinogre",
+      "attribution": "(c) Zinogre, some rights reserved (CC BY)",
+      "location": "河南中牟",
+      "date": "2022-04-09",
+      "observation": "https://www.inaturalist.org/observations/110958491",
+      "originalAudio": "https://static.inaturalist.org/sounds/389363.m4a?1649597523",
+      "soundId": 389363,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        5.74,
+        8.12
+      ]
+    },
+    {
+      "id": "swallow-1",
+      "file": "swallow-1.flac",
+      "species": "家燕",
+      "scientificName": "Hirundo rustica",
+      "placement": "开阔处",
+      "durationSeconds": 3.57,
+      "recordist": "JIN Pin-Tsen",
+      "attribution": "no rights reserved",
+      "location": "浙江舟山",
+      "date": "2025-06-03",
+      "observation": "https://www.inaturalist.org/observations/286458892",
+      "originalAudio": "https://static.inaturalist.org/sounds/1502362.m4a?1748923419",
+      "soundId": 1502362,
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "excerptSeconds": [
+        18.36,
+        21.93
+      ]
+    },
+    {
+      "id": "swallow-2",
+      "file": "swallow-2.flac",
+      "species": "家燕",
+      "scientificName": "Hirundo rustica",
+      "placement": "开阔处",
+      "durationSeconds": 3.45,
+      "recordist": "祐",
+      "attribution": "(c) 祐, some rights reserved (CC BY)",
+      "location": "台中",
+      "date": "2026-07-03",
+      "observation": "https://www.inaturalist.org/observations/377625137",
+      "originalAudio": "https://static.inaturalist.org/sounds/2054211.wav?1783047793",
+      "soundId": 2054211,
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "excerptSeconds": [
+        9.02,
+        12.47
+      ]
+    }
+  ]
+}
