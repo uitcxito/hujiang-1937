@@ -63,6 +63,18 @@ function barkMaterial() {
 }
 const bark = barkMaterial(),
   treeTrunks = [];
+function lightPlantCards(shader) {
+  // Both sides share the crown or clump's normals. Sunlit leaves transmit some light towards the eye.
+  const normals = T.ShaderChunk.normal_fragment_begin.replace("normal *= faceDirection;", "");
+  const lighting = T.ShaderChunk.lights_lambert_pars_fragment.replace(
+    "vec3 irradiance = dotNL * directLight.color;",
+    `float backlight = pow(saturate(dot(-geometryViewDir, directLight.direction)), 5.0);
+     vec3 irradiance = directLight.color * (dotNL + vec3(0.23, 0.30, 0.09) * backlight);`,
+  );
+  shader.fragmentShader = shader.fragmentShader
+    .replace("#include <normal_fragment_begin>", normals)
+    .replace("#include <lights_lambert_pars_fragment>", lighting);
+}
 function makeTree(type) {
   const woody = new T.Group(),
     crowns = [],
@@ -115,8 +127,7 @@ function makeTree(type) {
         const tone = new T.Color().setHSL(
           between(0.16, 0.215),
           between(0.12, 0.29),
-          between(0.52, 0.86) *
-            (0.74 + (0.2 * pt.y) / high + 0.12 * normal.dot(new V(-0.52, 0.81, 0.33))),
+          between(0.52, 0.86) * (0.82 + (0.2 * pt.y) / high),
         );
         for (const [s, t] of [
           [-0.5, -0.45],
@@ -144,20 +155,17 @@ function makeTree(type) {
     return g;
   }
   const trunk = new T.Group();
-  bake(woody, trunk);
-  const leaves = new T.MeshStandardMaterial({
+  // Trees are already instanced by cell below. Keep the trunk and branches in one shadow draw per batch.
+  bake(woody, trunk, false);
+  const leaves = new T.MeshLambertMaterial({
     map: leafSpray(slender),
     alphaTest: 0.27,
     side: T.DoubleSide,
     vertexColors: true,
-    roughness: 1,
     emissive: 0x152009,
     emissiveIntensity: 0.27,
   });
-  leaves.onBeforeCompile = (sh) => {
-    const code = T.ShaderChunk.normal_fragment_begin.replace("normal *= faceDirection;", "");
-    sh.fragmentShader = sh.fragmentShader.replace("#include <normal_fragment_begin>", code);
-  };
+  leaves.onBeforeCompile = lightPlantCards;
   const near = sprays(false),
     far = sprays(true);
   let crownRadius = 0,
@@ -169,7 +177,7 @@ function makeTree(type) {
       height = Math.max(height, p.getY(i));
     }
   }
-  return { wood: trunk.children.map((m) => m.geometry), near, far, leaves, crownRadius, height };
+  return { wood: trunk.children[0].geometry, near, far, leaves, crownRadius, height };
 }
 function inPolygon(x, z, poly) {
   let yes = false;
@@ -303,29 +311,31 @@ function vegetation(scene) {
       const o = new T.InstancedMesh(geom, material, cell.matrices.length);
       cell.matrices.forEach((a, i) => o.setMatrixAt(i, a));
       scene.add(o);
-      o.castShadow = true;
+      o.castShadow = o.receiveShadow = true;
       return o;
     }
-    const trunks = m.wood.map((g) => instances(g, bark)),
-      near = instances(m.near, m.leaves),
+    instances(m.wood, bark);
+    const near = instances(m.near, m.leaves),
       far = instances(m.far, m.leaves);
-    collection.push({ ...cell, near, far, trunks });
+    collection.push({ x: cell.x, z: cell.z, near, far });
   }
   return (position, quality) => {
+    let castersChanged = false;
     for (const c of collection) {
       const dist = Math.hypot(position.x - c.x, position.z - c.z),
         near = dist < [55, 88, 135][quality];
+      if (c.near.visible !== near) castersChanged = true;
       c.near.visible = near;
       c.far.visible = !near;
-      c.far.castShadow = dist < 150;
-      c.trunks.forEach((t) => (t.visible = dist < 520));
     }
+    return castersChanged;
   };
 }
 function grass(scene) {
   const geom = new T.BufferGeometry(),
     p = [],
-    col = [];
+    col = [],
+    normals = [];
   for (let j = 0; j < 16; j++) {
     const a = rand() * 6.28,
       x = between(-0.21, 0.21),
@@ -336,15 +346,16 @@ function grass(scene) {
       dz = Math.sin(a) * w;
     p.push(x - dx, 0, z - dz, x + dx, 0, z + dz, x + dz * 5.2, h, z - dx * 5.2);
     col.push(0.075, 0.13, 0.036, 0.096, 0.16, 0.05, 0.28, 0.32, 0.092);
+    for (let i = 0; i < 3; i++) normals.push(0.3 * Math.sin(a), 1, -0.3 * Math.cos(a));
   }
   geom.setAttribute("position", new T.Float32BufferAttribute(p, 3));
   geom.setAttribute("color", new T.Float32BufferAttribute(col, 3));
-  const o = new T.InstancedMesh(
-    geom,
-    new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide }),
-    11500,
-  );
+  geom.setAttribute("normal", new T.Float32BufferAttribute(normals, 3));
+  const material = new T.MeshLambertMaterial({ vertexColors: true, side: T.DoubleSide });
+  material.onBeforeCompile = lightPlantCards;
+  const o = new T.InstancedMesh(geom, material, 11500);
   scene.add(o);
+  o.receiveShadow = true;
   o.frustumCulled = false;
   let previous = "";
   return (pos, q, walk) => {

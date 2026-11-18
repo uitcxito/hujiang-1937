@@ -1511,14 +1511,16 @@ function rod(g, a, b, r1, r2, mat, segments = 7) {
   o.quaternion.setFromUnitVectors(new V(0, 1, 0), delta.normalize());
   return o;
 }
-// Combine fixed geometry by material and 65 m cell. Picking uses the matching footprint solids.
-function bake(root, dest) {
+// Combine fixed geometry by material. Buildings also use 65 m cells for frustum culling.
+function bake(root, dest, splitByCell = true) {
   root.updateMatrixWorld(true);
   const batches = new Map();
   root.traverse((o) => {
     if (!o.isMesh) return;
     const center = new V().setFromMatrixPosition(o.matrixWorld);
-    const key = [Math.floor(center.x / 65), Math.floor(center.z / 65), o.material.uuid].join("/");
+    const key = splitByCell
+      ? [Math.floor(center.x / 65), Math.floor(center.z / 65), o.material.uuid].join("/")
+      : o.material.uuid;
     if (!batches.has(key)) batches.set(key, { mat: o.material, p: [], n: [], uv: [], ids: [] });
     const out = batches.get(key);
     let ancestor = o;
@@ -1715,7 +1717,7 @@ function terrain(scene) {
   const soil = mesh(scene, geo, m);
   soil.receiveShadow = true;
   // River occupies the part beyond the sloping bank where the ground falls below its level.
-  const waterMat = std(0x718d8a, { roughness: 0.44, metalness: 0.11 });
+  const waterMat = std(0x708986, { roughness: 0.21, metalness: 0.04 });
   waterMat.onBeforeCompile = (sh) => {
     sh.vertexShader =
       "varying vec2 rippleXZ;\n" +
@@ -1727,32 +1729,63 @@ function terrain(scene) {
       "varying vec2 rippleXZ;\n" +
       noise +
       "\n" +
-      sh.fragmentShader.replace(
-        "#include <color_fragment>",
-        `#include <color_fragment>
- float rip=noise2(rippleXZ*vec2(.34,3.6))*.7+noise2(rippleXZ*vec2(.1,1.3))*.3;
- diffuseColor.rgb+=vec3(.065,.077,.073)*(rip-.36);`,
-      );
+      sh.fragmentShader
+        .replace(
+          "#include <color_fragment>",
+          `#include <color_fragment>
+          float swell = noise2(rippleXZ * 0.16);
+          diffuseColor.rgb += vec3(0.033, 0.045, 0.040) * (swell - 0.5);`,
+        )
+        .replace(
+          "#include <normal_fragment_maps>",
+          `#include <normal_fragment_maps>
+          vec2 phase = vec2(dot(rippleXZ, vec2(1.7, 6.1)), dot(rippleXZ, vec2(4.3, -2.8)));
+          phase += swell * vec2(5.0, 7.0);
+          vec2 waves = cos(phase) * (1.0 - smoothstep(vec2(0.6), vec2(3.14), fwidth(phase)));
+          vec2 slope = vec2(0.031, 0.11) * waves.x + vec2(0.063, -0.041) * waves.y;
+          normal = normalize(mat3(viewMatrix) * vec3(-slope.x, 1.0, -slope.y));`,
+        );
   };
   const water = new T.PlaneGeometry(7200, 7200);
   water.rotateX(-Math.PI / 2);
-  mesh(scene, water, waterMat, 0, riverLevel, 0);
+  mesh(scene, water, waterMat, 0, riverLevel, 0).receiveShadow = true;
 }
-function sky(scene) {
+function sky(scene, sunDirection) {
   const mat = new T.ShaderMaterial({
     side: T.BackSide,
     depthWrite: false,
     fog: false,
-    uniforms: {},
+    extensions: { derivatives: true },
+    uniforms: { sunDirection: { value: sunDirection } },
     vertexShader: `varying vec3 dir;void main(){dir=position;vec4 p=projectionMatrix*mat4(mat3(viewMatrix))*vec4(position,1.);gl_Position=p.xyww;}`,
     fragmentShader: `
- varying vec3 dir;
- float h(vec2 p){return fract(sin(dot(p,vec2(17.37,59.43)))*4257.31);}
- float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y);}
- void main(){vec3 d=normalize(dir);float a=max(.0,d.y);vec3 col=mix(vec3(.84,.88,.88),vec3(.30,.54,.73),pow(a,.50));
- vec2 p=d.xz/max(.1,a+.10)*2.1;float f=.52*n(p)+.26*n(p*2.04)+.135*n(p*4.15)+.067*n(p*8.4)+.035*n(p*16.);
- float clouds=smoothstep(.50,.76,f)*smoothstep(.025,.16,a);col=mix(col,vec3(.96,.955,.925),clouds*.77);
- float sun=max(0.,dot(d,normalize(vec3(-.52,.81,.33))));col+=vec3(.16,.12,.07)*pow(sun,24.);gl_FragColor=vec4(col,1.);}`,
+      varying vec3 dir;
+      uniform vec3 sunDirection;
+      float h(vec2 p){return fract(sin(dot(p,vec2(17.37,59.43)))*4257.31);}
+      float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y);}
+      void main() {
+        vec3 d = normalize(dir);
+        float height = max(0.0, d.y);
+        float separation = length(d - sunDirection);
+        float sunward = exp(-2.5 * separation);
+        vec3 horizon = mix(vec3(0.84, 0.88, 0.89), vec3(1.0, 0.90, 0.75), sunward);
+        vec3 col = mix(horizon, vec3(0.28, 0.52, 0.74), sqrt(height));
+
+        vec2 p = d.xz / (height + 0.10) * 2.1;
+        float f = 0.52*n(p) + 0.26*n(p*2.04) + 0.135*n(p*4.15) + 0.067*n(p*8.4) + 0.035*n(p*16.);
+        float cloud = smoothstep(0.50, 0.76, f) * smoothstep(0.025, 0.16, height);
+        vec3 cloudColor = mix(vec3(0.93, 0.95, 0.96), vec3(1.0, 0.93, 0.80), sunward);
+        col = mix(col, cloudColor, cloud * 0.80);
+
+        float transmission = 1.0 - 0.82 * cloud;
+        float halo = 0.36 * sunward + 0.60 * exp(-16.0 * separation);
+        col = mix(col, vec3(1.0, 0.88, 0.66), halo * transmission);
+        // The solar disc subtends about half a degree. Filter its edge at screen resolution.
+        float aa = max(0.0003, 0.5 * fwidth(separation));
+        float disc = 1.0 - smoothstep(0.00465 - aa, 0.00465 + aa, separation);
+        float core = mix(0.70 * exp(-58.0 * separation), 1.0, disc);
+        gl_FragColor = vec4(mix(col, vec3(1.0, 0.992, 0.94), core * transmission), 1.0);
+      }`,
   });
   const dome = mesh(scene, new T.SphereGeometry(1, 48, 24), mat);
   dome.frustumCulled = false;
@@ -3892,6 +3925,18 @@ function barkMaterial() {
 }
 const bark = barkMaterial(),
   treeTrunks = [];
+function lightPlantCards(shader) {
+  // Both sides share the crown or clump's normals. Sunlit leaves transmit some light towards the eye.
+  const normals = T.ShaderChunk.normal_fragment_begin.replace("normal *= faceDirection;", "");
+  const lighting = T.ShaderChunk.lights_lambert_pars_fragment.replace(
+    "vec3 irradiance = dotNL * directLight.color;",
+    `float backlight = pow(saturate(dot(-geometryViewDir, directLight.direction)), 5.0);
+     vec3 irradiance = directLight.color * (dotNL + vec3(0.23, 0.30, 0.09) * backlight);`,
+  );
+  shader.fragmentShader = shader.fragmentShader
+    .replace("#include <normal_fragment_begin>", normals)
+    .replace("#include <lights_lambert_pars_fragment>", lighting);
+}
 function makeTree(type) {
   const woody = new T.Group(),
     crowns = [],
@@ -3944,8 +3989,7 @@ function makeTree(type) {
         const tone = new T.Color().setHSL(
           between(0.16, 0.215),
           between(0.12, 0.29),
-          between(0.52, 0.86) *
-            (0.74 + (0.2 * pt.y) / high + 0.12 * normal.dot(new V(-0.52, 0.81, 0.33))),
+          between(0.52, 0.86) * (0.82 + (0.2 * pt.y) / high),
         );
         for (const [s, t] of [
           [-0.5, -0.45],
@@ -3973,20 +4017,17 @@ function makeTree(type) {
     return g;
   }
   const trunk = new T.Group();
-  bake(woody, trunk);
-  const leaves = new T.MeshStandardMaterial({
+  // Trees are already instanced by cell below. Keep the trunk and branches in one shadow draw per batch.
+  bake(woody, trunk, false);
+  const leaves = new T.MeshLambertMaterial({
     map: leafSpray(slender),
     alphaTest: 0.27,
     side: T.DoubleSide,
     vertexColors: true,
-    roughness: 1,
     emissive: 0x152009,
     emissiveIntensity: 0.27,
   });
-  leaves.onBeforeCompile = (sh) => {
-    const code = T.ShaderChunk.normal_fragment_begin.replace("normal *= faceDirection;", "");
-    sh.fragmentShader = sh.fragmentShader.replace("#include <normal_fragment_begin>", code);
-  };
+  leaves.onBeforeCompile = lightPlantCards;
   const near = sprays(false),
     far = sprays(true);
   let crownRadius = 0,
@@ -3998,7 +4039,7 @@ function makeTree(type) {
       height = Math.max(height, p.getY(i));
     }
   }
-  return { wood: trunk.children.map((m) => m.geometry), near, far, leaves, crownRadius, height };
+  return { wood: trunk.children[0].geometry, near, far, leaves, crownRadius, height };
 }
 function inPolygon(x, z, poly) {
   let yes = false;
@@ -4132,29 +4173,31 @@ function vegetation(scene) {
       const o = new T.InstancedMesh(geom, material, cell.matrices.length);
       cell.matrices.forEach((a, i) => o.setMatrixAt(i, a));
       scene.add(o);
-      o.castShadow = true;
+      o.castShadow = o.receiveShadow = true;
       return o;
     }
-    const trunks = m.wood.map((g) => instances(g, bark)),
-      near = instances(m.near, m.leaves),
+    instances(m.wood, bark);
+    const near = instances(m.near, m.leaves),
       far = instances(m.far, m.leaves);
-    collection.push({ ...cell, near, far, trunks });
+    collection.push({ x: cell.x, z: cell.z, near, far });
   }
   return (position, quality) => {
+    let castersChanged = false;
     for (const c of collection) {
       const dist = Math.hypot(position.x - c.x, position.z - c.z),
         near = dist < [55, 88, 135][quality];
+      if (c.near.visible !== near) castersChanged = true;
       c.near.visible = near;
       c.far.visible = !near;
-      c.far.castShadow = dist < 150;
-      c.trunks.forEach((t) => (t.visible = dist < 520));
     }
+    return castersChanged;
   };
 }
 function grass(scene) {
   const geom = new T.BufferGeometry(),
     p = [],
-    col = [];
+    col = [],
+    normals = [];
   for (let j = 0; j < 16; j++) {
     const a = rand() * 6.28,
       x = between(-0.21, 0.21),
@@ -4165,15 +4208,16 @@ function grass(scene) {
       dz = Math.sin(a) * w;
     p.push(x - dx, 0, z - dz, x + dx, 0, z + dz, x + dz * 5.2, h, z - dx * 5.2);
     col.push(0.075, 0.13, 0.036, 0.096, 0.16, 0.05, 0.28, 0.32, 0.092);
+    for (let i = 0; i < 3; i++) normals.push(0.3 * Math.sin(a), 1, -0.3 * Math.cos(a));
   }
   geom.setAttribute("position", new T.Float32BufferAttribute(p, 3));
   geom.setAttribute("color", new T.Float32BufferAttribute(col, 3));
-  const o = new T.InstancedMesh(
-    geom,
-    new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide }),
-    11500,
-  );
+  geom.setAttribute("normal", new T.Float32BufferAttribute(normals, 3));
+  const material = new T.MeshLambertMaterial({ vertexColors: true, side: T.DoubleSide });
+  material.onBeforeCompile = lightPlantCards;
+  const o = new T.InstancedMesh(geom, material, 11500);
   scene.add(o);
+  o.receiveShadow = true;
   o.frustumCulled = false;
   let previous = "";
   return (pos, q, walk) => {
@@ -4435,13 +4479,16 @@ function explore() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = T.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
-  scene.add(new T.HemisphereLight(0xf0f6ff, 0xa89978, 1.5));
-  const sun = new T.DirectionalLight(0xffedcd, 2.43);
+  scene.add(new T.HemisphereLight(0xe2efff, 0xb7a58b, 1.55));
+  // Early summer morning, with the light coming across the avenue from the river.
+  const sunDirection = new V(0.89, 0.43, 0.4).normalize();
+  const sun = new T.DirectionalLight(0xffe4bc, 3.95);
   scene.add(sun, sun.target);
   sun.castShadow = true;
-  sun.shadow.bias = -0.00027;
-  sun.shadow.normalBias = 0.026;
-  sky(scene);
+  const shadowRight = new V().crossVectors(sun.up, sunDirection).normalize();
+  const shadowUp = new V().crossVectors(sunDirection, shadowRight);
+  const droneShadowFocus = new V();
+  sky(scene, sunDirection);
   terrain(scene);
   riverGarden(scene);
   const architecture = new T.Group();
@@ -4709,7 +4756,7 @@ function explore() {
     q = Number(el("quality").value);
     renderer.setPixelRatio(Math.min(devicePixelRatio, [0.8, 1.25, 1.75][q]));
     renderer.setSize(innerWidth, innerHeight);
-    sun.shadow.mapSize.setScalar([1024, 2048, 3072][q]);
+    sun.shadow.mapSize.setScalar(Math.min([1024, 2048, 3072][q], renderer.capabilities.maxTextureSize));
     if (sun.shadow.map) {
       sun.shadow.map.dispose();
       sun.shadow.map = null;
@@ -4720,13 +4767,14 @@ function explore() {
   function setupShadows() {
     const aerial = mode !== "walk";
     let anchor = player,
-      range = 43;
+      range = 55;
     if (mode === "orbit") {
       anchor = target;
-      range = Math.min(390, Math.max(35, radius * 0.67));
+      range = T.MathUtils.clamp(radius * 0.78, 40, 390);
     } else if (mode === "drone") {
-      anchor = drone;
-      range = T.MathUtils.clamp(55 + Math.ceil(drone.y / 10) * 12, 55, 390);
+      const altitude = drone.y - flightSurface(drone.x, drone.z);
+      range = T.MathUtils.clamp(55 + Math.ceil(altitude / 10) * 24, 55, 390);
+      anchor = camera.getWorldDirection(droneShadowFocus).multiplyScalar(range * 0.4).add(drone);
     }
     if (
       Math.abs(range - shadowRange) < 0.1 &&
@@ -4737,15 +4785,25 @@ function explore() {
     shadowX = anchor.x;
     shadowZ = anchor.z;
     sun.target.position.set(shadowX, 0, shadowZ);
-    sun.position.set(shadowX - 180, 285, shadowZ + 115);
+    // Keep static edges on the same texels when the shadow camera follows the visitor.
+    const texel = (2 * range) / sun.shadow.mapSize.x;
+    for (const axis of [shadowRight, shadowUp]) {
+      const offset = sun.target.position.dot(axis);
+      sun.target.position.addScaledVector(axis, Math.round(offset / texel) * texel - offset);
+    }
+    // At a shallow sun angle, tall or distant casters can be well upstream of the receiver.
+    const depth = (range + 40) / sunDirection.y;
+    sun.position.copy(sun.target.position).addScaledVector(sunDirection, depth);
     Object.assign(sun.shadow.camera, {
       left: -range,
       right: range,
       top: range,
       bottom: -range,
       near: 0.5,
-      far: 850,
+      far: 2 * depth,
     });
+    sun.shadow.bias = -0.04 / (2 * depth);
+    sun.shadow.normalBias = Math.max(0.022, texel * 0.35);
     sun.shadow.camera.updateProjectionMatrix();
     renderer.shadowMap.needsUpdate = true;
   }
@@ -4999,7 +5057,7 @@ function explore() {
     if (!dirty) return;
     aim();
     updatePins();
-    trees(camera.position, q);
+    if (trees(camera.position, q)) renderer.shadowMap.needsUpdate = true;
     blades(camera.position, q, camera.position.y - groundY(camera.position.x, camera.position.z) < 8);
     setupShadows();
     if (mode === "drone") {

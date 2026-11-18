@@ -157,14 +157,16 @@ function rod(g, a, b, r1, r2, mat, segments = 7) {
   o.quaternion.setFromUnitVectors(new V(0, 1, 0), delta.normalize());
   return o;
 }
-// Combine fixed geometry by material and 65 m cell. Picking uses the matching footprint solids.
-function bake(root, dest) {
+// Combine fixed geometry by material. Buildings also use 65 m cells for frustum culling.
+function bake(root, dest, splitByCell = true) {
   root.updateMatrixWorld(true);
   const batches = new Map();
   root.traverse((o) => {
     if (!o.isMesh) return;
     const center = new V().setFromMatrixPosition(o.matrixWorld);
-    const key = [Math.floor(center.x / 65), Math.floor(center.z / 65), o.material.uuid].join("/");
+    const key = splitByCell
+      ? [Math.floor(center.x / 65), Math.floor(center.z / 65), o.material.uuid].join("/")
+      : o.material.uuid;
     if (!batches.has(key)) batches.set(key, { mat: o.material, p: [], n: [], uv: [], ids: [] });
     const out = batches.get(key);
     let ancestor = o;

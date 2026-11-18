@@ -156,7 +156,7 @@ function terrain(scene) {
   const soil = mesh(scene, geo, m);
   soil.receiveShadow = true;
   // River occupies the part beyond the sloping bank where the ground falls below its level.
-  const waterMat = std(0x718d8a, { roughness: 0.44, metalness: 0.11 });
+  const waterMat = std(0x708986, { roughness: 0.21, metalness: 0.04 });
   waterMat.onBeforeCompile = (sh) => {
     sh.vertexShader =
       "varying vec2 rippleXZ;\n" +
@@ -168,32 +168,63 @@ function terrain(scene) {
       "varying vec2 rippleXZ;\n" +
       noise +
       "\n" +
-      sh.fragmentShader.replace(
-        "#include <color_fragment>",
-        `#include <color_fragment>
- float rip=noise2(rippleXZ*vec2(.34,3.6))*.7+noise2(rippleXZ*vec2(.1,1.3))*.3;
- diffuseColor.rgb+=vec3(.065,.077,.073)*(rip-.36);`,
-      );
+      sh.fragmentShader
+        .replace(
+          "#include <color_fragment>",
+          `#include <color_fragment>
+          float swell = noise2(rippleXZ * 0.16);
+          diffuseColor.rgb += vec3(0.033, 0.045, 0.040) * (swell - 0.5);`,
+        )
+        .replace(
+          "#include <normal_fragment_maps>",
+          `#include <normal_fragment_maps>
+          vec2 phase = vec2(dot(rippleXZ, vec2(1.7, 6.1)), dot(rippleXZ, vec2(4.3, -2.8)));
+          phase += swell * vec2(5.0, 7.0);
+          vec2 waves = cos(phase) * (1.0 - smoothstep(vec2(0.6), vec2(3.14), fwidth(phase)));
+          vec2 slope = vec2(0.031, 0.11) * waves.x + vec2(0.063, -0.041) * waves.y;
+          normal = normalize(mat3(viewMatrix) * vec3(-slope.x, 1.0, -slope.y));`,
+        );
   };
   const water = new T.PlaneGeometry(7200, 7200);
   water.rotateX(-Math.PI / 2);
-  mesh(scene, water, waterMat, 0, riverLevel, 0);
+  mesh(scene, water, waterMat, 0, riverLevel, 0).receiveShadow = true;
 }
-function sky(scene) {
+function sky(scene, sunDirection) {
   const mat = new T.ShaderMaterial({
     side: T.BackSide,
     depthWrite: false,
     fog: false,
-    uniforms: {},
+    extensions: { derivatives: true },
+    uniforms: { sunDirection: { value: sunDirection } },
     vertexShader: `varying vec3 dir;void main(){dir=position;vec4 p=projectionMatrix*mat4(mat3(viewMatrix))*vec4(position,1.);gl_Position=p.xyww;}`,
     fragmentShader: `
- varying vec3 dir;
- float h(vec2 p){return fract(sin(dot(p,vec2(17.37,59.43)))*4257.31);}
- float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y);}
- void main(){vec3 d=normalize(dir);float a=max(.0,d.y);vec3 col=mix(vec3(.84,.88,.88),vec3(.30,.54,.73),pow(a,.50));
- vec2 p=d.xz/max(.1,a+.10)*2.1;float f=.52*n(p)+.26*n(p*2.04)+.135*n(p*4.15)+.067*n(p*8.4)+.035*n(p*16.);
- float clouds=smoothstep(.50,.76,f)*smoothstep(.025,.16,a);col=mix(col,vec3(.96,.955,.925),clouds*.77);
- float sun=max(0.,dot(d,normalize(vec3(-.52,.81,.33))));col+=vec3(.16,.12,.07)*pow(sun,24.);gl_FragColor=vec4(col,1.);}`,
+      varying vec3 dir;
+      uniform vec3 sunDirection;
+      float h(vec2 p){return fract(sin(dot(p,vec2(17.37,59.43)))*4257.31);}
+      float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y);}
+      void main() {
+        vec3 d = normalize(dir);
+        float height = max(0.0, d.y);
+        float separation = length(d - sunDirection);
+        float sunward = exp(-2.5 * separation);
+        vec3 horizon = mix(vec3(0.84, 0.88, 0.89), vec3(1.0, 0.90, 0.75), sunward);
+        vec3 col = mix(horizon, vec3(0.28, 0.52, 0.74), sqrt(height));
+
+        vec2 p = d.xz / (height + 0.10) * 2.1;
+        float f = 0.52*n(p) + 0.26*n(p*2.04) + 0.135*n(p*4.15) + 0.067*n(p*8.4) + 0.035*n(p*16.);
+        float cloud = smoothstep(0.50, 0.76, f) * smoothstep(0.025, 0.16, height);
+        vec3 cloudColor = mix(vec3(0.93, 0.95, 0.96), vec3(1.0, 0.93, 0.80), sunward);
+        col = mix(col, cloudColor, cloud * 0.80);
+
+        float transmission = 1.0 - 0.82 * cloud;
+        float halo = 0.36 * sunward + 0.60 * exp(-16.0 * separation);
+        col = mix(col, vec3(1.0, 0.88, 0.66), halo * transmission);
+        // The solar disc subtends about half a degree. Filter its edge at screen resolution.
+        float aa = max(0.0003, 0.5 * fwidth(separation));
+        float disc = 1.0 - smoothstep(0.00465 - aa, 0.00465 + aa, separation);
+        float core = mix(0.70 * exp(-58.0 * separation), 1.0, disc);
+        gl_FragColor = vec4(mix(col, vec3(1.0, 0.992, 0.94), core * transmission), 1.0);
+      }`,
   });
   const dome = mesh(scene, new T.SphereGeometry(1, 48, 24), mat);
   dome.frustumCulled = false;

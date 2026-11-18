@@ -13,13 +13,16 @@ function explore() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = T.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
-  scene.add(new T.HemisphereLight(0xf0f6ff, 0xa89978, 1.5));
-  const sun = new T.DirectionalLight(0xffedcd, 2.43);
+  scene.add(new T.HemisphereLight(0xe2efff, 0xb7a58b, 1.55));
+  // Early summer morning, with the light coming across the avenue from the river.
+  const sunDirection = new V(0.89, 0.43, 0.4).normalize();
+  const sun = new T.DirectionalLight(0xffe4bc, 3.95);
   scene.add(sun, sun.target);
   sun.castShadow = true;
-  sun.shadow.bias = -0.00027;
-  sun.shadow.normalBias = 0.026;
-  sky(scene);
+  const shadowRight = new V().crossVectors(sun.up, sunDirection).normalize();
+  const shadowUp = new V().crossVectors(sunDirection, shadowRight);
+  const droneShadowFocus = new V();
+  sky(scene, sunDirection);
   terrain(scene);
   riverGarden(scene);
   const architecture = new T.Group();
@@ -287,7 +290,7 @@ function explore() {
     q = Number(el("quality").value);
     renderer.setPixelRatio(Math.min(devicePixelRatio, [0.8, 1.25, 1.75][q]));
     renderer.setSize(innerWidth, innerHeight);
-    sun.shadow.mapSize.setScalar([1024, 2048, 3072][q]);
+    sun.shadow.mapSize.setScalar(Math.min([1024, 2048, 3072][q], renderer.capabilities.maxTextureSize));
     if (sun.shadow.map) {
       sun.shadow.map.dispose();
       sun.shadow.map = null;
@@ -298,13 +301,14 @@ function explore() {
   function setupShadows() {
     const aerial = mode !== "walk";
     let anchor = player,
-      range = 43;
+      range = 55;
     if (mode === "orbit") {
       anchor = target;
-      range = Math.min(390, Math.max(35, radius * 0.67));
+      range = T.MathUtils.clamp(radius * 0.78, 40, 390);
     } else if (mode === "drone") {
-      anchor = drone;
-      range = T.MathUtils.clamp(55 + Math.ceil(drone.y / 10) * 12, 55, 390);
+      const altitude = drone.y - flightSurface(drone.x, drone.z);
+      range = T.MathUtils.clamp(55 + Math.ceil(altitude / 10) * 24, 55, 390);
+      anchor = camera.getWorldDirection(droneShadowFocus).multiplyScalar(range * 0.4).add(drone);
     }
     if (
       Math.abs(range - shadowRange) < 0.1 &&
@@ -315,15 +319,25 @@ function explore() {
     shadowX = anchor.x;
     shadowZ = anchor.z;
     sun.target.position.set(shadowX, 0, shadowZ);
-    sun.position.set(shadowX - 180, 285, shadowZ + 115);
+    // Keep static edges on the same texels when the shadow camera follows the visitor.
+    const texel = (2 * range) / sun.shadow.mapSize.x;
+    for (const axis of [shadowRight, shadowUp]) {
+      const offset = sun.target.position.dot(axis);
+      sun.target.position.addScaledVector(axis, Math.round(offset / texel) * texel - offset);
+    }
+    // At a shallow sun angle, tall or distant casters can be well upstream of the receiver.
+    const depth = (range + 40) / sunDirection.y;
+    sun.position.copy(sun.target.position).addScaledVector(sunDirection, depth);
     Object.assign(sun.shadow.camera, {
       left: -range,
       right: range,
       top: range,
       bottom: -range,
       near: 0.5,
-      far: 850,
+      far: 2 * depth,
     });
+    sun.shadow.bias = -0.04 / (2 * depth);
+    sun.shadow.normalBias = Math.max(0.022, texel * 0.35);
     sun.shadow.camera.updateProjectionMatrix();
     renderer.shadowMap.needsUpdate = true;
   }
@@ -577,7 +591,7 @@ function explore() {
     if (!dirty) return;
     aim();
     updatePins();
-    trees(camera.position, q);
+    if (trees(camera.position, q)) renderer.shadowMap.needsUpdate = true;
     blades(camera.position, q, camera.position.y - groundY(camera.position.x, camera.position.z) < 8);
     setupShadows();
     if (mode === "drone") {
