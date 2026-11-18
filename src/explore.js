@@ -56,9 +56,17 @@ function explore() {
   function legal(x, z) {
     if (!inPolygon(x / SCALE + 780, z / SCALE + 370, boundary) || shoreDistance(x, z) < 1.05)
       return false;
-    for (const o of obstacles)
-      if (Math.abs(x - o.x) < o.w / 2 + collisionRadius && Math.abs(z - o.z) < o.d / 2 + collisionRadius)
+    for (const o of obstacles) {
+      let dx = x - o.x,
+        dz = z - o.z;
+      if (o.angle) {
+        const co = Math.cos(o.angle),
+          si = Math.sin(o.angle);
+        [dx, dz] = [co * dx - si * dz, si * dx + co * dz];
+      }
+      if (Math.abs(dx) < o.w / 2 + collisionRadius && Math.abs(dz) < o.d / 2 + collisionRadius)
         return false;
+    }
     for (const t of treeTrunks)
       if ((x - t.x) ** 2 + (z - t.z) ** 2 < (t.r + collisionRadius) ** 2) return false;
     return true;
@@ -123,18 +131,29 @@ function explore() {
     el("location").textContent = "全校园";
   }
   function relocate(s) {
-    if (s.id === 121) {
-      const [x, z] = point(825, 379);
+    if (s.approach) {
+      const [x, z] = point(...s.approach);
       if (legal(x, z)) {
-        setWalk(x, z, s.x, s.z + 3);
-        pitch = 0.15;
+        setWalk(x, z, s.x, s.z + (s.id === 121 ? 3 : 0));
+        pitch = s.id === 154 ? 0.27 : 0.15;
         viewLabel = { name: s.name, x, z };
+        el("location").textContent = s.name;
         return;
       }
     }
     const distance = s.style === "gate" ? 11 : Math.max(s.w, s.d) * 0.54 + 9;
     for (const scale of [1, 1.4, 1.9])
-      for (const a of [2.52, -2.55, 1.95, -1.7, 0.5, -0.48, 0, Math.PI]) {
+      for (const a of [
+        Math.PI - (s.photoView?.azimuth ?? -0.64),
+        2.52,
+        -2.55,
+        1.95,
+        -1.7,
+        0.5,
+        -0.48,
+        0,
+        Math.PI,
+      ]) {
         const x = s.x + Math.sin(a) * distance * scale,
           z = s.z - Math.cos(a) * distance * scale;
         if (legal(x, z)) {
@@ -154,30 +173,32 @@ function explore() {
     el("typeline").textContent = s.year ? s.year + "　·　沪江校舍" : "沪江校园　·　1937";
     el("placeTitle").textContent = s.name;
     el("placeStory").textContent = s.story;
-    let notes =
-      "史料可证：老图中的位置与用途。合理推定：按占地描取的尺寸、层高、门窗排列与色彩。环境补景：树木个体、草叶、路面颗粒及天气。";
-    if (s.id === 121)
-      notes =
-        "史料可证：L形联体、思魏堂在北侧、双联扁拱和尖券长窗。合理推定：屋脊高度、窗格数量、砖色和背立面。环境补景：附近树木与地表细节。";
-    if (s.id === 142)
-      notes =
-        "史料可证：1928年原馆位于科学馆东隅。战后才形成对称东翼和连接塔楼。合理推定：战前原馆的窗格、山墙和檐部细节。环境补景：草坪与树丛。";
-    if (s.style === "landmark")
-      notes =
-        "史料可证：图中的区域名称和边界关系。合理推定：岸线宽度、路径宽度与地表材料。环境补景：植被个体、苗床细节与远方树线。";
-    if (s.id === 190)
-      notes =
-        "史料可证：1916年启用，位于图中门房旁。合理推定：柱身、开启的铁门、题字位置及门洞净宽。环境补景：校门外接近道路的地面与植被。";
-    el("evidence").textContent = notes;
-    el("sourceLink").href = s.source;
+    const record = s.record;
+    el("evidence").textContent = record.observed;
+    el("inference").textContent = "复原推定 · " + record.inferred;
+    const links = el("photoLinks");
+    links.replaceChildren();
+    for (const [label, url] of record.links || []) {
+      const a = document.createElement("a");
+      a.textContent = label + " ↗";
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      links.append(a);
+    }
+    el("sourceLink").href = record.source;
+    el("sourceLink").hidden = record.source === ARCHIVE;
     el("mapSource").href = ARCHIVE;
     el("location").textContent = s.name;
   }
   function focus(s) {
-    target.set(s.x, Math.min(s.h * 0.44, 8), s.z);
-    radius = Math.max(s.w, s.d, s.h) * 1.62 + 10;
-    theta = -0.74;
-    tilt = 1.12;
+    const view = s.photoView;
+    target.set(s.x, groundY(s.x, s.z) + (view?.height ?? Math.min(s.h * 0.44, 8)), s.z);
+    radius = view?.distance ?? Math.max(s.w, s.d, s.h) * 1.62 + 10;
+    // Increase distance on narrow windows so that the long façades still fit.
+    radius *= Math.max(1, 1.48 / camera.aspect);
+    theta = view?.azimuth ?? -0.64;
+    tilt = view?.tilt ?? 1.12;
     setMode("orbit");
     card(s);
   }
@@ -453,7 +474,7 @@ function explore() {
     const q = el("placeQuery").value.trim();
     el("placeList").replaceChildren();
     for (const s of [gate, ...sites.filter((s) => s !== gate)]) {
-      if (!s.name.includes(q)) continue;
+      if (![s.name, ...(s.aliases || [])].some((name) => name.includes(q))) continue;
       const b = document.createElement("button");
       b.textContent = s.name;
       const small = document.createElement("small");

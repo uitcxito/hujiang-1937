@@ -187,6 +187,8 @@ function vegetation(scene) {
     )
       return;
     if (!outside && Math.hypot(u - 838, v - 361) < 17) return;
+    // The plan leaves the approach to Science Hall and the small adjoining lawn open.
+    if (!outside && u > 923 && u < 1004 && v > 267 && v < 360) return;
     if (shoreDistance(x, z) < 3 && !outside) return;
     const ix = Math.floor(x / 4),
       iz = Math.floor(z / 4);
@@ -243,11 +245,32 @@ function vegetation(scene) {
     const v = between(100, 687);
     tree(riverU(v) - between(6, 20), v);
   }
-  for (let n = 0; n < 55; n++) {
-    const u = between(992, 1265),
-      v = rand() > 0.55 ? between(255, 265) : between(329, 342);
-    tree(u, v);
-  }
+  // Tree symbols on the two edges of the quadrangle, including the gap opposite Breaker Hall.
+  for (const [u, v] of [
+    [1018, 262],
+    [1038, 261],
+    [1125, 259],
+    [1148, 260],
+    [1172, 259],
+    [1194, 259],
+    [1218, 258],
+    [1243, 257],
+    [1272, 257],
+    [1302, 265],
+    [1286, 292],
+    [1271, 311],
+    [1021, 334],
+    [1040, 335],
+    [1084, 334],
+    [1109, 335],
+    [1129, 334],
+    [1155, 335],
+    [1175, 335],
+    [1197, 335],
+    [1215, 335],
+    [1249, 334],
+  ])
+    tree(u, v, false, between(0.7, 1.0));
   for (let n = 0; n < 37; n++) tree(between(1210, 1358), between(121, 244));
   for (let n = 0; n < 50; n++) tree(between(365, 589), between(432, 506));
   for (let n = 0; n < 110; n++) {

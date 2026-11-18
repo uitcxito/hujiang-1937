@@ -74,7 +74,7 @@ function roofMaterial() {
       const xx = x * 64 + (y % 2) * 32,
         yy = y * 64;
       const grad = g.createLinearGradient(xx, 0, xx + 64, 0);
-      const l = between(28, 37);
+      const l = between(28, 34);
       for (const [t, v] of [
         [0, -5],
         [0.14, 4],
@@ -82,7 +82,7 @@ function roofMaterial() {
         [0.8, -2],
         [1, -7],
       ])
-        grad.addColorStop(t, "hsl(15 32% " + (l + v) + "%)");
+        grad.addColorStop(t, "hsl(19 23% " + (l + v) + "%)");
       g.fillStyle = grad;
       g.fillRect(xx, yy, 63, 61);
       g.fillStyle = "#b88d713f";

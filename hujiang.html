@@ -399,6 +399,16 @@ a {
   accent-color: #304e3a;
 }
 
+#photoLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 5px;
+}
+#placeCard #inference {
+  color: #665846;
+}
+
 </style>
   </head>
   <body>
@@ -421,8 +431,10 @@ a {
       <h2 id="placeTitle"></h2>
       <p id="placeStory"></p>
       <details>
-        <summary>复原依据</summary>
+        <summary>老照片与复原依据</summary>
         <p id="evidence"></p>
+        <p id="inference"></p>
+        <div id="photoLinks"></div>
         <a id="sourceLink" target="_blank" rel="noopener">建筑资料 ↗</a>　<a
           id="mapSource"
           target="_blank"
@@ -487,20 +499,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 /* Coordinates are hand-traced in the 1550 px wide reproduction of the archive map.
    X points right and Z points down the sheet. North is not the screen vertical. */
 const ARCHIVE = "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm";
-const RECORD = "https://iso.usst.edu.cn/2008/0529/c1109a9571/page.htm";
-const LIBRARY = "https://iso.usst.edu.cn/2008/0529/c1109a9576/page.htm";
-const AUDITORIUM = "https://www.usst.edu.cn/2022/0726/c999a47070/page.htm";
-const GATE = "https://buildings.usst.edu.cn/2018/1002/c882a30395/page.htm";
-const TOWER = "https://buildings.usst.edu.cn/2018/1004/c882a30409/page.htm";
 // Four hundred and two metres around the quarter-mile track, divided by its traced centreline.
 const SCALE = 0.4826;
 function point(u, v) {
   return [(u - 780) * SCALE, (v - 370) * SCALE];
 }
 const sites = [];
-function site(id, name, u, v, w, d, h, style, year, story, source = RECORD) {
+function site(id, name, u, v, w, d, h, style, year, story) {
   const [x, z] = point(u, v);
-  const s = { id, name, u, v, x, z, w: w * SCALE, d: d * SCALE, h, style, year, story, source };
+  const s = { id, name, u, v, x, z, w: w * SCALE, d: d * SCALE, h, style, year, story };
   sites.push(s);
   return s;
 }
@@ -515,19 +522,18 @@ site(
   "auditorium",
   "1937",
   "为庆祝建校三十周年而兴建。大礼堂与北侧的思魏堂相接，构成曲尺形平面。双联扁拱入口和由细柱分隔的长窗，是辨认这座建筑的线索。",
-  AUDITORIUM,
 );
 site(
   141,
   "科学馆",
   971,
   372,
-  55,
-  23,
-  13.5,
+  56,
+  22,
+  9.9,
   "science",
-  "1921",
-  "物理、化学和生物学的实验与教学集中于此。校史记载原楼四层，屋顶在1965年改为平顶。",
+  "1922",
+  "1921年开工，1922年4月竣工。前三层分别用于物理、生物和化学，坡顶内的第四层用于地质。1965年大修时屋顶改为平顶。",
 );
 site(
   142,
@@ -540,7 +546,6 @@ site(
   "library",
   "1928",
   "新馆位于科学馆东侧、近黄浦江。1937年只能看到原馆，东翼与塔式连接门厅均属战后扩建。",
-  LIBRARY,
 );
 site(
   153,
@@ -565,16 +570,15 @@ site(
   "tower",
   "1930",
   "五层水塔立于东堂与思晏堂之间的校园腹地。此处取1937年夏季战前状态。",
-  TOWER,
 );
 site(
   163,
   "东堂",
-  1031,
-  130,
-  17,
-  32,
-  10,
+  1030.5,
+  130.5,
+  15,
+  31,
+  5.65,
   "east",
   "1909",
   "校园早期的膳厅。1937年平面图将其标为 East Hall，位于体育馆北端一侧。",
@@ -582,14 +586,14 @@ site(
 site(
   161,
   "哈斯科体育馆",
-  1032,
-  181,
-  25,
-  60,
-  8.1,
+  1030.5,
+  181.5,
+  29,
+  60.5,
+  7.75,
   "gym",
-  "1910年代",
-  "体育课与运动集会使用的场馆，平面呈长条形。",
+  "1918",
+  "哈斯科上校捐建，1918年竣工，翌年1月开馆。靠东堂的一段是球场，高侧窗为场内采光；另一端接较宽的两层入口楼。",
 );
 site(166, "思裴堂", 1086, 229, 50, 25, 11.5, "dorm", "1915", "大学部学生宿舍，沿中央草坪一侧排布。");
 site(
@@ -604,7 +608,18 @@ site(
   "1919",
   "大学部校舍，毗邻思裴堂，面向开敞的校园草地。",
 );
-site(168, "大学部膳厅", 1138, 141, 55, 23, 6.3, "dining", "", "沿图上北缘的后勤区域布置。");
+site(
+  168,
+  "大学部膳厅",
+  1138,
+  141,
+  55,
+  23,
+  6.3,
+  "dining",
+  "1931",
+  "1931年底建成，供大学部男生用膳。在图上位于魏氏游泳池东侧。",
+);
 site(
   152,
   "北住宅",
@@ -624,7 +639,7 @@ site(
   509,
   25,
   63,
-  11.8,
+  12.65,
   "dorm",
   "1923",
   "女生宿舍背靠运动场，面向黄浦江。按原坡屋顶表现。",
@@ -667,7 +682,18 @@ site(
   "",
   "中学部师生用膳空间，依1937年图中阴影轮廓放置。",
 );
-site(101, "麦氏医院", 164, 304, 24, 23, 8, "house", "", "在密氏校门旁为校园服务的医院。");
+site(
+  101,
+  "麦氏医院",
+  164,
+  304,
+  24,
+  23,
+  8,
+  "house",
+  "1917",
+  "1917年5月开业。位于原校门近旁，设疗养室、药房和校医办公室。",
+);
 site(
   103,
   "门口学校 · 小学部",
@@ -693,7 +719,7 @@ site(
   "在图上标作 Georgia Hall，属小学和幼稚园区域。",
 );
 site(105, "游戏棚", 168, 507, 30, 52, 3.5, "shed", "", "地处小学部运动用地。");
-site(102, "门房", 150, 337, 13, 10, 3.2, "house", "", "紧邻校门的值守用房。", GATE);
+site(102, "门房", 150, 337, 13, 10, 3.2, "house", "", "紧邻校门的值守用房。");
 site(151, "助学社", 879, 122, 16, 14, 4, "shed", "", "1937年平面图标记的校园商店。");
 site(155, "电房", 989, 151, 25, 12, 4, "shed", "", "校园后勤设施。");
 site(156, "煤气房", 998, 133, 14, 11, 3.4, "shed", "", "校园后勤设施。");
@@ -713,45 +739,153 @@ site(
   "gate",
   "1916",
   "从军工路进入沪江的历史入口。校门此后经历迁移和放大改建，此处采用老图门房旁的位置。",
-  GATE,
 );
-const houses = [
-  [168, 235, 16, 31],
-  [239, 206, 38, 13],
-  [288, 196, 30, 13],
-  [398, 175, 25, 25],
-  [446, 171, 20, 23],
-  [485, 169, 16, 22],
-  [525, 163, 18, 27],
-  [561, 164, 21, 28],
-  [612, 173, 22, 31],
-  [477, 226, 21, 27],
-  [550, 244, 24, 26],
-  [588, 248, 21, 27],
-  [636, 268, 20, 35],
-  [678, 189, 24, 28],
-  [742, 177, 22, 34],
-  [803, 159, 24, 36],
-  [861, 177, 19, 29],
-  [707, 314, 28, 23],
-  [768, 295, 37, 23],
-  [813, 295, 30, 28],
-  [798, 353, 37, 19],
+// Parts are [left, top, right, bottom] on the period plan. Internal numbers are scene IDs.
+// The first part contains the main rooms. Attached ranges preserve notches and small yards.
+const housePlans = [
+  [[159.2, 212.8, 174.9, 250.6]],
+  [[222.4, 199.4, 259.9, 214.1]],
+  [[272.4, 189.4, 302.7, 204.1]],
+  [
+    [384.9, 170.9, 412.1, 187.8],
+    [390.8, 162.5, 406.8, 170.9],
+  ],
+  [
+    [435.4, 162.9, 457.2, 182.9],
+    [449.4, 157.9, 457.2, 162.9],
+  ],
+  [
+    [476.2, 160.9, 494.1, 176.8],
+    [482.2, 152.4, 494.1, 160.9],
+  ],
+  [
+    [513.4, 159.6, 532.2, 177.4],
+    [520.0, 150.8, 532.2, 159.6],
+  ],
+  [
+    [551.9, 160.6, 572.2, 180.6],
+    [566.9, 150.6, 572.2, 160.6],
+    [557.2, 150.6, 566.9, 155.2],
+  ],
+  [
+    [604.8, 171.1, 622.9, 189.9],
+    [609.5, 155.2, 622.9, 171.1],
+  ],
+  [
+    [467.3, 213.5, 486.7, 230.1],
+    [471.7, 230.1, 482.9, 240.1],
+    [473.2, 211.0, 486.7, 213.5],
+  ],
+  [
+    [536.2, 242.1, 555.9, 257.4],
+    [536.2, 232.4, 560.3, 242.1],
+    [552.8, 219.6, 560.3, 232.4],
+    [547.8, 219.6, 552.8, 223.7],
+  ],
+  [
+    [577.1, 243.3, 597.4, 262.1],
+    [590.5, 231.8, 597.4, 243.3],
+    [586.4, 231.8, 590.5, 238.0],
+  ],
+  [
+    [625.7, 264.9, 645.4, 284.2],
+    [639.1, 253.6, 645.4, 264.9],
+    [631.6, 253.6, 639.1, 259.9],
+  ],
+  [
+    [665.2, 187.8, 687.4, 204.3],
+    [674.6, 173.7, 684.6, 187.8],
+  ],
+  [
+    [731.4, 176.1, 752.9, 194.2],
+    [737.3, 158.2, 748.9, 176.1],
+  ],
+  [
+    [792.4, 156.2, 815.5, 172.8],
+    [797.4, 143.1, 811.4, 156.2],
+  ],
+  [
+    [852.6, 171.1, 870.7, 193.6],
+    [855.7, 156.1, 865.7, 171.1],
+  ],
+  [
+    [695.8, 304.3, 714.5, 325.9],
+    [714.5, 304.3, 725.8, 311.2],
+    [720.8, 311.2, 725.8, 317.8],
+  ],
+  [
+    [750.8, 284.7, 768.9, 310.3],
+    [768.9, 284.7, 780.2, 295.3],
+    [775.5, 295.3, 788.3, 300.6],
+    [782.4, 300.6, 788.3, 309.4],
+    [747.4, 290.6, 750.8, 300.3],
+  ],
+  [
+    [802.4, 287.2, 821.1, 309.7],
+    [821.1, 281.9, 830.5, 293.4],
+    [802.7, 281.9, 821.1, 287.2],
+    [802.7, 276.6, 811.1, 281.9],
+    [797.7, 287.2, 802.4, 300.0],
+  ],
+  [[779.9, 343.6, 817.1, 362.7]],
 ];
-houses.forEach(([u, v, w, d], i) =>
-  site(
-    200 + i,
+const namedHouses = {
+  208: [
+    "刘湛恩校长住宅",
+    "1922",
+    "刘湛恩出任沪江大学校长期间的居所。旧照中，两座山墙隔着较低的入口相望。",
+  ],
+  220: [
+    "思福堂（位置推定）",
+    "1937",
+    "为女教员兴建的住宅。校史记载1936年募建、1937年建成，具体落成月份待考。",
+  ],
+};
+housePlans.forEach((parts, i) => {
+  const id = 200 + i,
+    left = Math.min(...parts.map((p) => p[0])),
+    right = Math.max(...parts.map((p) => p[2]));
+  const top = Math.min(...parts.map((p) => p[1])),
+    bottom = Math.max(...parts.map((p) => p[3]));
+  const [name, year, story] = namedHouses[id] || [
     "教员住宅 " + (i + 1),
+    "",
+    "教师及家属生活区。导览中的住宅序号用于定位。",
+  ];
+  const s = site(
+    id,
+    name,
+    (left + right) / 2,
+    (top + bottom) / 2,
+    right - left,
+    bottom - top,
+    5.7,
+    "house",
+    year,
+    story,
+  );
+  s.parts = parts;
+});
+// Five small hatched outbuildings lie along the perimeter behind the residences. Their uses are unlabelled.
+for (const [i, u, v, w, d] of [
+  [1, 443, 154, 12, 4],
+  [2, 625, 142, 10, 6],
+  [3, 697, 126, 17, 7],
+  [4, 740, 126, 20, 9],
+  [5, 835, 119, 22, 9],
+])
+  site(
+    229 + i,
+    "北缘附屋 " + i,
     u,
     v,
     w,
     d,
-    5.3 + (i % 3) * 0.7,
-    "house",
+    2.35,
+    "shed",
     "",
-    "教师及家属生活区。单栋住宅编号用于场景定位，屋面与立面依同时期住宅风格推定。",
-  ),
-);
+    "图上沿住宅区边界的一处小型阴影轮廓，用途和外观待考。",
+  );
 site(
   181,
   "生物园 · 植物园",
@@ -763,7 +897,6 @@ site(
   "landmark",
   "",
   "1937年图例在江岸边标出 Biological Garden。园界依图，苗床、步径和具体植物为环境推定。",
-  ARCHIVE,
 );
 site(
   180,
@@ -776,7 +909,6 @@ site(
   "landmark",
   "",
   "平面图直接标注四分之一英里跑道。依据图上不规则场地轮廓描绘，跑道材料为推定。",
-  ARCHIVE,
 );
 site(
   182,
@@ -789,11 +921,115 @@ site(
   "landmark",
   "",
   "老图将江岸画在校园东侧。水位、岸边植物和对岸林地为环境补景。",
-  ARCHIVE,
 );
 const byId = new Map(sites.map((s) => [s.id, s]));
+byId.get(141).aliases = ["科学楼", "格致堂"];
+byId.get(161).aliases = ["哈斯克体育馆", "北体育馆"];
+byId.get(114).aliases = ["音乐堂"];
+byId.get(152).aliases = ["北堂"];
+for (const [id, u, v] of [
+  [121, 825, 379],
+  [141, 990, 326],
+  [163, 1009, 111],
+  [161, 1052, 230],
+  [142, 1101, 337],
+  [154, 1004, 216],
+])
+  byId.get(id).approach = [u, v];
+// Oblique views checked in the built scene, including foreground roofs and tree crowns.
+// [site ID, azimuth, polar angle, camera distance, target height above ground], in radians and metres.
+const facadeViews = [
+  [101, -0.57, 1.38, 18.5, 4.7],
+  [102, -1.34, 1.38, 11.4, 2.6],
+  [103, -0.64, 1.38, 18.5, 3.3],
+  [104, -0.64, 1.38, 32.1, 4.5],
+  [105, -0.64, 1.38, 36.6, 2.6],
+  [111, -0.64, 1.38, 26.6, 4.1],
+  [112, 0.35, 1.38, 36.6, 8.1],
+  [113, -1.05, 1.38, 37.6, 8.2],
+  [114, -0.91, 0.91, 25.1, 5.3],
+  [121, -2.3, 1.14, 45.7, 7.7],
+  [131, 1.78, 1.38, 34.6, 8.9],
+  [132, 2.83, 1.38, 39.9, 5.4],
+  [133, -0.64, 1.38, 12.7, 1.6],
+  [141, -2.29, 1.38, 31.1, 7.3],
+  [142, -2.68, 1.14, 34.6, 5.7],
+  [151, -0.64, 1.38, 13.3, 2.9],
+  [152, -2.49, 1.38, 37.6, 4.5],
+  [153, 0.68, 1.38, 38.6, 8],
+  [154, 0.58, 1.38, 31.7, 10.7],
+  [155, -0.64, 1.38, 15.5, 2.8],
+  [156, -1.34, 1.38, 12.1, 2.4],
+  [157, -0.98, 1.38, 13.3, 2.5],
+  [161, 1.25, 1.38, 33.4, 5.6],
+  [162, 0.6, 1.38, 30.1, 0.1],
+  [163, -2.37, 1.38, 18.6, 4.3],
+  [164, -0.64, 1.38, 12.1, 2.5],
+  [165, -0.3, 1.38, 14.6, 2.6],
+  [166, -0.26, 1.38, 28.1, 6.8],
+  [167, 0.36, 0.91, 33.6, 7.2],
+  [168, 0.42, 1.38, 30.6, 4.5],
+  [190, -0.81, 1.38, 14.5, 2.3],
+  [200, -0.64, 1.38, 22, 4.4],
+  [201, -0.3, 1.38, 21.8, 4.3],
+  [202, -0.64, 1.38, 18.2, 4.3],
+  [203, -0.64, 1.38, 20.6, 4.5],
+  [204, -0.64, 1.38, 19.2, 4.6],
+  [205, -0.3, 1.38, 18.8, 4.4],
+  [206, -0.64, 1.38, 20.2, 4.5],
+  [207, -0.64, 1.38, 22.4, 4.6],
+  [208, 1.22, 1.14, 20.4, 4.1],
+  [209, -0.38, 1.38, 21.8, 4.8],
+  [210, -0.31, 1.14, 27.4, 5],
+  [211, 0.31, 1.38, 22.6, 4.8],
+  [212, 0.34, 0.91, 22.8, 4.8],
+  [213, -0.98, 1.38, 22.8, 4.4],
+  [214, -1.34, 1.38, 26.3, 4.6],
+  [215, -1.34, 1.14, 22.2, 4.4],
+  [216, -0.64, 1.38, 21.8, 4.6],
+  [217, 2.36, 1.38, 22.4, 4.8],
+  [218, 1.44, 1.14, 29.4, 4.8],
+  [219, 1.11, 1.38, 24.4, 4.8],
+  [220, -0.45, 1.38, 21.7, 4.4],
+  [230, -0.98, 1.38, 9, 1.5],
+  [231, -0.98, 1.38, 9.5, 1.6],
+  [232, -0.64, 1.38, 11.5, 1.7],
+  [233, -0.64, 1.38, 13, 1.8],
+  [234, -0.3, 1.38, 14, 1.8],
+];
+for (const [id, azimuth, tilt, distance, height] of facadeViews)
+  byId.get(id).photoView = { azimuth, tilt, distance, height };
 // Each polyline is a road centreline. Widths are in metres.
 const paths = [
+  [
+    2.7,
+    [
+      [1009, 390],
+      [1010, 382],
+      [1010, 355],
+      [1011, 348],
+    ],
+  ],
+  [
+    2.7,
+    [
+      [1007, 211],
+      [1010, 214],
+      [1013, 215],
+      [1033, 215],
+      [1053, 215],
+      [1078, 215],
+    ],
+  ],
+  [
+    2.3,
+    [
+      [1036, 215],
+      [1038, 219],
+      [1049, 234],
+      [1056, 247],
+    ],
+  ],
   [
     7,
     [
@@ -906,12 +1142,12 @@ const paths = [
   [
     3,
     [
-      [974, 386],
-      [974, 340],
+      [974, 356],
+      [974, 347],
       [974, 269],
       [982, 256],
       [1005, 249],
-      [1007, 204],
+      [1007, 216],
       [1007, 152],
       [1008, 109],
     ],
@@ -1190,7 +1426,7 @@ function roofMaterial() {
       const xx = x * 64 + (y % 2) * 32,
         yy = y * 64;
       const grad = g.createLinearGradient(xx, 0, xx + 64, 0);
-      const l = between(28, 37);
+      const l = between(28, 34);
       for (const [t, v] of [
         [0, -5],
         [0.14, 4],
@@ -1198,7 +1434,7 @@ function roofMaterial() {
         [0.8, -2],
         [1, -7],
       ])
-        grad.addColorStop(t, "hsl(15 32% " + (l + v) + "%)");
+        grad.addColorStop(t, "hsl(19 23% " + (l + v) + "%)");
       g.fillStyle = grad;
       g.fillRect(xx, yy, 63, 61);
       g.fillStyle = "#b88d713f";
@@ -1523,8 +1759,8 @@ function sky(scene) {
 </script>
     <script>
 const obstacles = [];
-function solid(s, x, z, w, d, h, base = 0) {
-  obstacles.push({ id: s.id, x, z, w, d, h, base });
+function solid(s, x, z, w, d, h, base = 0, angle = 0) {
+  obstacles.push({ id: s.id, x, z, w, d, h, base, angle });
 }
 function profile(points) {
   const s = new T.Shape();
@@ -1563,14 +1799,6 @@ function pitchRoof(g, w, d, h, rise) {
     box(g, 0, h - 0.05, side * (d / 2 + 0.12), w + 0.4, 0.18, 0.32, darkStone);
   }
   box(g, 0, h + rise + 0.12, 0, w + 0.6, 0.19, 0.28, roof);
-}
-function sash(g, x, y, w, h, trim = stone) {
-  box(g, x, y + h / 2, 0.09, w + 0.23, h + 0.22, 0.2, trim);
-  box(g, x, y + h / 2, 0.201, w, h, 0.04, frame);
-  box(g, x, y + h / 2, 0.234, w - 0.15, h - 0.16, 0.04, glass);
-  box(g, x, y + h / 2, 0.268, 0.065, h, 0.075, frame);
-  for (const q of [0.36, 0.72]) box(g, x, y + h * q, 0.268, w, 0.055, 0.075, frame);
-  box(g, x, y - 0.08, 0.19, w + 0.46, 0.12, 0.42, trim);
 }
 function archPath(w, h, pointed) {
   const p = new T.Shape(),
@@ -1646,9 +1874,17 @@ function collectTreads(root) {
     const s = group.userData.site;
     if (!s || s.style === "gate") continue;
     const footprint = obstacles.filter((o) => o.id === s.id);
+    const angle = footprint[0]?.angle || 0;
+    const align = new T.Matrix4()
+      .makeTranslation(s.x, 0, s.z)
+      .multiply(new T.Matrix4().makeRotationY(-angle))
+      .multiply(new T.Matrix4().makeTranslation(-s.x, 0, -s.z));
+    const fromAligned = align.clone().invert();
     group.traverse((o) => {
       if (!o.isMesh || o.userData.step) return;
-      const b = new T.Box3().setFromObject(o),
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      const matrix = angle ? new T.Matrix4().multiplyMatrices(align, o.matrixWorld) : o.matrixWorld;
+      const b = o.geometry.boundingBox.clone().applyMatrix4(matrix),
         ground = group.position.y;
       if (b.max.y < ground + 0.68 || b.min.y > ground + 1.65) return;
       if (
@@ -1661,9 +1897,9 @@ function collectTreads(root) {
         )
       )
         return;
-      const c = b.getCenter(new V()),
+      const c = b.getCenter(new V()).applyMatrix4(fromAligned),
         size = b.getSize(new V());
-      solid(s, c.x, c.z, size.x, size.z, size.y, b.min.y);
+      solid(s, c.x, c.z, size.x, size.z, size.y, b.min.y, angle);
     });
   }
   root.traverse((o) => {
@@ -1696,197 +1932,6 @@ function gableEdge(g, d, h, rise) {
   for (const sign of [-1, 1])
     rod(g, new V(sign * (d * 0.5 + 0.12), h, 0.1), new V(0, h + rise + 0.13, 0.1), 0.13, 0.13, stone, 4);
 }
-function hall(s, g, base) {
-  const make = (cx, cz, w, d, h, rise, rot, chapel) => {
-    const block = sub(g, cx, 0, cz, rot);
-    wing(block, w, d, h, rise);
-    solid(s, s.x + cx, s.z + cz, rot ? d : w, rot ? w : d, h + rise, base);
-    for (const side of [-1, 1]) {
-      const f = wallFace(block, d, side);
-      box(f, 0, 4, 0.12, w, 0.2, 0.4, stone);
-      const count = Math.max(3, Math.round(w / 4.8)),
-        step = w / count;
-      for (let j = 0; j < count; j++) {
-        const x = (j + 0.5) * step - w / 2;
-        arch(f, x, 4.8, Math.min(2.1, step * 0.6), h - 5.3);
-        sash(f, x, 1, 1.6, 2.15);
-        buttress(f, x - step / 2 + 0.2, h - 0.1);
-      }
-    }
-    for (const side of [-1, 1]) {
-      const f = endFace(block, w, d, side);
-      gableEdge(f, d, h, rise);
-      box(f, 0, 4.04, 0.22, d + 0.4, 0.24, 0.54, stone);
-      const mainW = d * 0.48;
-      arch(f, 0, 4.8, mainW, h + rise - 6.9); // stone mullions within the tall gable light
-      for (const k of [-1, 1]) {
-        arch(f, k * d * 0.145, 0.46, d * 0.23, 2.95, true, false);
-        buttress(f, k * (d / 2 - 0.3), h + 0.2);
-      }
-      box(f, 0, 3.72, 0.29, d * 0.67, 0.21, 0.73, stone);
-      steps(f, d * 0.72);
-      if (chapel) box(f, 0, h + rise - 1.2, 0.18, 0.22, 0.56, 0.12, stone);
-    }
-  };
-  // The two rectangles follow the shaded L outline on the map, touching along a shared wall.
-  make(0, 7.5, 31, 15, 10.8, 5.2, 0, false);
-  make(8.78, -7.35, 15.05, 13.45, 10.9, 5.2, Math.PI / 2, true);
-}
-function yates(s, g) {
-  const { w, d, h } = s;
-  wing(g, w, d, h, 4.5);
-  for (const sign of [-1, 1]) {
-    const f = wallFace(g, d, sign);
-    for (let i = -3; i <= 3; i++) {
-      sash(f, (i * w) / 7.4, 1.1, 1.45, 2.4);
-      arch(f, (i * w) / 7.4, 5, 1.7, 3.4);
-      buttress(f, ((i + 0.35) * w) / 7.4, h * 0.83);
-    }
-    const porch = sub(f, 0, 0, 2.2);
-    box(porch, 0, 4, 0, 8, 0.42, 4.5, stone);
-    for (const x of [-3.25, -2.56, 2.56, 3.25])
-      rod(porch, new V(x, 0.4, 1.55), new V(x, 3.85, 1.55), 0.23, 0.2, stone, 12);
-    steps(porch, 8);
-    arch(f, 0, 0.35, 2.35, 3.3, true, false);
-  }
-  for (const k of [-1, 1]) {
-    const f = endFace(g, w, d, k);
-    gableEdge(f, d, h, 4.5);
-    for (const a of [-1, 1]) {
-      arch(f, a * 2.15, 4.6, 2.3, 5.1);
-      sash(f, a * 3.0, 1.0, 1.5, 2.25);
-    }
-    const o = mesh(f, new T.CylinderGeometry(1.18, 1.18, 0.2, 30), glass, 0, h + 0.45, 0.15);
-    o.rotation.x = Math.PI / 2;
-    mesh(f, new T.TorusGeometry(1.2, 0.13, 8, 30), stone, 0, h + 0.45, 0.32);
-    for (let j = 0; j < 4; j++) {
-      const bar = box(f, 0, h + 0.45, 0.34, 0.08, 2.3, 0.09, stone);
-      bar.rotation.z = (j * Math.PI) / 4;
-    }
-  }
-  const turret = sub(g, -w * 0.28, h + 2, 0);
-  box(turret, 0, 1, 0, 2.3, 2, 2.3, brick);
-  mesh(turret, new T.ConeGeometry(1.8, 5.4, 4), roof, 0, 4.65, 0).rotation.y = Math.PI / 4;
-}
-function eastHall(s, g) {
-  const core = sub(g, 0, 0, 0, Math.PI / 2);
-  regular(s, core, s.d, s.w, "dorm");
-  const f = wallFace(core, s.w, 1);
-  box(f, 0, s.h * 0.5, 0.4, 3.8, s.h + 0.6, 1.7, brick);
-  arch(sub(f, 0, 0, 1.3), 0, 0.45, 1.8, 2.9, true);
-  for (let k = -2; k <= 2; k++) box(f, k * 0.83, s.h + 0.8, 1.12, 0.49, 0.73, 0.42, stone);
-}
-function regular(s, g, w, d, kind) {
-  const h = s.h,
-    rise = Math.min(d * 0.38, kind === "chapel" ? 6 : 4.6);
-  wing(g, w, d, h, rise);
-  const small = ["house", "shed", "school", "dining"].includes(kind);
-  const floors =
-    kind === "science" ? 4 : kind === "library" ? 2 : Math.max(1, Math.round((h - 0.9) / 3.4));
-  for (const side of [-1, 1]) {
-    const f = wallFace(g, d, side),
-      count = Math.max(2, Math.floor(w / (small ? 3.2 : 3.65))),
-      space = w / count;
-    for (let i = 0; i < count; i++) {
-      const x = (i + 0.5) * space - w / 2;
-      for (let k = 0; k < floors; k++) {
-        if (k === 0 && Math.abs(x) < 2 && side === 1) continue;
-        const yy = 0.92 + (k * (h - 0.51)) / floors;
-        if (["chapel", "gym", "library"].includes(kind) && k === floors - 1)
-          arch(f, x, yy, Math.min(space * 0.61, 1.8), Math.min(3.25, (h - yy) * 0.88));
-        else
-          sash(
-            f,
-            x,
-            yy,
-            Math.min(space * 0.56, 1.6),
-            Math.min(1.93, ((h - 0.5) / floors) * 0.65),
-            small ? darkStone : stone,
-          );
-      }
-      if (kind === "science" || kind === "chapel") buttress(f, x - space / 2 + 0.16, h - 0.2);
-    }
-    if (side === 1) {
-      arch(f, 0, 0.35, small ? 1.25 : 2.1, Math.min(2.95, h - 0.45), true, !small);
-      steps(f, small ? 2.4 : 4.3);
-    }
-    if (["melrose", "richmond", "library"].includes(kind)) {
-      box(f, 0, h - 0.25, 0.14, w, 0.15, 0.4, stone);
-      const entry = sub(f, 0, 0, 0.5);
-      for (const k of [-1, 1]) buttress(entry, k * 2.25, h * 0.76);
-      if (kind !== "library") {
-        box(entry, 0, h * 0.76, 0.12, 5, 0.25, 0.8, stone);
-        gableEdge(sub(entry, 0, 0, 0.05), 4.6, h * 0.76, 1.35);
-      }
-    }
-  }
-  for (const side of [-1, 1]) {
-    const f = endFace(g, w, d, side);
-    gableEdge(f, d, h, rise);
-    for (const a of [-1, 1])
-      for (let k = 0; k < floors; k++)
-        sash(
-          f,
-          a * d * 0.24,
-          0.9 + (k * (h - 0.55)) / floors,
-          Math.min(d * 0.17, 1.6),
-          Math.min(1.82, ((h - 0.5) / floors) * 0.58),
-        );
-    if (kind === "chapel" || kind === "gym") arch(f, 0, h * 0.43, Math.min(d * 0.38, 3.45), h * 0.64);
-    else if (rise > 1.75) arch(f, 0, h + 0.13, 0.8, 1.18);
-  }
-  if (kind === "house" || kind === "dorm") {
-    box(g, w * 0.3, h + rise * 0.7, 0, 0.82, 2.8, 0.97, brick);
-    box(g, w * 0.3, h + rise * 0.7 + 1.4, 0, 1, 0.15, 1.12, stone);
-  }
-}
-function cottage(s, g) {
-  const rot = s.d > s.w ? Math.PI / 2 : 0,
-    b = sub(g, 0, 0, 0, rot),
-    w = Math.max(s.w, s.d),
-    d = Math.min(s.w, s.d);
-  regular(s, b, w, d, "house");
-  const variation = s.id % 4,
-    front = wallFace(b, d, 1);
-  if (variation === 0 || variation === 3) {
-    const porch = sub(front, (variation === 3 ? -0.18 : 0) * w, 0, 1.06),
-      pw = w * 0.48;
-    box(porch, 0, 2.88, 0, pw, 0.26, 2.15, stone);
-    for (const x of [-pw * 0.4, pw * 0.4]) {
-      box(porch, x, 1.58, 0.82, 0.2, 2.7, 0.2, wood);
-      box(porch, x, 0.28, 0.82, 0.46, 0.55, 0.46, brick);
-    }
-  } else {
-    const dorm = sub(b, w * (variation === 1 ? 0.19 : -0.18), s.h + 0.39, d * 0.16);
-    wing(dorm, 2.35, 2.45, 1.42, 1.01);
-    sash(wallFace(dorm, 2.45, 1), 0, 0.19, 1.33, 0.96);
-  }
-  if (variation === 2) {
-    const bay = sub(front, w * 0.26, 0, 0.36);
-    box(bay, 0, 1.48, 0, 2.45, 2.9, 1, brick);
-    box(bay, 0, 2.99, 0, 2.7, 0.22, 1.24, stone);
-    sash(sub(bay, 0, 0, 0.51), 0, 0.82, 1.73, 1.46);
-  }
-}
-function makeTower(s, g) {
-  const w = s.w,
-    h = s.h;
-  box(g, 0, 0.28, 0, w + 0.5, 0.56, w + 0.5, stone);
-  for (let k = 0; k < 5; k++) {
-    const floor = sub(g, 0, (k * h) / 5, 0);
-    box(floor, 0, h / 10, 0, w, h / 5, w, brick);
-    for (let j = 0; j < 4; j++) {
-      const f = sub(floor, 0, 0, 0, (j * Math.PI) / 2),
-        face = sub(f, 0, 0, w / 2);
-      sash(face, 0, 0.72, w * 0.26, 2.36);
-      box(face, 0, 0.22, 0.08, w + 0.3, 0.25, 0.3, darkStone);
-      for (const side of [-1, 1])
-        box(face, side * (w * 0.5 - 0.21), h / 10, 0.07, 0.41, h / 5, 0.24, darkStone);
-    }
-  }
-  box(g, 0, h, 0, w + 0.45, 0.36, w + 0.45, stone);
-  box(g, 0, h + 0.48, 0, w, 0.66, w, brick);
-}
 function makeGate(s, g, base) {
   const width = 6.6;
   const engraved = canvas(140, 512),
@@ -1899,22 +1944,41 @@ function makeGate(s, g, base) {
   [..."滬江大學"].forEach((c, i) => ctx.fillText(c, 70, 109 + i * 119));
   for (const side of [-1, 1]) {
     const z = side * width * 0.5;
-    box(g, 0, 1.65, z, 1.05, 3.3, 1.05, stone);
+    // The two inner posts carry the open leaves. The heavier rusticated gateposts flank the rails.
+    box(g, 0, 1.32, z, 0.7, 2.64, 0.7, stone);
     for (const [y, w, h] of [
-      [0.2, 1.5, 0.4],
-      [0.49, 1.28, 0.2],
-      [2.98, 1.21, 0.14],
-      [3.28, 1.44, 0.22],
-      [3.52, 1.1, 0.2],
+      [0.16, 0.94, 0.32],
+      [2.43, 0.82, 0.14],
+      [2.7, 0.95, 0.21],
     ])
-      box(g, 0, y, z, w, h, w, darkStone);
-    sphere(g, 0, 3.88, z, 0.34, stone);
+      box(g, 0, y, z, w, h, w, stone);
+    sphere(g, 0, 2.98, z, 0.19, darkStone);
+    solid(s, s.x, s.z + z, 0.94, 0.94, 3.2, base);
+    const outer = z + side * 3.3;
+    for (let course = 0; course < 8; course++) {
+      const w = course === 0 ? 1.6 : 1.19 + (course % 2) * 0.09;
+      box(g, 0, 0.23 + course * 0.44, outer, w, 0.432, w, stone);
+    }
+    for (const [y, w, h] of [
+      [3.5, 1.38, 0.2],
+      [3.68, 1.55, 0.19],
+      [3.88, 1.17, 0.25],
+      [4.08, 0.88, 0.17],
+    ])
+      box(g, 0, y, outer, w, h, w, darkStone);
+    sphere(g, 0, 4.32, outer, 0.25, stone);
+    solid(s, s.x, s.z + outer, 1.6, 1.6, 4.6, base);
     if (side === 1) {
-      const m = std(0xffffff, { map: texture(engraved) });
-      const plaque = mesh(g, new T.PlaneGeometry(0.4, 1.65), m, -0.532, 1.83, z);
+      const plaque = mesh(
+        g,
+        new T.PlaneGeometry(0.32, 1.41),
+        std(0xffffff, { map: texture(engraved) }),
+        -0.356,
+        1.48,
+        z,
+      );
       plaque.rotation.y = -Math.PI / 2;
     }
-    solid(s, s.x, s.z + z, 1.22, 1.22, 4.2, base);
     const gate = sub(g, 0.35, 0, z - side * 0.52, 0);
     for (let j = 0; j < 14; j++) {
       const x = 0.12 + j * 0.205,
@@ -1932,65 +1996,1830 @@ function makeGate(s, g, base) {
     solid(s, s.x, s.z + z + side * 1.8, 0.16, 2.6, 1.9, base);
   }
 }
+
+// Local façade coordinates look out of the building along +Z. Dimensions are in metres.
+const casement = (() => {
+  const c = canvas(96, 144),
+    ctx = c.getContext("2d");
+  ctx.drawImage(glass.map.image, 0, 0, c.width, c.height);
+  ctx.strokeStyle = "#b8b3a6";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(1.5, 1.5, 93, 141);
+  ctx.fillStyle = "#b1aca1";
+  ctx.fillRect(47, 0, 2, 144);
+  for (const y of [35, 71, 107]) ctx.fillRect(0, y, 96, y === 71 ? 4 : 2);
+  return std(0xffffff, { map: texture(c), metalness: 0.09, roughness: 0.38 });
+})();
+const casementPlanes = new Map();
+function casementPlane(count) {
+  if (!casementPlanes.has(count)) {
+    const plane = new T.PlaneGeometry(1, 1),
+      uv = plane.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * count);
+    casementPlanes.set(count, plane);
+  }
+  return casementPlanes.get(count);
+}
+function lights(face, x, sill, width, height, count = 2, toothed = false) {
+  const cy = sill + height / 2;
+  box(face, x, cy, 0.031, width + 0.18, height + 0.17, 0.16, darkStone);
+  mesh(face, casementPlane(count), casement, x, cy, 0.116).scale.set(width, height, 1);
+  box(face, x, sill + height * 0.53, 0.133, width, 0.046, 0.054, frame);
+  box(face, x, sill + height * 0.79, 0.131, width, 0.031, 0.048, frame);
+  for (let k = 1; k < count; k++)
+    box(face, x + width * (k / count - 0.5), cy, 0.135, 0.075, height + 0.045, 0.12, stone);
+  box(face, x, sill - 0.055, 0.105, width + 0.34, 0.115, 0.34, stone);
+  if (!toothed) return;
+  box(face, x, sill + height + 0.065, 0.09, width + 0.32, 0.13, 0.24, stone);
+  for (const sign of [-1, 1]) {
+    box(face, x + sign * (width / 2 + 0.05), cy, 0.07, 0.1, height, 0.16, stone);
+    for (const q of [0.12, 0.5, 0.88])
+      box(face, x + sign * (width / 2 + 0.115), sill + q * height, 0.075, 0.2, 0.21, 0.19, stone);
+  }
+}
+function timberDoor(face, x, y, w, h) {
+  box(face, x, y + h / 2, 0.05, w + 0.22, h + 0.2, 0.22, darkStone);
+  box(face, x, y + h / 2, 0.17, w, h, 0.055, wood);
+  for (const side of [-1, 1]) {
+    box(face, x + side * w * 0.23, y + h * 0.54, 0.205, w * 0.41, h * 0.63, 0.035, frame);
+    box(face, x + side * w * 0.23, y + h * 0.54, 0.229, w * 0.32, h * 0.54, 0.025, wood);
+  }
+  box(face, x, y + h / 2, 0.24, 0.035, h, 0.04, iron);
+}
+function belt(face, w, y, material = stone, depth = 0.22) {
+  return box(face, 0, y, 0.055, w + 0.12, 0.13, depth, material);
+}
+function oculus(face, x, y, r, spokes = 0) {
+  const disk = mesh(face, new T.CircleGeometry(r, 28), glass, x, y, 0.12);
+  mesh(face, new T.TorusGeometry(r, Math.max(0.06, r * 0.12), 7, 28), stone, x, y, 0.15);
+  for (let i = 0; i < spokes; i++)
+    box(face, x, y, disk.position.z + 0.06, 0.06, r * 1.94, 0.07, stone).rotation.z =
+      (Math.PI * i) / spokes;
+}
+// The back of a cross-gable runs INTO the main roof; its front is a wall with real thickness.
+function frontGable(face, x, front, w, bottom, eave, rise, depth, coping = false) {
+  const f = sub(face, x, 0, front);
+  const shape = profile([
+    [-w / 2, bottom],
+    [w / 2, bottom],
+    [w / 2, eave],
+    [0, eave + rise],
+    [-w / 2, eave],
+  ]);
+  extrude(f, shape, depth, brick, -depth);
+  const run = Math.hypot(w / 2, rise);
+  for (const side of [-1, 1]) {
+    const p = sub(f, (side * w) / 4, eave + rise / 2, -depth / 2);
+    p.rotation.z = -side * Math.atan2(rise, w / 2);
+    box(p, 0, 0.045, 0, run + 0.13, 0.12, depth + 0.16, roof);
+  }
+  if (coping) gableEdge(f, w, eave, rise);
+  return f;
+}
+function dormer(face, x, w, eave, roofSlope, height, rise, inset = 0.45, count = 1) {
+  const bottom = eave + inset * roofSlope - 0.22;
+  const f = frontGable(
+    face,
+    x,
+    -inset,
+    w,
+    bottom,
+    bottom + height,
+    rise,
+    (height + rise) / roofSlope + 0.1,
+  );
+  lights(f, 0, bottom + 0.15, w * 0.59, height * 0.83, count);
+}
+function portico(face, width, depth, height, columns) {
+  box(face, 0, height + 0.12, depth / 2, width, 0.29, depth, stone);
+  box(face, 0, height + 0.34, depth / 2, width + 0.16, 0.13, depth + 0.15, darkStone);
+  for (const x of columns) {
+    box(face, x, 0.25, depth - 0.29, 0.56, 0.5, 0.56, stone);
+    rod(
+      face,
+      new V(x, 0.37, depth - 0.29),
+      new V(x, height - 0.2, depth - 0.29),
+      0.195,
+      0.155,
+      stone,
+      10,
+    );
+    box(face, x, height - 0.15, depth - 0.29, 0.48, 0.24, 0.48, stone);
+  }
+  steps(sub(face, 0, 0, depth - 0.21), width);
+}
+function merlons(face, width, top, count) {
+  belt(face, width, top - 0.12);
+  for (let j = 0; j < count; j++)
+    box(
+      face,
+      ((j + 0.5 - count / 2) * width) / count,
+      top + 0.15,
+      0,
+      width / (count * 2),
+      0.31,
+      0.31,
+      brick,
+    );
+}
+function ridgeStack(g, x, z, top) {
+  box(g, x, top - 0.92, z, 0.63, 1.84, 0.77, brick);
+  box(g, x, top - 0.1, z, 0.8, 0.18, 0.93, darkStone);
+}
+function pinacle(face, x, y, size = 1) {
+  box(face, x, y + size * 0.3, 0.04, size * 0.34, size * 0.65, size * 0.36, brick);
+  box(face, x, y + size * 0.58, 0.04, size * 0.43, size * 0.1, size * 0.45, stone);
+  mesh(
+    face,
+    new T.ConeGeometry(size * 0.29, size * 0.59, 4),
+    stone,
+    x,
+    y + size * 0.91,
+    0.04,
+  ).rotation.y = Math.PI / 4;
+}
+function bays(count, span) {
+  return Array.from({ length: count }, (_, i) => ((i + 0.5 - count / 2) * span) / count);
+}
+function boxedSite(s, cx, cz, w, d, height, base) {
+  solid(s, s.x + cx, s.z + cz, w, d, height, base);
+}
+
+function openingOutline(path, width, apex, spring) {
+  const a = width / 2;
+  path.lineTo(-a, spring);
+  path.bezierCurveTo(-a, spring + (apex - spring) * 0.55, -a * 0.52, apex - 0.16, 0, apex);
+  path.bezierCurveTo(a * 0.52, apex - 0.16, a, spring + (apex - spring) * 0.55, a, spring);
+  path.lineTo(a, 0);
+}
+// A cut-through porch wall exposes the timber door set behind two stepped masonry reveals.
+function recessedEntry(face, width, wallHeight, depth, doorWidth, apex, spring) {
+  const block = new T.Shape(),
+    outer = doorWidth + 0.46;
+  block.moveTo(-width / 2, 0);
+  block.lineTo(-outer / 2, 0);
+  openingOutline(block, outer, apex + 0.25, spring);
+  block.lineTo(width / 2, 0);
+  block.lineTo(width / 2, wallHeight);
+  block.lineTo(-width / 2, wallHeight);
+  block.closePath();
+  extrude(face, block, depth, brick, -depth);
+  for (const [w, top, rim, z, mat] of [
+    [outer, apex + 0.25, 0.14, 0.04, stone],
+    [doorWidth + 0.19, apex + 0.11, 0.093, -0.11, darkStone],
+  ]) {
+    const outerEdge = new T.Shape();
+    outerEdge.moveTo(-w / 2, 0);
+    openingOutline(outerEdge, w, top, spring);
+    outerEdge.lineTo(w / 2 - rim, 0);
+    outerEdge.lineTo(w / 2 - rim, spring);
+    outerEdge.bezierCurveTo(
+      w / 2 - rim,
+      spring + (top - spring) * 0.5,
+      w * 0.23,
+      top - rim - 0.16,
+      0,
+      top - rim,
+    );
+    outerEdge.bezierCurveTo(
+      -w * 0.23,
+      top - rim - 0.16,
+      -w / 2 + rim,
+      spring + (top - spring) * 0.5,
+      -w / 2 + rim,
+      spring,
+    );
+    outerEdge.lineTo(-w / 2 + rim, 0);
+    outerEdge.closePath();
+    extrude(face, outerEdge, 0.15, mat, z - 0.15);
+  }
+  const back = sub(face, 0, 0, -depth + 0.04);
+  const door = new T.Shape();
+  door.moveTo(-doorWidth / 2, 0);
+  openingOutline(door, doorWidth, apex, spring);
+  door.closePath();
+  extrude(back, door, 0.07, wood);
+  timberDoor(back, 0, 0.12, doorWidth - 0.09, spring - 0.14);
+  lights(back, 0, spring + 0.01, doorWidth * 0.69, (apex - spring) * 0.37, 3);
+}
+function compoundLight(face, width, sill, height, round) {
+  const f = sub(face, 0, sill, 0.05);
+  extrude(f, archPath(width, height, !round), 0.11, stone);
+  const span = width * 0.84,
+    unit = span / 5;
+  for (let i = 0; i < 5; i++) {
+    const x = (i - 2) * unit,
+      top = height * (0.91 - 0.072 * Math.abs(i - 2) - 0.021 * (i - 2) ** 2);
+    const low = height * 0.255,
+      mid = height * 0.35;
+    const lower = sub(f, x, 0.22, 0.117);
+    mesh(lower, casementPlane(1), casement, 0, low / 2, 0).scale.set(unit * 0.64, low, 1);
+    const upper = sub(f, x, mid, 0.117);
+    extrude(upper, archPath(unit * 0.68, top - mid, true), 0.04, glass);
+    box(upper, 0, (top - mid) * 0.4, 0.057, unit * 0.65, 0.037, 0.05, frame);
+    box(upper, 0, (top - mid) * 0.46, 0.056, 0.038, (top - mid) * 0.89, 0.05, frame);
+  }
+  belt(f, width, 0.07);
+}
+
+</script>
+    <script>
+// Campus teaching, assembly and residential halls, in local coordinates traced from the map.
+function scienceHall(s, g, base) {
+  const { w, d, h } = s,
+    rise = 4.45,
+    slope = (2 * rise) / d;
+  wing(g, w, d, h, rise);
+  boxedSite(s, 0, 0, w, d, h + rise, base);
+  for (const side of [-1, 1]) {
+    const f = wallFace(g, d, side);
+    // Two full-height end bays, with the attic windows in their gables.
+    for (const end of [-1, 1]) {
+      const endBay = frontGable(f, end * w * 0.395, 0.36, w * 0.202, 0, h + 0.6, 2.54, 4.5, true);
+      for (let floor = 0; floor < 3; floor++)
+        lights(endBay, 0, 0.84 + floor * 3.12, w * 0.122, 1.84, 3, true);
+      lights(endBay, 0, h + 0.22, 1.27, 1.37, 2);
+    }
+    for (const x of [-w * 0.197, 0, w * 0.197]) {
+      for (let floor = 0; floor < 3; floor++) {
+        if (side === -1 && floor === 0 && x === 0) continue;
+        const width = x === 0 ? w * 0.106 : w * 0.161;
+        lights(f, x, 0.84 + floor * 3.12, width, floor === 2 ? 2.08 : 1.9, x === 0 ? 3 : 4, true);
+      }
+      for (const pos of [-1, 1]) {
+        const px = x + pos * (x === 0 ? w * 0.065 : w * 0.092);
+        box(f, px, h * 0.5, 0.06, 0.21, h - 0.3, 0.22, brick);
+      }
+      dormer(f, x, x === 0 ? 2.66 : 3.04, h, slope, 1.55, 1.06, 0.61, 2);
+    }
+    belt(f, w, 0.58, darkStone);
+  }
+  for (const side of [-1, 1]) {
+    const f = endFace(g, w, d, side);
+    gableEdge(f, d, h, rise);
+    for (let level = 0; level < 3; level++) {
+      const y = 0.84 + 3.12 * level;
+      for (const end of [-1, 1]) lights(f, end * d * 0.338, y, 1.44, 1.89, 2, true);
+      lights(f, 0, y, 2.86, 1.89, 4, true);
+    }
+    lights(f, 0, h + 0.38, 2.4, 1.66, 3, true);
+    for (const x of [-d * 0.48, d * 0.48]) buttress(f, x, h - 0.22);
+  }
+  const front = wallFace(g, d, -1),
+    pw = w * 0.174,
+    pd = 1.92;
+  box(front, 0, 0.1, pd / 2, w * 0.35, 0.2, pd + 0.54, darkStone).userData.step = true;
+  const door = sub(front, 0, 0, pd);
+  recessedEntry(door, pw, 3.64, pd, 2.08, 2.99, 2.05);
+  for (const edge of [-1, 1]) {
+    buttress(door, edge * (pw / 2 - 0.21), 3.5);
+    box(door, edge * pw * 0.337, 3.37, 0.075, pw * 0.17, 0.34, 0.16, stone);
+  }
+  box(front, 0, 3.74, pd / 2, pw + 0.24, 0.26, pd + 0.26, stone);
+  steps(door, 3.6);
+  boxedSite(s, 0, -(d + pd) / 2, pw, pd, 3.9, base);
+}
+function eastHall(s, g) {
+  const w = s.d,
+    d = s.w,
+    h = s.h,
+    rise = 2.74;
+  const b = sub(g, 0, 0, 0, Math.PI / 2);
+  wing(b, w, d, h, rise);
+  for (const side of [-1, 1]) {
+    const f = wallFace(b, d, side);
+    belt(f, w, 2.84);
+    belt(f, w, h - 0.16);
+    bays(7, w * 0.94).forEach((x, i) => {
+      if (side === -1 && i === 1) timberDoor(f, x, 0.27, 0.98, 1.93);
+      else lights(f, x, 0.65, 0.85, 1.46, 1);
+      lights(f, x, 3.24, 0.9, 1.75, 1);
+    });
+    for (const x of bays(6, w * 0.96)) dormer(f, x, 1.34, h, (2 * rise) / d, 0.88, 0.61, 0.39);
+  }
+  for (const side of [-1, 1]) {
+    const f = endFace(b, w, d, side);
+    belt(f, d, 2.84);
+    belt(f, d, h - 0.14);
+    for (const x of [-0.25 * d, 0, 0.25 * d]) lights(f, x, 3.24, 0.9, 1.69, 1);
+    for (const x of [-0.25 * d, 0.25 * d]) lights(f, x, 0.65, 0.9, 1.5, 1);
+    lights(f, 0, h + 0.3, 0.69, 1.14, 1);
+  }
+}
+function haskellGym(s, g, base) {
+  const wide = s.w,
+    narrow = 20.4 * SCALE,
+    total = s.d,
+    crossDepth = 18.5 * SCALE;
+  const long = total - crossDepth,
+    hallZ = -crossDepth / 2,
+    crossZ = long / 2;
+  const hall = sub(g, 0, 0, hallZ, Math.PI / 2),
+    h = 6.85;
+  wing(hall, long, narrow, h, 2.82);
+  boxedSite(s, 0, hallZ, narrow, long, h + 2.82, base);
+  for (const side of [-1, 1]) {
+    const f = wallFace(hall, narrow, side);
+    belt(f, long, 0.76);
+    const span = long - 1.0;
+    for (const x of bays(5, span)) {
+      lights(f, x, 1.33, (span / 5) * 0.67, 1.45, 3, true);
+      box(f, x, 3.49, 0.065, (span / 5) * 0.67, 1.03, 0.12, brick);
+      for (const u of [-0.22, 0, 0.22]) {
+        const tile = box(f, x + (u * span) / 5, 3.48, 0.15, 0.26, 0.26, 0.07, darkStone);
+        tile.rotation.z = Math.PI / 4;
+      }
+      lights(f, x, 4.11, (span / 5) * 0.69, 2.15, 3, true);
+    }
+    for (let i = 0; i <= 5; i++) buttress(f, -span / 2 + (i * span) / 5, h - 0.16);
+  }
+  // The far gable adjoins East Hall across a gap. Its tall central light is visible in the museum drawing.
+  const end = endFace(hall, long, narrow, 1);
+  gableEdge(end, narrow, h, 2.82);
+  for (const x of [-narrow * 0.34, narrow * 0.34]) {
+    lights(end, x, 1.37, 1.55, 1.53, 2);
+    lights(end, x, 4.12, 1.55, 1.86, 2);
+  }
+  lights(end, 0, 1.25, 1.78, 5.72, 2, true);
+  const cross = sub(g, 0, 0, crossZ),
+    ch = s.h,
+    cr = 3.12;
+  wing(cross, wide, crossDepth, ch, cr);
+  boxedSite(s, 0, crossZ, wide, crossDepth, ch + cr, base);
+  for (const side of [-1, 1]) {
+    const f = endFace(cross, wide, crossDepth, side);
+    gableEdge(f, crossDepth, ch, cr);
+    for (let level = 0; level < 2; level++) {
+      for (const x of [-crossDepth * 0.278, crossDepth * 0.278])
+        lights(f, x, 1.05 + 3.54 * level, 2.05, 1.7, 3, true);
+      lights(f, 0, 1.05 + 3.54 * level, 0.78, 1.7, 1);
+    }
+    lights(f, 0, ch + 0.23, 2.39, 1.36, 3);
+  }
+  const f = wallFace(cross, crossDepth, 1);
+  for (const x of [-wide * 0.31, wide * 0.31])
+    for (let level = 0; level < 2; level++) lights(f, x, 1.2 + level * 3.38, wide * 0.22, 1.85, 4, true);
+  const entry = frontGable(f, 0, 0.73, 3.83, 3.45, ch + 0.18, 1.67, 2.75, true);
+  recessedEntry(entry, 3.83, 3.45, 0.72, 2.12, 2.92, 2.32);
+  lights(entry, 0, 4.54, 2.39, 1.88, 3, true);
+  lights(entry, 0, ch + 0.22, 0.62, 0.74, 1);
+  for (const x of [-wide / 2 + 0.22, -2.18, 2.18, wide / 2 - 0.22]) buttress(f, x, ch - 0.18);
+  steps(entry, 3.9);
+}
+function hall(s, g, base) {
+  const w = 31,
+    d = 15,
+    h = 10.4,
+    rise = 4.8;
+  const main = sub(g, 0, 0, 7.5);
+  wing(main, w, d, h, rise);
+  boxedSite(s, 0, 7.5, w, d, h + rise, base);
+  // The west entrance addresses the approach from the gate. Only the free portions of the L have openings.
+  const entrance = endFace(main, w, d, -1);
+  gableEdge(entrance, d, h, rise);
+  compoundLight(entrance, d * 0.5, 4.45, 7.66, false);
+  for (const k of [-1, 1]) {
+    arch(entrance, k * 1.34, 0.43, 2.19, 2.89, true, false);
+    buttress(entrance, k * (d / 2 - 0.28), h - 0.15);
+  }
+  belt(entrance, d, 3.88);
+  steps(entrance, 6.6);
+  const longSide = (f, positions) => {
+    for (const x of positions) {
+      const round = Math.abs(x) > w * 0.34;
+      if (round) oculus(f, x, 7.06, 0.74);
+      else arch(f, x, 4.55, 2.13, 4.69);
+      lights(f, x, 1.05, 1.86, 1.6, 2);
+      buttress(f, x - 2.08, h - 0.2);
+    }
+  };
+  longSide(wallFace(main, d, 1), bays(7, w));
+  belt(wallFace(main, d, 1), w, 3.88);
+  longSide(wallFace(main, d, -1), [2.35, 6.68, 11.1]);
+  const east = endFace(main, w, d, 1);
+  gableEdge(east, d, h, rise);
+  arch(east, 0, 4.58, 5.0, 4.95, false, false);
+  for (const x of [-4.25, 0, 4.25]) lights(east, x, 1.05, 2.03, 1.61, 2);
+  const chapelW = 15.05,
+    chapelD = 13.45,
+    chapelH = 8.75;
+  const c = sub(g, 8.78, 0, -7.35, Math.PI / 2);
+  wing(c, chapelW, chapelD, chapelH, 4.42);
+  boxedSite(s, 8.78, -7.35, chapelD, chapelW, 13.17, base);
+  const apse = endFace(c, chapelW, chapelD, 1);
+  gableEdge(apse, chapelD, chapelH, 4.42);
+  compoundLight(apse, chapelD * 0.55, 4.2, 5.72, true);
+  for (const k of [-1, 1]) lights(apse, k * chapelD * 0.32, 1.12, 2.12, 1.38, 2);
+  timberDoor(apse, 0, 0.34, 1.5, 2.04);
+  belt(apse, chapelD, 3.84);
+  for (const side of [-1, 1]) {
+    const f = wallFace(c, chapelD, side);
+    belt(f, chapelW, 3.84);
+    for (const [i, x] of bays(3, chapelW).entries()) {
+      if (i === 1) oculus(f, x, 6.37, 0.72);
+      else arch(f, x, 4.48, 1.85, 3.42);
+      lights(f, x, 1.05, 1.92, 1.65);
+      buttress(f, x - 2.02, chapelH - 0.18);
+    }
+  }
+}
+
+function yates(s, g) {
+  const { w, d } = s,
+    h = 9.85,
+    rise = 4.95;
+  wing(g, w, d, h, rise);
+  for (const side of [-1, 1]) {
+    const f = wallFace(g, d, side);
+    belt(f, w, 3.37);
+    belt(f, w, 6.51, darkStone);
+    for (const [i, x] of bays(7, w * 0.96).entries()) {
+      if (i !== 3 || side < 0) lights(f, x, 0.86, 1.83, 1.85, 2);
+      if (i >= 3 && i <= 5 && side === 1) {
+        arch(f, x, 4.02, 2.36, 4.65, false, i !== 3);
+      } else {
+        lights(f, x, 4.04, 1.65, 1.63, 2);
+        for (const k of [-1, 1]) arch(f, x + k * 0.48, 7.04, 0.72, 1.53, false, false);
+      }
+    }
+    for (const k of [-1, 1]) {
+      const bay = frontGable(f, k * w * 0.315, 0.18, 4.4, h - 0.17, h + 0.12, 2.14, 4.3, true);
+      for (const j of [-1, 0, 1]) arch(bay, j * 0.78, h + 0.14, 0.55, 0.92, false, true);
+      pinacle(bay, 0, h + 2.27, 0.86);
+    }
+    for (const x of [-w * 0.483, -w * 0.14, w * 0.15, w * 0.483]) buttress(f, x, h - 0.12);
+    if (side === 1) {
+      arch(f, 0, 0.36, 2.15, 2.83, true, false);
+      portico(f, 6.9, 2.62, 3.55, [-2.89, -2.35, 2.35, 2.89]);
+    }
+  }
+  for (const side of [-1, 1]) {
+    const f = endFace(g, w, d, side);
+    gableEdge(f, d, h, rise);
+    belt(f, d, 3.37);
+    belt(f, d, h - 0.12);
+    arch(f, 0, 0.38, 2.33, 2.74, side === 1, false);
+    for (const x of [-d * 0.33, d * 0.33]) lights(f, x, 0.91, 1.82, 1.65, 2);
+    for (const x of [-d * 0.322, -d * 0.106, d * 0.106, d * 0.322]) arch(f, x, 4.27, 2.08, 4.12);
+    if (side === 1) oculus(f, 0, h + 1.12, 1.29, 6);
+    else for (const x of [-0.72, 0.72]) arch(f, x, h + 0.38, 0.88, 1.65);
+    for (const x of [-d * 0.48, -d * 0.185, d * 0.185, d * 0.48]) {
+      const height = h + rise * (1 - Math.abs(x) / (d / 2));
+      buttress(f, x, height - 0.2);
+      pinacle(f, x, height - 0.12, 1.06);
+    }
+    pinacle(f, 0, h + rise, 0.92);
+  }
+  for (const x of [-w * 0.36, 0, w * 0.37]) ridgeStack(g, x, -d * 0.065, h + rise + 0.94);
+}
+function library(s, g, base) {
+  const { w, d } = s,
+    h = 6.36,
+    rise = 4.18;
+  wing(g, w, d, h, rise);
+  boxedSite(s, 0, 0, w, d, h + rise, base);
+  for (const side of [-1, 1]) {
+    const f = wallFace(g, d, side);
+    const deep = side === -1 ? 1.56 : 3.36,
+      width = w * 0.3;
+    for (const x of [-w * 0.424, -w * 0.273, w * 0.273, w * 0.424]) {
+      lights(f, x, 0.92, 2.1, 1.72, 2, true);
+      lights(f, x, 3.68, 2.21, 2.15, 2, true);
+      buttress(f, x - 1.41, h - 0.09);
+    }
+    for (const k of [-1, 1]) {
+      const b = frontGable(f, k * w * 0.421, 0.21, 2.88, h - 0.12, h + 0.14, 1.91, 3.2, true);
+      lights(b, 0, h + 0.18, 0.83, 0.98, 1);
+    }
+    const fh = side === -1 ? h + 1.32 : h - 0.24;
+    box(f, 0, fh / 2, deep / 2, width, fh, deep, brick);
+    const entry = sub(f, 0, 0, deep);
+    if (side === -1) {
+      arch(entry, 0, 0.38, 1.85, 2.6, true);
+      lights(entry, 0, 3.6, 2.68, 2.28, 3, true);
+      for (const k of [-1, 1]) buttress(entry, k * width * 0.39, fh + 0.12);
+      box(f, 0, fh, deep / 2, width + 0.21, 0.2, deep + 0.16, stone);
+      merlons(entry, width, fh + 0.2, 9);
+      steps(entry, 3.25);
+    } else {
+      for (const k of [-1, 1])
+        for (const level of [0.97, 3.7]) lights(entry, k * width * 0.25, level, 2.11, 1.72, 2);
+      box(f, 0, fh + 0.1, deep / 2, width + 0.19, 0.24, deep + 0.15, darkStone);
+    }
+    boxedSite(s, 0, (side * (d + deep)) / 2, width, deep, fh, base);
+  }
+  for (const side of [-1, 1]) {
+    const f = endFace(g, w, d, side);
+    gableEdge(f, d, h, rise);
+    for (const x of bays(4, d * 0.88)) {
+      lights(f, x, 0.92, 1.53, 1.73, 2);
+      lights(f, x, 3.58, 1.61, 2, 2, true);
+      buttress(f, x - 0.99, h - 0.12);
+    }
+    for (const x of [-1.03, 1.03]) lights(f, x, h + 0.56, 1.35, 1.23, 2);
+    pinacle(f, 0, h + rise, 0.67);
+  }
+}
+function residentialEnds(b, w, d, h, rise, floors) {
+  for (const side of [-1, 1]) {
+    const f = endFace(b, w, d, side);
+    gableEdge(f, d, h, rise);
+    for (const x of [-d * 0.29, 0, d * 0.29]) {
+      for (let k = 0; k < floors; k++)
+        lights(f, x, 0.81 + (k * h) / floors, Math.min(1.45, d * 0.17), (h / floors) * 0.54, 2);
+    }
+    lights(f, 0, h + 0.25, 1.27, Math.min(1.36, rise * 0.47), 2);
+  }
+}
+function breaker(s, g) {
+  const { w, d } = s,
+    h = 9.15,
+    rise = 4.26;
+  wing(g, w, d, h, rise);
+  for (const side of [-1, 1]) {
+    const f = wallFace(g, d, side);
+    belt(f, w, 3.16);
+    belt(f, w, 3.42, darkStone);
+    belt(f, w, h - 0.18);
+    for (const x of bays(9, w * 0.97)) {
+      if (Math.abs(x) < 0.1) continue;
+      lights(f, x, 0.87, 1.44, 1.72, 2);
+      box(f, x, 6.2, 0.052, 1.65, 5.45, 0.13, darkStone);
+      const inset = sub(f, x, 0, 0.102);
+      arch(inset, 0, 3.88, 1.27, 1.95, false, false);
+      arch(inset, 0, 6.53, 1.32, 2.02, false, false);
+    }
+    const center = frontGable(f, 0, 0.38, 3.58, 0, h + 0.4, 2.74, 4.72, true);
+    for (const k of [-1, 1]) buttress(center, k * 1.63, h + 0.43);
+    lights(center, 0, 4.03, 1.69, 1.72, 2);
+    arch(center, 0, 6.52, 1.68, 2.11, false, false);
+    lights(center, 0, h + 0.27, 0.83, 1.39, 1);
+    for (const x of [-w * 0.31, w * 0.31]) dormer(f, x, 2.57, h, (rise * 2) / d, 1.27, 1.34, 0.3, 2);
+    if (side === 1) {
+      arch(center, 0, 0.38, 1.67, 2.63, true);
+      portico(center, 6.03, 2.45, 3.1, [-2.59, -2.14, 2.14, 2.59]);
+      for (const x of [-2.59, -2.14, 2.14, 2.59])
+        rod(center, new V(x, 0.35, 0.41), new V(x, 3, 0.41), 0.19, 0.16, stone, 10);
+      for (const x of bays(18, 5.73)) box(center, x, 3.71, 2.33, 0.1, 0.56, 0.13, stone);
+      box(center, 0, 4.0, 2.33, 6.03, 0.11, 0.25, stone);
+    } else lights(center, 0, 0.92, 1.5, 1.72, 2);
+  }
+  residentialEnds(g, w, d, h, rise, 3);
+}
+function oriel(f, x, width, sill, height, levels = 2) {
+  const projection = 0.62;
+  box(f, x, sill + height / 2, projection / 2, width, height, projection, stone);
+  const face = sub(f, x, 0, projection);
+  for (let i = 0; i < levels; i++)
+    lights(face, 0, sill + (i * height) / levels + 0.32, width - 0.43, height / levels - 0.75, 3);
+  box(f, x, sill - 0.1, projection * 0.39, width + 0.25, 0.2, projection * 1.18, darkStone);
+  box(f, x, sill + height + 0.07, projection / 2, width + 0.22, 0.17, projection + 0.18, stone);
+}
+function evanston(s, g) {
+  const { w, d } = s,
+    h = 9.25,
+    rise = 4.34;
+  wing(g, w, d, h, rise);
+  for (const side of [-1, 1]) {
+    const f = wallFace(g, d, side);
+    for (const x of bays(9, w * 0.96)) {
+      if (Math.abs(x) < 0.1) continue;
+      for (let k = 0; k < 3; k++) lights(f, x, 0.83 + k * 3.01, 1.93, 1.71, 3);
+    }
+    const entry = frontGable(f, 0, 0.29, 3.75, 0, h + 0.34, 2.7, 4.5, true);
+    if (side === 1) {
+      arch(entry, 0, 0.4, 1.84, 2.65, true);
+      oriel(entry, 0, 2.98, 3.18, 5.67);
+    } else for (let k = 0; k < 3; k++) lights(entry, 0, 0.84 + k * 3.01, 2.13, 1.72, 3);
+    lights(entry, 0, h + 0.29, 1.52, 1.34, 2);
+    for (const x of [-0.434, -0.32, -0.215, -0.12, 0.12, 0.215, 0.32, 0.434])
+      dormer(f, x * w, Math.abs(x) > 0.4 ? 2.4 : 1.88, h, (rise * 2) / d, 1.46, 1.1, 0.29, 2);
+    belt(f, w, 0.59);
+  }
+  residentialEnds(g, w, d, h, rise, 3);
+  for (const x of [-0.18 * w, 0.19 * w]) ridgeStack(g, x, 0, h + rise + 0.81);
+}
+function treat(s, g, base) {
+  const w = s.d,
+    d = s.w - 0.98,
+    h = s.h,
+    rise = 4.25,
+    b = sub(g, -0.45, 0, 0, Math.PI / 2);
+  wing(b, w, d, h, rise);
+  boxedSite(s, -0.45, 0, d, w, h + rise, base);
+  for (const side of [-1, 1]) {
+    const f = wallFace(b, d, side);
+    for (const x of [-0.29, -0.16, 0.16, 0.29]) {
+      for (let k = 0; k < 4; k++) lights(f, x * w, 0.78 + 3.12 * k, 2.04, 1.82, 3);
+      dormer(f, x * w, 1.65, h, (2 * rise) / d, 1.24, 1.23, 0.32, 1);
+    }
+    for (const location of [-0.422, 0, 0.422]) {
+      const fwd = frontGable(f, location * w, 0.91, w * 0.144, 0, h + 0.29, 2.96, 4.55, true);
+      for (let k = 0; k < 4; k++) {
+        if (k === 0 && location === 0) {
+          arch(fwd, 0, 0.36, 1.78, 2.59, true);
+          continue;
+        }
+        lights(fwd, 0, 0.78 + 3.12 * k, 2.18, 1.85, 3);
+      }
+      lights(fwd, 0, h + 0.35, 1.45, 1.49, 2);
+      if (side === -1 && location !== 0) oriel(fwd, 0, 2.74, 3.43, 5.57);
+    }
+    if (side === 1) portico(f, w * 0.7, 2.15, 5.85, bays(6, w * 0.69));
+    for (const x of [-w * 0.493, w * 0.493]) buttress(f, x, h - 0.09);
+  }
+  residentialEnds(b, w, d, h, rise, 4);
+  for (const x of [-w * 0.21, w * 0.22]) ridgeStack(b, x, 0, h + rise + 0.82);
+}
+function academy(s, g) {
+  const { w, d } = s,
+    h = 11.68,
+    rise = 3.71;
+  wing(g, w, d, h, rise);
+  for (const side of [-1, 1]) {
+    const f = wallFace(g, d, side);
+    for (const x of [-0.302, -0.163, 0.163, 0.302]) {
+      for (let k = 0; k < 4; k++) lights(f, x * w, 0.78 + k * 2.9, 2.47, 1.72, 3);
+    }
+    for (const x of [-0.432 * w, 0, 0.432 * w]) {
+      const bay = frontGable(
+        f,
+        x,
+        0.42,
+        x === 0 ? 4.4 : 3.55,
+        0,
+        h + 0.09,
+        x === 0 ? 2.33 : 1.61,
+        3.86,
+        true,
+      );
+      if (x === 0 && side === 1) {
+        arch(bay, 0, 0.35, 1.84, 2.25, true, false);
+        oriel(bay, 0, 2.98, 2.95, 8.16, 3);
+      } else for (let k = 0; k < 4; k++) lights(bay, 0, 0.78 + k * 2.9, 1.66, 1.72, 2);
+      if (x === 0) lights(bay, 0, h + 0.22, 1.14, 1.18, 2);
+    }
+    belt(f, w, 0.56, darkStone);
+  }
+  residentialEnds(g, w, d, h, rise, 4);
+  ridgeStack(g, -w * 0.23, 0, h + rise + 0.91);
+}
+function makeTower(s, g) {
+  const { w, h } = s,
+    shoulder = h * 0.685;
+  box(g, 0, shoulder / 2, 0, w, shoulder, w, brick);
+  box(g, 0, (h + shoulder) / 2, 0, w, h - shoulder, w, std(0xb9aa9a));
+  box(g, 0, 0.25, 0, w + 0.38, 0.5, w + 0.38, stone);
+  for (let i = 0; i < 4; i++) {
+    const f = wallFace(sub(g, 0, 0, 0, (i * Math.PI) / 2), w, 1);
+    for (const x of [-w * 0.47, w * 0.47]) box(f, x, h / 2, 0.04, 0.18, h, 0.18, darkStone);
+    for (const y of [h * 0.17, h * 0.34, h * 0.51, shoulder]) belt(f, w, y, stone, 0.26);
+    if (i === 0) timberDoor(f, 0, 0.33, 1.19, 2.3);
+    for (const y of [h * 0.227, h * 0.397, h * 0.563]) lights(f, 0, y, 1.36, 1.3, 2);
+    merlons(f, w, h + 0.14, 7);
+  }
+}
+
+function musicHall(s, g) {
+  const w = s.d,
+    d = s.w,
+    h = 6.1,
+    rise = 4.35,
+    b = sub(g, 0, 0, 0, Math.PI / 2);
+  wing(b, w, d, h, rise);
+  for (const side of [-1, 1]) {
+    const f = wallFace(b, d, side);
+    belt(f, w, 3.07);
+    for (const x of bays(5, w * 0.95)) {
+      if (side === -1 && Math.abs(x) < 0.1) continue;
+      lights(f, x, 0.97, 2.05, 1.51, 3);
+      lights(f, x, 3.77, 2.14, 1.54, 3);
+    }
+    if (side === -1) {
+      const entry = frontGable(f, 0, 1.44, 5.02, 0, h + 0.45, 2.25, 4.3, true);
+      arch(entry, 0, 0.38, 1.94, 2.35, true);
+      arch(entry, 0, 3.58, 3.1, 3.45);
+      for (const x of [-2.33, 2.33]) buttress(entry, x, 6.32);
+      steps(entry, 3.46);
+    }
+  }
+  for (const side of [-1, 1]) {
+    const f = endFace(b, w, d, side);
+    gableEdge(f, d, h, rise);
+    lights(f, 0, 3.6, 4.09, 2.76, 4, true);
+    if (side === -1) {
+      for (const k of [-1, 1]) {
+        const bx = k * d * 0.36;
+        arch(f, bx, 3.03, 1.14, 1.89, true);
+        box(f, bx, 2.85, 0.76, 1.63, 0.3, 1.52, stone).userData.step = true;
+        // Two mirrored flights turn inwards below the end window.
+        for (let i = 0; i < 16; i++) {
+          const height = (16 - i) * 0.178;
+          box(
+            f,
+            bx - k * (0.78 + i * 0.175),
+            height / 2,
+            0.82,
+            0.19,
+            height,
+            1.16,
+            darkStone,
+          ).userData.step = true;
+        }
+      }
+    } else for (const x of [-2.55, 0, 2.55]) lights(f, x, 0.94, 1.52, 1.55, 2);
+  }
+}
+function edmands(s, g, base) {
+  // The period footprint is cruciform. The short front break and the long rear projection differ in depth.
+  const { w, d } = s,
+    h = 6.5,
+    bodyDepth = d * 0.5,
+    cz = -d * 0.08;
+  const core = sub(g, 0, 0, cz);
+  wing(core, w, bodyDepth, h, 4.14);
+  boxedSite(s, 0, cz, w, bodyDepth, h + 4.14, base);
+  const front = wallFace(core, bodyDepth, -1),
+    deep = d * 0.17,
+    width = w * 0.29,
+    top = h + 1.76;
+  for (const x of [-0.42, -0.31, -0.195, 0.195, 0.31, 0.42]) {
+    for (const y of [0.97, 3.86]) lights(front, x * w, y, 1.12, 1.81, 2, true);
+  }
+  for (const x of [-w * 0.436, w * 0.436]) {
+    const bay = frontGable(front, x, 0.24, 2.83, h - 0.13, h + 0.15, 1.44, 2.85, true);
+    lights(bay, 0, h + 0.17, 0.74, 0.77, 1);
+  }
+  box(front, 0, top / 2, deep / 2, width, top, deep, brick);
+  const entry = sub(front, 0, 0, deep);
+  arch(entry, 0, 0.38, 1.62, 2.64, true);
+  for (const x of [-width * 0.33, width * 0.33]) lights(entry, x, 1.03, 0.78, 1.56, 1, true);
+  lights(entry, 0, 3.7, 2.32, 1.97, 3, true);
+  lights(entry, 0, h + 0.26, 1.63, 0.79, 3);
+  merlons(entry, width, top, 9);
+  for (const x of [-width * 0.47, width * 0.47]) {
+    buttress(entry, x, top);
+    pinacle(entry, x, top, 0.82);
+  }
+  steps(entry, 3.47);
+  boxedSite(s, 0, cz - (bodyDepth + deep) / 2, width, deep, top, base);
+  const rearD = d / 2 - (cz + bodyDepth / 2),
+    rz = cz + bodyDepth / 2 + rearD / 2,
+    rearW = w * 0.285;
+  const tail = sub(g, 0, 0, rz, Math.PI / 2);
+  wing(tail, rearD, rearW, h - 0.81, 2.5);
+  boxedSite(s, 0, rz, rearW, rearD, h + 1.69, base);
+  for (const side of [-1, 1])
+    for (const x of bays(3, rearD))
+      for (const y of [0.93, 3.53]) lights(wallFace(tail, rearW, side), x, y, 1.48, 1.36, 2);
+  for (const side of [-1, 1]) {
+    const f = endFace(core, w, bodyDepth, side);
+    gableEdge(f, bodyDepth, h, 4.14);
+    for (const x of bays(4, bodyDepth * 0.91))
+      for (const y of [0.91, 3.75]) lights(f, x, y, 1.46, 1.77, 2, true);
+    lights(f, 0, h + 0.37, 1.56, 1.38, 2);
+  }
+}
+function diningHall(s, g) {
+  const { w, d } = s,
+    h = 5.87,
+    rise = 2.81;
+  wing(g, w, d, h, rise);
+  for (const side of [-1, 1]) {
+    const f = wallFace(g, d, side);
+    box(f, 0, h - 0.49, 0.035, w, 0.66, 0.095, stone);
+    belt(f, w, h - 0.84, darkStone);
+    belt(f, w, 3.13);
+    for (const x of bays(7, w * 0.96)) {
+      if (Math.abs(x) < 0.1 && side === 1) {
+        arch(f, 0, 0.38, 1.72, 2.55, true, false);
+        steps(f, 2.93);
+      } else lights(f, x, 1.0, 1.59, 1.5, 2);
+      lights(f, x, 3.69, 1.63, 1.22, 2);
+    }
+  }
+  residentialEnds(g, w, d, h, rise, 2);
+}
+
+</script>
+    <script>
+// Housing, gate services and the smaller structures on the period plan.
+function greenhouse(s, g) {
+  const { w, d } = s,
+    h = 1.83,
+    rise = 1.06;
+  const gl = std(0x9baea4, { metalness: 0.1, roughness: 0.27, side: T.DoubleSide });
+  box(g, 0, 0.23, 0, w, 0.46, d, brick);
+  for (const side of [-1, 1]) {
+    const f = wallFace(g, d, side);
+    box(f, 0, (h + 0.46) / 2, 0, w, h - 0.46, 0.06, gl);
+    for (const x of bays(10, w)) box(f, x, (h + 0.46) / 2, 0.06, 0.06, h - 0.45, 0.1, frame);
+    for (const y of [0.48, 1.08, h]) box(f, 0, y, 0.04, w + 0.12, 0.07, 0.12, wood);
+    const pitch = sub(g, 0, h + rise / 2, (side * d) / 4);
+    pitch.rotation.x = side * Math.atan2(rise, d / 2);
+    const length = Math.hypot(rise, d / 2);
+    box(pitch, 0, 0, 0, w + 0.1, 0.07, length + 0.08, gl);
+    for (const x of bays(10, w)) box(pitch, x, 0.064, 0, 0.057, 0.07, length + 0.12, frame);
+    box(pitch, 0, 0.06, 0, w + 0.16, 0.06, 0.07, wood);
+    const end = endFace(g, w, d, side);
+    extrude(
+      end,
+      profile([
+        [-d / 2, 0.45],
+        [d / 2, 0.45],
+        [d / 2, h],
+        [0, h + rise],
+        [-d / 2, h],
+      ]),
+      0.053,
+      gl,
+    );
+    for (const x of bays(5, d)) {
+      const top = h + rise * (1 - (2 * Math.abs(x)) / d);
+      box(end, x, (top + 0.45) / 2, 0.07, 0.065, top - 0.45, 0.11, frame);
+    }
+    gableEdge(end, d, h, rise);
+    if (side === 1) timberDoor(end, 0, 0.26, 0.85, 1.6);
+  }
+}
+function playShelter(s, g, base) {
+  const w = s.d,
+    d = s.w,
+    h = 3.15,
+    b = sub(g, 0, 0, 0, Math.PI / 2);
+  const rise = 1.95,
+    len = Math.hypot(d / 2, rise);
+  for (const side of [-1, 1]) {
+    const roofSide = sub(b, 0, h + rise / 2, (side * d) / 4);
+    roofSide.rotation.x = side * Math.atan2(rise, d / 2);
+    box(roofSide, 0, 0, 0, w + 0.36, 0.14, len + 0.28, roof);
+    box(b, 0, h - 0.14, side * (d / 2 - 0.14), w, 0.21, 0.17, wood);
+  }
+  for (const x of bays(6, w * 1.1)) {
+    for (const side of [-1, 1]) {
+      const z = side * (d / 2 - 0.26);
+      box(b, x, h / 2, z, 0.21, h, 0.21, wood);
+      boxedSite(s, z, -x, 0.27, 0.27, h, base);
+      rod(b, new V(x, h - 0.09, z), new V(x, h + rise - 0.16, 0), 0.07, 0.07, wood);
+    }
+    box(b, x, h - 0.11, 0, 0.14, 0.16, d - 0.34, wood);
+  }
+}
+function service(s, g) {
+  const w = Math.max(s.w, s.d),
+    d = Math.min(s.w, s.d);
+  const b = s.d > s.w ? sub(g, 0, 0, 0, Math.PI / 2) : g;
+  const floors = [104, 111, 152].includes(s.id) ? 2 : 1;
+  const h = s.id === 152 ? 6.18 : s.id === 103 ? 3.79 : s.h;
+  const rise = Math.min(2.6, d * (s.style === "shed" ? 0.23 : 0.35));
+  wing(b, w, d, h, rise);
+  const count = Math.max(1, Math.round(w / (s.id === 152 ? 3.25 : 4.3)));
+  for (const side of [-1, 1]) {
+    const f = wallFace(b, d, side);
+    for (const [i, x] of bays(count, w * 0.97).entries()) {
+      const frontDoor = side === 1 && i === Math.floor(count / 2);
+      if (frontDoor)
+        timberDoor(f, x, 0.27, Math.min(w * 0.48, s.id === 155 ? 2 : 1.21), Math.min(h - 0.36, 2.13));
+      else
+        lights(
+          f,
+          x,
+          0.8,
+          Math.min((w / count) * 0.49, 1.58),
+          Math.min(1.58, h * 0.45),
+          s.style === "shed" ? 1 : 2,
+        );
+      if (floors === 2) lights(f, x, h * 0.57, Math.min((w / count) * 0.51, 1.55), 1.47, 2);
+    }
+    if (floors === 2) belt(f, w, h / 2);
+  }
+  if (d > 3.8) {
+    for (const side of [-1, 1]) {
+      const f = endFace(b, w, d, side);
+      for (const x of bays(d > 7 ? 2 : 1, d * 0.85)) lights(f, x, 0.83, 1.22, 1.36, 2);
+      if (floors === 2) lights(f, 0, h * 0.58, 1.28, 1.38, 2);
+    }
+  }
+}
+function infirmary(s, g) {
+  const { w, d } = s,
+    h = 5.98,
+    rise = 3.27;
+  wing(g, w, d, h, rise);
+  for (const side of [-1, 1]) {
+    const f = wallFace(g, d, side);
+    for (const [i, x] of bays(4, w * 0.94).entries()) {
+      if (side === 1 && i === 2) timberDoor(f, x, 0.32, 1.28, 2.19);
+      else lights(f, x, 0.73, 1.51, 1.71, 2);
+      lights(f, x, 3.47, 1.43, 1.83, 2);
+    }
+    belt(f, w, 2.95);
+    belt(f, w, 3.16, darkStone);
+    for (const x of [-w * 0.24, w * 0.24]) dormer(f, x, 1.49, h, (2 * rise) / d, 1.14, 0.71, 0.71);
+  }
+  for (const side of [-1, 1]) {
+    const f = endFace(g, w, d, side);
+    belt(f, d, 2.95);
+    belt(f, d, h - 0.18);
+    for (const x of bays(3, d * 0.87)) for (const y of [0.75, 3.48]) lights(f, x, y, 1.59, 1.67, 2);
+    for (const x of [-0.83, 0.83]) lights(f, x, h + 0.24, 1.16, 1.39, 2);
+  }
+}
+function virginia(s, g) {
+  const { w, d } = s,
+    h = 5.28,
+    rise = 2.92;
+  wing(g, w, d, h, rise);
+  const f = wallFace(g, d, 1);
+  for (const [fraction, width, extra] of [
+    [-0.135, w * 0.275, 0.37],
+    [0.118, w * 0.18, -0.19],
+  ]) {
+    const bay = frontGable(f, w * fraction, 0.48, width, 0, h + extra, rise * 0.75, 3.3, true);
+    lights(bay, 0, 0.69, width * 0.62, 1.64, 2);
+    lights(bay, 0, 3.1, width * 0.66, 1.53, 3);
+    lights(bay, 0, h + extra + 0.15, width * 0.28, 1.02, 1);
+    if (fraction < 0) {
+      box(bay, 0, 2.93, 0.44, width * 0.89, 0.18, 0.95, stone);
+      for (const x of bays(10, width * 0.88)) box(bay, x, 3.21, 0.84, 0.08, 0.54, 0.1, stone);
+      box(bay, 0, 3.51, 0.84, width * 0.9, 0.1, 0.16, stone);
+    }
+  }
+  for (const x of [-w * 0.386, w * 0.37]) {
+    lights(f, x, 3.09, 2.36, 1.63, 3);
+    if (x < 0) timberDoor(f, x + 0.46, 0.31, 1.21, 1.98);
+    else lights(f, x, 0.77, 2.27, 1.58, 3);
+  }
+  for (const x of bays(6, w * 0.95))
+    for (const y of [0.74, 3.14]) lights(wallFace(g, d, -1), x, y, 1.48, 1.46, 2);
+  residentialEnds(g, w, d, h, rise, 2);
+  for (const x of [w * 0.03, w * 0.18]) ridgeStack(g, x, 0, h + rise + 0.52);
+}
+let greyMasonry;
+function greyBrick() {
+  if (greyMasonry) return greyMasonry;
+  const original = brick.map.image,
+    c = canvas(original.width, original.height),
+    ctx = c.getContext("2d");
+  ctx.drawImage(original, 0, 0);
+  const pixels = ctx.getImageData(0, 0, c.width, c.height);
+  for (let i = 0; i < pixels.data.length; i += 4) {
+    const y = pixels.data[i] * 0.32 + pixels.data[i + 1] * 0.5 + pixels.data[i + 2] * 0.18;
+    pixels.data[i] = y * 0.91 + 5;
+    pixels.data[i + 1] = y * 0.93 + 7;
+    pixels.data[i + 2] = y * 0.93 + 7;
+  }
+  ctx.putImageData(pixels, 0, 0);
+  greyMasonry = brick.clone();
+  greyMasonry.map = texture(c);
+  greyMasonry.map.repeat.copy(brick.map.repeat);
+  return greyMasonry;
+}
+function presidentsHouse(s, g, base, parts) {
+  const [south, north] = parts,
+    w = s.d,
+    depth = north.w,
+    cx = s.w / 2 - depth / 2,
+    h = 5.45,
+    rise = 2.55;
+  const core = sub(g, cx, 0, 0, Math.PI / 2);
+  wing(core, w, depth, h, rise);
+  boxedSite(s, cx, 0, depth, w, h + rise, base);
+  const extra = south.w - depth,
+    ex = cx - (depth + extra) / 2;
+  const back = sub(g, ex, 0, south.z, Math.PI / 2);
+  wing(back, south.d, extra, 3.14, 0.87);
+  boxedSite(s, ex, south.z, extra, south.d, 4, base);
+  const front = wallFace(core, depth, 1);
+  for (const x of [-w * 0.324, w * 0.324]) {
+    const bay = frontGable(front, x, 0.33, w * 0.33, 0, h + 0.1, 1.93, 3.13);
+    for (const y of [0.72, 3.31]) lights(bay, 0, y, w * 0.255, 1.55, 4);
+  }
+  const entry = sub(front, 0, 0, 0.21);
+  portico(entry, w * 0.28, 1.08, 2.46, [-w * 0.12, w * 0.12]);
+  timberDoor(entry, 0, 0.31, 1.26, 1.98);
+  for (const x of [-w * 0.105, w * 0.105]) lights(entry, x, 0.66, 0.64, 1.49, 1);
+  lights(front, 0, 3.34, w * 0.21, 1.17, 4);
+  for (const x of bays(5, w * 0.94))
+    for (const y of [0.79, 3.31]) lights(wallFace(core, depth, -1), x, y, 1.59, 1.42, 2);
+  residentialEnds(core, w, depth, h, rise, 2);
+}
+function cottagePorch(face, x) {
+  const p = sub(face, x, 0, 0),
+    eave = 2.34,
+    width = 2.04,
+    depth = 1.38;
+  const roofFace = frontGable(p, 0, depth, width, eave - 0.14, eave, 0.62, depth + 0.12);
+  for (const sign of [-1, 1]) box(roofFace, sign * 0.84, eave / 2, 0, 0.14, eave, 0.14, wood);
+  timberDoor(p, 0, 0.31, 1.07, 1.87);
+  steps(roofFace, width);
+}
+function cottage(s, g, base) {
+  if (s.id === 220) {
+    virginia(s, g);
+    boxedSite(s, 0, 0, s.w, s.d, 8.2, base);
+    return;
+  }
+  const doubleHouse = s.id === 218 || s.id === 219;
+  const photoCottage = [209, 210, 211, 212, 217].includes(s.id);
+  const parts = s.parts.map(([l, t, r, b]) => ({
+    x: ((r + l) / 2 - s.u) * SCALE,
+    z: ((t + b) / 2 - s.v) * SCALE,
+    w: (r - l) * SCALE,
+    d: (b - t) * SCALE,
+  }));
+  if (s.id === 208) return presidentsHouse(s, g, base, parts);
+  const tilt = s.id === 202 ? 0.24 : s.id === 201 ? 0.047 : 0;
+  for (const [i, p] of parts.entries()) {
+    const longest = Math.max(p.w, p.d),
+      depth = Math.min(p.w, p.d),
+      turn = (p.d > p.w ? Math.PI / 2 : 0) + tilt;
+    const body = sub(g, p.x, 0, p.z, turn);
+    const full = i === 0 || (depth > 2.65 && longest > 4 && !doubleHouse && s.id !== 209);
+    const h = full ? s.h : i === 1 && doubleHouse ? 4.45 : 2.61;
+    const rise = Math.min(full ? 3.25 : 1.66, depth * (photoCottage ? 0.52 : 0.37));
+    wing(body, longest, depth, h, rise);
+    solid(s, s.x + p.x, s.z + p.z, p.w, p.d, h + rise, base, tilt);
+    for (const side of [-1, 1]) {
+      const f = wallFace(body, depth, side);
+      const count = Math.max(1, Math.round(longest / 2.91));
+      for (const [j, x] of bays(count, longest * 0.94).entries()) {
+        const localX = p.x + Math.cos(turn) * x + Math.sin(turn) * side * (depth / 2 + 0.26);
+        const localZ = p.z - Math.sin(turn) * x + Math.cos(turn) * side * (depth / 2 + 0.26);
+        if (
+          parts.some(
+            (o, k) =>
+              i !== k &&
+              Math.abs(o.x - localX) < o.w / 2 + 0.04 &&
+              Math.abs(o.z - localZ) < o.d / 2 + 0.04,
+          )
+        )
+          continue;
+        const door = side === 1 && i === 0 && j === Math.floor(count / 2);
+        if (door) {
+          if (!photoCottage) timberDoor(f, x, 0.31, 1.14, 1.99);
+        } else
+          lights(
+            f,
+            x,
+            0.8,
+            Math.min(1.68, (longest / count) * 0.6),
+            Math.min(1.47, h * 0.42),
+            full ? 2 : 1,
+          );
+        if (h > 4.3)
+          lights(f, x, h * 0.57, Math.min(1.61, (longest / count) * 0.57), Math.min(1.51, h * 0.3), 2);
+      }
+      if (h > 4.4) {
+        const course = belt(f, longest, h * 0.5, doubleHouse ? brick : darkStone);
+        course.userData.redCourse = doubleHouse;
+      }
+      if (i !== 0) continue;
+      if (photoCottage && side === 1) {
+        const width = Math.min(3.25, longest * 0.44),
+          x = longest * 0.19;
+        const bay = frontGable(f, x, 0.36, width, 0, h + 0.12, 1.79, 3.22);
+        for (const y of [0.79, h * 0.57]) lights(bay, 0, y, width * 0.67, 1.48, 2);
+        lights(bay, 0, h + 0.15, 0.8, 0.94, 1);
+        if (s.id === 210) {
+          const chimneyX = -longest * 0.075,
+            top = h + rise + 1.08;
+          box(f, chimneyX, top / 2, 0.12, 0.84, top, 0.61, brick);
+          box(f, chimneyX, top - 0.12, 0.12, 1.02, 0.22, 0.79, darkStone);
+          dormer(f, -longest * 0.32, 1.61, h, (2 * rise) / depth, 1.02, 0.89, 0.22, 1);
+        } else if (s.id === 209) {
+          arch(f, -longest * 0.28, 0.36, 1.24, 2.12, true, false);
+          dormer(f, -longest * 0.28, 1.48, h, (2 * rise) / depth, 0.87, 0.73, 0.31, 1);
+        } else {
+          for (const k of [-1, 1])
+            rod(bay, new V(k * 0.91, h + 0.25, 0.085), new V(0, h + 1.57, 0.085), 0.054, 0.054, wood, 4);
+          cottagePorch(f, -longest * 0.275);
+        }
+      } else if (doubleHouse && side === 1) {
+        const width = longest * 0.7;
+        portico(f, width, 1.46, 2.94, bays(4, width * 1.13));
+        dormer(f, 0, 2.03, h, (2 * rise) / depth, 0.98, 0.82, 0.37, 2);
+      }
+    }
+    for (const side of [-1, 1]) {
+      const f = endFace(body, longest, depth, side);
+      const wx = p.x + Math.cos(turn) * side * (longest / 2 + 0.26),
+        wz = p.z - Math.sin(turn) * side * (longest / 2 + 0.26);
+      if (
+        parts.some(
+          (o, k) => i !== k && Math.abs(o.x - wx) < o.w / 2 + 0.04 && Math.abs(o.z - wz) < o.d / 2 + 0.04,
+        )
+      )
+        continue;
+      for (const x of bays(depth > 4.4 ? 2 : 1, depth * 0.83)) {
+        lights(f, x, 0.79, Math.min(depth * 0.32, 1.25), Math.min(1.44, h * 0.45), 2);
+        if (h > 4.3) lights(f, x, h * 0.57, Math.min(depth * 0.3, 1.24), 1.32, 2);
+      }
+      if (rise > 1.52) lights(f, 0, h + 0.2, 0.78, 0.86, 1);
+    }
+    if (i === 0 && (photoCottage || doubleHouse)) ridgeStack(body, -longest * 0.23, 0, h + rise + 0.73);
+  }
+  if (doubleHouse) {
+    const grey = greyBrick();
+    g.traverse((o) => {
+      if (o.material === brick && !o.userData.redCourse) o.material = grey;
+    });
+  }
+}
 function buildSite(s, root) {
   const base = groundY(s.x, s.z),
     g = sub(root, s.x, base, s.z);
   g.userData.site = s;
-  if (s.style === "gate") {
-    makeGate(s, g, base);
-    return;
+  // Compound and open buildings register their individual occupied parts.
+  switch (s.style) {
+    case "gate":
+      return makeGate(s, g, base);
+    case "auditorium":
+      return hall(s, g, base);
+    case "science":
+      return scienceHall(s, g, base);
+    case "library":
+      return library(s, g, base);
+    case "gym":
+      return haskellGym(s, g, base);
+    case "edmands":
+      return edmands(s, g, base);
   }
-  if (s.style === "auditorium") {
-    hall(s, g, base);
-    return;
-  }
-  if (s.style === "pool") {
-    box(g, 0, 0.1, 0, s.w, 0.22, s.d, darkStone);
-    box(g, 0, 0.23, 0, s.w - 0.8, 0.045, s.d - 0.8, std(0x537f7b));
-  } else if (s.style === "tower") makeTower(s, g);
-  else if (s.style === "yates") yates(s, g);
-  else if (s.style === "east") eastHall(s, g);
-  else if (s.style === "house" && s.id >= 200) cottage(s, g);
-  else if (s.style === "science") {
-    regular(s, g, s.w, s.d, "science");
-    const f = sub(g, 0, 0, s.d / 2 + 0.45);
-    box(f, 0, s.h * 0.5, 0, 5.8, s.h, 1.27, brick);
-    for (const k of [-1, 1]) buttress(f, k * 2.65, s.h + 0.18);
-    for (let k = 1; k <= 3; k++) {
-      for (const xx of [-0.9, 0.9]) sash(sub(f, 0, 0, 0.58), xx, k * 3.17 + 0.73, 1.27, 2.12);
+  switch (s.id) {
+    case 101:
+      infirmary(s, g);
+      break;
+    case 105:
+      return playShelter(s, g, base);
+    case 112:
+    case 113:
+      academy(s, g);
+      break;
+    case 114:
+      musicHall(s, g);
+      break;
+    case 131:
+      return treat(s, g, base);
+    case 133:
+      greenhouse(s, g);
+      break;
+    case 153:
+      yates(s, g);
+      break;
+    case 154:
+      makeTower(s, g);
+      break;
+    case 163:
+      eastHall(s, g);
+      break;
+    case 166:
+      breaker(s, g);
+      break;
+    case 167:
+      evanston(s, g);
+      break;
+    case 168:
+      diningHall(s, g);
+      break;
+    case 162: {
+      box(g, 0, 0.1, 0, s.w, 0.2, s.d, darkStone);
+      box(g, 0, 0.21, 0, s.w - 0.75, 0.038, s.d - 0.75, std(0x597f7c, { roughness: 0.23 }));
+      break;
     }
-    arch(sub(f, 0, 0, 0.62), 0, 0.35, 2.28, 3.16, true);
-    gableEdge(sub(f, 0, 0, 0.47), 5.8, s.h, 1.48);
-  } else if (s.style === "library") {
-    regular(s, g, s.w, s.d, "library");
-    const wingG = sub(g, 0, 0, 0, Math.PI / 2);
-    wing(wingG, s.d + 3.8, 6.5, s.h - 0.2, 2.65);
-    for (const side of [-1, 1]) {
-      const f = endFace(wingG, s.d + 3.8, 6.5, side);
-      gableEdge(f, 6.5, s.h - 0.2, 2.65);
-      arch(f, 0, 0.52, 2.85, 2.98, true, false);
-      arch(f, 0, 4.45, 3.25, 3.44);
-      steps(f, 5);
-    }
-    solid(s, s.x, s.z, 6.8, s.d + 4.0, s.h + 2, base);
-  } else if (s.style === "glasshouse") {
-    const frameG = sub(g, 0, 0, 0);
-    wing(frameG, s.w, s.d, 2.1, 1.1);
-    for (let i = -2; i <= 2; i++)
-      for (const k of [-1, 1]) sash(wallFace(frameG, s.d, k), (i * s.w) / 5, 0.3, s.w / 5 - 0.18, 1.55);
-  } else if (s.style === "edmands") {
-    regular(s, g, s.w, s.d * 0.55, "gym");
-    const annex = sub(g, 0, 0, 0, Math.PI / 2);
-    regular({ ...s, h: s.h * 0.84 }, annex, s.d, s.w * 0.38, "gym");
-    solid(s, s.x, s.z, s.w, s.d * 0.55, s.h + 3, base);
-    solid(s, s.x, s.z, s.w * 0.38, s.d, s.h + 3, base);
-    return;
-  } else {
-    const rotate = s.d > s.w;
-    const block = rotate ? sub(g, 0, 0, 0, Math.PI / 2) : g;
-    regular(s, block, Math.max(s.w, s.d), Math.min(s.w, s.d), s.style);
+    default:
+      if (s.parts) return cottage(s, g, base);
+      service(s, g);
   }
-  solid(s, s.x, s.z, s.w + 0.75, s.d + 0.75, s.h + (s.style === "tower" ? 1 : 2.5), base);
+  boxedSite(s, 0, 0, s.w, s.d, s.h + 1.9, base);
+}
+
+</script>
+    <script>
+// Museum photographs are linked to their originals and opened on demand.
+const buildingRecords = {
+  101: {
+    observed: "1917年开业，老图将其置于校门旁。旧照可见两层主体、坡顶上的小窗和立面贯通的水平线脚。",
+    inferred: "树木遮住了部分首层，入口位置、背立面、墙色与屋顶坡度为推定。",
+    source: "https://buildings.usst.edu.cn/2018/1003/c882a30404/page.htm",
+    links: [
+      [
+        "麦氏医院旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/87/30/5c3dc2e342b1b9230d01319939c5/ecfd33e2-2016-493d-8b80-0a6f14e9daeb.png",
+      ],
+    ],
+  },
+  102: {
+    observed: "校门档案记载门房于1916年随校门启用，图例102标在道路旁。",
+    inferred: "单层值守用房的门窗和顶面按用途推定，地图编号部分覆盖房基。",
+    source: "https://buildings.usst.edu.cn/2018/1002/c882a30395/page.htm",
+  },
+  103: {
+    observed: "图例103标作门口学校，校门进校园后在主路一侧，接近幼稚园。",
+    inferred: "平面可定位。单层、矩形窗和门面方向暂按小学校舍推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  104: {
+    observed: "1924年思乔堂建成。图例104标作幼稚园，长边与门口学校同处一组院落。",
+    inferred: "采用图中长条占地，层数、采光窗数量和外墙用材尚缺同期照片。",
+    source: "https://iso.usst.edu.cn/2008/0529/c1109a9573/page.htm",
+  },
+  105: {
+    observed: "老图中英文分别标作西操场和 Play Shed，场地位于幼稚园旁。",
+    inferred: "按英文图例暂作有顶活动棚，设开敞柱间；是否四面敞开、柱距和屋面形式待考。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  111: {
+    observed: "图上独立的中学部膳厅紧靠中学部场地，长轴与大学膳堂不同。",
+    inferred: "未取得可识别为本栋的同期照片，层数与门窗依据用膳建筑类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  112: {
+    observed:
+      "附中两栋校舍在图上并列。该栋旧照可见四层窗列、中央入口和凸窗，中央与两端的抱厦形成起伏的长立面。",
+    inferred: "依本栋照片设置主立面。窗格、凸窗进深与檐部尺寸为推定。",
+    source: "https://buildings.usst.edu.cn/2018/1003/c882a30405/page.htm",
+    links: [
+      [
+        "思孟堂旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/87/09/a9b9101e46af8b9d00f3364f0e1e/d58e3646-5a7b-4776-8633-f37185607219.png",
+      ],
+      [
+        "建筑手绘图",
+        "https://buildings.usst.edu.cn/_upload/article/images/87/09/a9b9101e46af8b9d00f3364f0e1e/80ac632a-bdee-4ad1-b661-8cb51b9f7d4b.png",
+      ],
+    ],
+  },
+  113: {
+    observed:
+      "附中两栋校舍在图上并列。该栋旧照可见四层窗列、中央入口和凸窗，中央与两端的抱厦形成起伏的长立面。",
+    inferred: "依本栋照片设置主立面。窗格、凸窗进深与檐部尺寸为推定。",
+    source: "https://buildings.usst.edu.cn/2018/1003/c882a30406/page.htm",
+    links: [
+      [
+        "思雷堂旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/48/3b/a337d1b9495abb0bb8a85e0ca686/89cbdd9d-c7df-448f-82fc-9f6e70e48753.png",
+      ],
+      [
+        "建筑手绘图",
+        "https://buildings.usst.edu.cn/_upload/article/images/48/3b/a337d1b9495abb0bb8a85e0ca686/7fa29429-781f-4034-9110-9a788a3c4ba6.png",
+      ],
+    ],
+  },
+  114: {
+    observed: "1935年建成。照片可见陡坡顶、长墙突出的山墙式门廊、一侧山墙的成组长窗及楼外成对梯段。",
+    inferred: "梯段宽度、踏步数与另一端的开窗为估算，门廊方向参考图上小凸部。",
+    source: "https://buildings.usst.edu.cn/2018/1004/c882a30411/page.htm",
+    links: [
+      [
+        "中学部礼堂旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/5b/8e/c16d42ff4fa5bce5e8edf034e7d6/47b04763-54f0-46ab-acb7-379fcf2279f9.png",
+      ],
+      [
+        "室外楼梯手绘图",
+        "https://buildings.usst.edu.cn/_upload/article/images/5b/8e/c16d42ff4fa5bce5e8edf034e7d6/4d169364-5bb4-404e-99f5-6814f6748805.png",
+      ],
+    ],
+  },
+  121: {
+    observed:
+      "老照片可同时辨认长侧墙的小圆窗、入口山墙，以及另一翼低而宽的分格大窗。实物照片和1937年平面图均显示两翼相接。",
+    inferred: "两翼的门窗对应到地图方向、砖色、背面和联接处的屋面交接按现有视图推定。",
+    source: "https://www.usst.edu.cn/2022/0726/c999a47070/page.htm",
+    links: [
+      [
+        "大礼堂与思魏堂旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/89/d5/89b1bbd24a3190a50830cb3c9e23/f39b9deb-a650-4e93-8068-f25ea718b2ac.png",
+      ],
+      ["图说与沿革", "https://buildings.usst.edu.cn/2018/1002/c882a30387/page.htm"],
+    ],
+  },
+  131: {
+    observed:
+      "四层主体之上是带小老虎窗的第五层。单体旧照和1934年从黄浦江拍摄的鸟瞰照共同显示长廊朝向江岸；两端和中部各有一座山墙。",
+    inferred: "长廊的准确进深、廊柱数和背面的凸窗细部按照片比例估计。1963年改为平顶。",
+    source: "https://buildings.usst.edu.cn/2018/1004/c882a30408/page.htm",
+    links: [
+      [
+        "宿舍正面旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/52/e8/f3ebdf8d4d18a3e5d60d483625f2/6c27d62d-f7be-4381-adaa-08c8cdc59a69.png",
+      ],
+      [
+        "带长廊一面旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/52/e8/f3ebdf8d4d18a3e5d60d483625f2/d9c570bd-0d9f-423e-9bdc-8e2e8ea6c0aa.png",
+      ],
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  132: {
+    observed:
+      "1932年建成，作女生健身房、膳厅和音乐室。旧照可辨突出的平顶入口、齿形女儿墙、两翼端部的小山花。平面图前后凸出深浅不同。",
+    inferred: "沿图中十字轮廓安排主体，后翼屋面和窗列按用途推定。",
+    source: "https://www.usst.edu.cn/2022/0726/c999a47075/page.htm",
+    links: [
+      [
+        "艾德蒙堂旧照",
+        "https://www.usst.edu.cn/_upload/article/images/0a/bb/3835bb0d46cbb886916574756cb9/93512afd-7d67-45da-b231-98458b3869c5.jpg",
+      ],
+      [
+        "正面手绘图",
+        "https://www.usst.edu.cn/_upload/article/images/0a/bb/3835bb0d46cbb886916574756cb9/a2f30fee-5d7b-4de2-a5ff-b7bee999bcbc.jpg",
+      ],
+    ],
+  },
+  133: {
+    observed: "图例133为温室，位于科学馆背侧道路外，和江岸生物园分开。",
+    inferred: "玻璃墙面、坡顶与格架体现园艺用途。框架间距、玻璃色泽和实际材料待考。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  141: {
+    observed:
+      "档案照片和馆方手绘图显示三层通高直墙、坡顶内的第四层、两端山墙和成组矩形窗。主入口朝院落，老图在这一侧画有凸出的门廊。",
+    inferred: "屋脊和檐口高度、窗格尺寸按图像比例估计。背面缺少完整的同期视图。",
+    source: "https://buildings.usst.edu.cn/2018/1002/c882a30388/page.htm",
+    links: [
+      [
+        "科学馆旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/d5/c6/09475e354dabbbdc11718356280e/e5fbc17b-6773-43be-a826-50853348109d.png",
+      ],
+      [
+        "科学馆手绘图",
+        "https://buildings.usst.edu.cn/_upload/article/images/d5/c6/09475e354dabbbdc11718356280e/84eb78b0-850d-43dd-9574-87715de33ef2.jpg",
+      ],
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  142: {
+    observed:
+      "1928年原馆有两层、陡坡顶、带窗的端山墙，以及长墙上窄而平顶的入口凸部。旧图有前后凸部，图书馆以东另一个空心轮廓属规划。",
+    inferred: "入口凸部的深度依图估算，背面窗数与屋面色调待考。1948年动工的扩建另有年代记录。",
+    source: "https://buildings.usst.edu.cn/2018/1002/c882a30389/page.htm",
+    links: [
+      [
+        "原馆旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/f8/a0/98595bae4ef68001aeab3c456bde/ad271e67-f725-430f-a7dc-aa962e4e7fe1.png",
+      ],
+      [
+        "1928年纪念册封面",
+        "https://buildings.usst.edu.cn/_upload/article/images/f8/a0/98595bae4ef68001aeab3c456bde/2b112d84-c0be-478a-a1ef-b52b033c8ba6.png",
+      ],
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  151: {
+    observed: "图例151为助学社，在北住宅西端，平面图能辨相邻道路。",
+    inferred: "入口、售货窗及屋面材料待考，暂取简单小铺的体量。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  152: {
+    observed:
+      "平面图在助学社与东堂之间标出狭长的北住宅。1934年鸟瞰可见此处的屋脊，东堂档案也记有学生住在北堂。",
+    inferred: "水塔及邻屋遮住部分立面。层数、分间和侧窗按早期宿舍类型推定。",
+    source: "https://buildings.usst.edu.cn/2018/1002/c882a30390/page.htm",
+    links: [
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  153: {
+    observed:
+      "风灾前照片和手绘图可见山墙玫瑰窗、双联尖券和沿山墙布置的尖饰。南侧是组合柱门廊，东面有拱门。",
+    inferred: "屋脊、烟囱尺寸及背立面窗列由旧照推定。四层楼的最上层融入坡屋顶。",
+    source: "https://buildings.usst.edu.cn/2018/1001/c882a30383/page.htm",
+    links: [
+      [
+        "风灾前旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/12/4e/c747f0144e27bdd67cc056d1e789/5d711b2b-9c87-4432-a3af-8fc733335bb9.png",
+      ],
+      [
+        "思晏堂手绘图",
+        "https://buildings.usst.edu.cn/_upload/article/images/12/4e/c747f0144e27bdd67cc056d1e789/31887249-1b76-4684-b508-6cc8c99b2abc.jpg",
+      ],
+      ["建筑史研究与图纸", "https://jss.usst.edu.cn/shlgdxxbsk/article/html/20200314"],
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  154: {
+    observed:
+      "图上在体育馆西侧。照片显示塔身分层、上段水箱大片实墙与齿形女儿墙。1937年8月的炮损晚于本场景。",
+    inferred: "按旧照中的明暗差异将水箱外表处理为较浅的实墙。确切面层、色调与塔高待考。",
+    source: "https://buildings.usst.edu.cn/2018/1004/c882a30409/page.htm",
+    links: [
+      [
+        "水塔旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/81/62/b0100be54b209f51aa2088704c42/e7b2b642-bf81-4c0d-b4fd-41b8cb981d10.png",
+      ],
+      [
+        "水塔手绘图",
+        "https://buildings.usst.edu.cn/_upload/article/images/81/62/b0100be54b209f51aa2088704c42/1e4b1b19-0425-40cf-8b0b-baeb728003ed.png",
+      ],
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  155: {
+    observed: "电房占地为图上识别度较高的横向后勤用房，邻近通往体育馆的道路。",
+    inferred: "设备开口、墙体高度和顶面按单层机房推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  156: {
+    observed: "图例156位于电房与油漆间之间，标作煤气房。",
+    inferred: "编号覆盖主要轮廓，开口和墙体尺度均为近似。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  157: {
+    observed: "图例157将油漆间标在后勤建筑组一端。",
+    inferred: "底图标签覆盖部分外墙，门窗、屋面、分间尺度待考。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  161: {
+    observed:
+      "1918年竣工，1919年开馆。图上靠东堂的一段较窄，另一端扩为横翼。侧面旧照可数出五组高侧窗和逐层收进的扶壁，入口旧照可见中央山花和门洞。",
+    inferred: "球场与横翼的宽度按阴影轮廓折算。屋顶坡度、彩色材料和照片未覆盖的后山墙细部为估计。",
+    source: "https://buildings.usst.edu.cn/2018/1002/c882a30392/page.htm",
+    links: [
+      [
+        "球场侧面旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/fc/3c/33117f90407ca63eb3edd647f8ad/365d4d24-7b1c-4bf1-8b3d-6aa5e6d5efdc.png",
+      ],
+      [
+        "横翼入口旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/fc/3c/33117f90407ca63eb3edd647f8ad/de0a91e3-9327-4518-828f-d23643a52204.png",
+      ],
+      [
+        "另一侧手绘图",
+        "https://buildings.usst.edu.cn/_upload/article/images/fc/3c/33117f90407ca63eb3edd647f8ad/117a3134-5b80-4507-b2b9-1f6f1a6bdb8e.png",
+      ],
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  162: {
+    observed: "1922年秋建成。图上泳池沿图面横向紧靠东堂，体育馆的球场在池畔另一方向。",
+    inferred: "只表现池体、水面与池沿，池深、栏杆样式和池岸材料缺少现场尺寸。",
+    source: "https://iso.usst.edu.cn/2008/0529/c1109a9573/page.htm",
+    links: [
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  163: {
+    observed:
+      "早期照片可辨两层主体和横贯山墙的腰线。沿1934年鸟瞰图中的水塔、体育馆及泳池定位，东堂坡面已可见一排小窗；单体旧照能辨出六扇。",
+    inferred: "屋顶加层的确切年份待考。临池以外一侧的窗数、入口位置、墙色和屋脊高度为推定。",
+    source: "https://buildings.usst.edu.cn/2018/1002/c882a30390/page.htm",
+    links: [
+      [
+        "东堂早期照片",
+        "https://buildings.usst.edu.cn/_upload/article/images/e7/dc/2b78527c40888d7b8cf2e71ba97d/859303ae-225e-4410-8d78-e5c8c4c5834a.png",
+      ],
+      [
+        "有老虎窗的旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/e7/dc/2b78527c40888d7b8cf2e71ba97d/c29c8a7a-55f2-4d78-96cc-07ffcac299c1.png",
+      ],
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  164: {
+    observed: "图例164标出大学印刷所，在游泳池附近。",
+    inferred: "编号遮挡足迹，面积、层数与采光窗均作近似表现。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  165: {
+    observed: "图例165为工友膳厅，位于东堂近旁、泳池的另一侧。",
+    inferred: "外轮廓局部受标号覆盖，门窗数量和屋面材料需要同期照片。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  166: {
+    observed:
+      "三层直墙上有陡坡顶，中央的入口山墙高出两侧。上下两层的窗在立面上竖向相连，南面八柱门廊托起露台。",
+    inferred: "窗券曲率、柱头纹样及廊深没有测绘尺寸。取战前坡顶形制。",
+    source: "https://buildings.usst.edu.cn/2018/1002/c882a30391/page.htm",
+    links: [
+      [
+        "思裴堂旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/b3/ff/b7af718f4bbba66ac8f276f299c2/db525b6a-293f-48f4-8e6a-40283435c6b2.jpg",
+      ],
+      [
+        "早期正面旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/b3/ff/b7af718f4bbba66ac8f276f299c2/e48cdb03-9293-4b59-b259-feaab2cc27b1.png",
+      ],
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  167: {
+    observed: "老照片可辨三层主体、密排老虎窗和中轴线上叠置的两层凸窗。1984年修缮时才改平顶。",
+    inferred: "背坡开窗、窗下装饰、檐高及颜色按可见的正面推定。",
+    source: "https://buildings.usst.edu.cn/2018/1002/c882a30393/page.htm",
+    links: [
+      [
+        "思伊堂正面旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/0e/ba/a6710d14429b85cea0734b0787e4/13be0ea2-9da2-463e-b26f-9dafc800de08.png",
+      ],
+      [
+        "另一张校园旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/0e/ba/a6710d14429b85cea0734b0787e4/41adf640-31aa-4733-b057-c9ff5cca659f.png",
+      ],
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  168: {
+    observed: "大学膳堂于1931年底建成。旧照显示两层长屋，屋面连贯，长墙为分组的矩形开窗。",
+    inferred: "檐下饰带按照片明暗区分，背立面、表面颜色和入口尺寸为推定。",
+    source: "https://buildings.usst.edu.cn/2018/1002/c882a30394/page.htm",
+    links: [
+      [
+        "大学膳堂旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/7d/65/5234be7149979ec7ea5dec07549e/86e75d66-002e-4dc6-88c8-5846253eef7f.png",
+      ],
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  180: {
+    observed: "1937年图中明确标出四分之一英里跑道和运动场地。",
+    inferred: "道宽、铺面和草地状态按运动场用途推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  181: {
+    observed: "1937年图例标出生物园，位于大学区与江岸之间。",
+    inferred: "苗床、步径和植物品种为环境补景。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  182: {
+    observed: "1937年图中可辨黄浦江岸与校园的相对位置。",
+    inferred: "岸线高差、水位与对岸树木为环境补景。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [
+      [
+        "1934年鸟瞰照片（第11页）",
+        "https://iso.usst.edu.cn/_upload/article/files/76/5c/5142c81c4eb1bc1f84aa015b2850/15cfc0b2-137d-4e9c-a7c6-f81d4431afc2.pdf#page=11",
+      ],
+    ],
+  },
+  190: {
+    observed:
+      "1916年校门和门房同时启用。旧照中可分辨高大的外门柱、一对较低的内门柱和铁栏，原址可由1937年图上的门房追认。",
+    inferred: "石材色泽、题字位置、门扇开启角与门洞净宽为估计。1953年迁移、1992年放大改建均在此后。",
+    source: "https://buildings.usst.edu.cn/2018/1002/c882a30395/page.htm",
+    links: [
+      [
+        "原校门旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/54/1e/b4f1e8924dd08f71577e4e6519b1/192645f3-193c-43ee-92ec-41666588901d.png",
+      ],
+      [
+        "1928年校门照片",
+        "https://buildings.usst.edu.cn/_upload/article/images/54/1e/b4f1e8924dd08f71577e4e6519b1/c23a1315-95e4-499b-9647-72c0322d058c.png",
+      ],
+    ],
+  },
+  200: {
+    observed: "最靠西的一处狭长合住房基，图中保留分户标记。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  201: {
+    observed: "接近西侧边路的一处横向长条住宅。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  202: {
+    observed: "沿弯路略有偏转的窄住宅，图中线条较淡。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  203: {
+    observed: "前排主体较宽，后部较窄并居中接出。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  204: {
+    observed: "主块后角多出一个较小的矩形。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  205: {
+    observed: "后段朝一侧收窄，临路一端较宽。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  206: {
+    observed: "后排较窄的一翼与临路主体错开。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  207: {
+    observed: "后部带有折角窄翼，转折沿图描取。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  208: {
+    observed:
+      "窄后翼与较宽前部相接；现校图33号与此处可按道路和邻屋比对。两处端山墙和中间门厅采用校长住宅旧照。",
+    inferred: "具体落点由跨年代图件比对推定，1937年旧图以住宅分组标记；背立面和尺寸待考。",
+    source: "https://buildings.usst.edu.cn/2018/1004/c882a30407/page.htm",
+    links: [
+      [
+        "建筑旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/44/ae/041fd35a40108bb73d1837035255/08132cd5-30b3-4772-8c96-45afc2678672.png",
+      ],
+      ["校方校园图（定位参照）", "https://www.usst.edu.cn/xypmt/list.htm"],
+    ],
+  },
+  209: {
+    observed: "路弯旁独立，多处外墙有退进。修缮图能比对这里连续四宅和路口另三宅的布局。",
+    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    source: "https://buildings.usst.edu.cn/2018/1003/c882a30403/page.htm",
+    links: [
+      [
+        "同组住宅旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/22/62/7064741d420a8ee15ce81292fef9/96175a4e-61f2-46d7-881e-6c80724a67f7.png",
+      ],
+      ["校方修缮定位图", "https://xxgk.usst.edu.cn/2024/1205/c8492a331238/page.htm"],
+    ],
+  },
+  210: {
+    observed: "靠曲路一端的主体接两段错位小翼。修缮图能比对这里连续四宅和路口另三宅的布局。",
+    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    source: "https://buildings.usst.edu.cn/2018/1003/c882a30402/page.htm",
+    links: [
+      [
+        "同组住宅旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/b6/05/bcf5ed934752ae5bc89a322aced6/85fb5703-9115-4558-87c7-49e2f9a201f6.png",
+      ],
+      ["校方修缮定位图", "https://xxgk.usst.edu.cn/2024/1205/c8492a331238/page.htm"],
+    ],
+  },
+  211: {
+    observed: "前后宽度不同，后段折入一侧。修缮图能比对这里连续四宅和路口另三宅的布局。",
+    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    source: "https://buildings.usst.edu.cn/2018/1003/c882a30401/page.htm",
+    links: [
+      [
+        "同组住宅旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/94/ff/784514b54d1f8d599145f546795a/75ec6f79-612b-4237-a80a-2c6882fbe5ea.png",
+      ],
+      ["校方修缮定位图", "https://xxgk.usst.edu.cn/2024/1205/c8492a331238/page.htm"],
+    ],
+  },
+  212: {
+    observed: "靠三岔路的一所，后部有窄翼与凹角。修缮图能比对这里连续四宅和路口另三宅的布局。",
+    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    source: "https://buildings.usst.edu.cn/2018/1003/c882a30400/page.htm",
+    links: [
+      [
+        "同组住宅手绘图",
+        "https://buildings.usst.edu.cn/_upload/article/images/11/eb/7ff47fdb4679a30af5666b54532d/f2f1d69b-9cc0-4a0d-9979-3e7a16063f17.png",
+      ],
+      ["校方修缮定位图", "https://xxgk.usst.edu.cn/2024/1205/c8492a331238/page.htm"],
+    ],
+  },
+  213: {
+    observed: "临路一段较宽，背后以短颈接窄翼。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  214: {
+    observed: "靠路住宅主块上接窄长后段。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  215: {
+    observed: "临路主体与细长后翼组合。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  216: {
+    observed: "紧邻大学部后勤区，街面宽、背后窄。",
+    inferred: "单栋门牌与立面照片未能互证。模型按该处轮廓及同期住宅的门窗、屋面类型推定。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+    links: [["同期住宅类型参照", "https://buildings.usst.edu.cn/2018/1003/c882a30396/page.htm"]],
+  },
+  217: {
+    observed: "靠路口的一所，主屋一侧伸出折角侧翼。修缮图能比对这里连续四宅和路口另三宅的布局。",
+    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    source: "https://buildings.usst.edu.cn/2018/1003/c882a30399/page.htm",
+    links: [
+      [
+        "同组住宅旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/a8/5a/6edf5bb8424cac90aa9d129291ff/81795fdc-3fce-471b-9557-682060bd7677.png",
+      ],
+      ["校方修缮定位图", "https://xxgk.usst.edu.cn/2024/1205/c8492a331238/page.htm"],
+    ],
+  },
+  218: {
+    observed: "主块与两段边翼围出向道路开口的小院。修缮图能比对这里连续四宅和路口另三宅的布局。",
+    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    source: "https://buildings.usst.edu.cn/2018/1003/c882a30398/page.htm",
+    links: [
+      [
+        "同组住宅旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/c0/60/14b3553c46bc9773a343fba39d02/d4a7c70d-5b62-4fb8-99d8-19f9bbb5e5c6.png",
+      ],
+      ["校方修缮定位图", "https://xxgk.usst.edu.cn/2024/1205/c8492a331238/page.htm"],
+    ],
+  },
+  219: {
+    observed: "一侧形成较长侧翼，图上可辨数次凹凸。修缮图能比对这里连续四宅和路口另三宅的布局。",
+    inferred: "该地块与具体门牌的对应是推定。外观参考所列同组住宅，附屋高度与不可见面暂估。",
+    source: "https://buildings.usst.edu.cn/2018/1003/c882a30397/page.htm",
+    links: [
+      [
+        "同组住宅旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/af/73/4714fe074f108f281408b179d38a/27edb3ea-2f52-4b2c-b2c7-0e3d4d18a8ce.png",
+      ],
+      ["校方修缮定位图", "https://xxgk.usst.edu.cn/2024/1205/c8492a331238/page.htm"],
+    ],
+  },
+  220: {
+    observed:
+      "靠大礼堂及沿路的长条基底；与现校图35号、周边住宅和礼堂可作相对定位。旧照中可见一大一小两座山墙及石栏阳台。",
+    inferred: "具体落点由跨年代图件比对推定，1937年旧图以住宅分组标记；背立面和尺寸待考。",
+    source: "https://buildings.usst.edu.cn/2018/1004/c882a30412/page.htm",
+    links: [
+      [
+        "建筑旧照",
+        "https://buildings.usst.edu.cn/_upload/article/images/9b/ca/ad1e990642a1859709f512716c9c/598d2c70-51cf-4c5d-a058-c26e8df66e32.png",
+      ],
+      ["校方校园图（定位参照）", "https://www.usst.edu.cn/xypmt/list.htm"],
+    ],
+  },
+  230: {
+    observed: "住宅后侧边界的实有建筑阴影，可与1937年平面图的实有建筑图例对照。",
+    inferred: "图例未逐一注明它的名称与用途。暂作低矮附屋表现，材料、开口和高度待考。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  231: {
+    observed: "住宅后侧边界的实有建筑阴影，可与1937年平面图的实有建筑图例对照。",
+    inferred: "图例未逐一注明它的名称与用途。暂作低矮附屋表现，材料、开口和高度待考。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  232: {
+    observed: "住宅后侧边界的实有建筑阴影，可与1937年平面图的实有建筑图例对照。",
+    inferred: "图例未逐一注明它的名称与用途。暂作低矮附屋表现，材料、开口和高度待考。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  233: {
+    observed: "住宅后侧边界的实有建筑阴影，可与1937年平面图的实有建筑图例对照。",
+    inferred: "图例未逐一注明它的名称与用途。暂作低矮附屋表现，材料、开口和高度待考。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+  234: {
+    observed: "住宅后侧边界的实有建筑阴影，可与1937年平面图的实有建筑图例对照。",
+    inferred: "图例未逐一注明它的名称与用途。暂作低矮附屋表现，材料、开口和高度待考。",
+    source: "https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm",
+  },
+};
+for (const s of sites) {
+  s.record = buildingRecords[s.id];
+  s.source = s.record.source;
 }
 
 </script>
@@ -2184,6 +4013,8 @@ function vegetation(scene) {
     )
       return;
     if (!outside && Math.hypot(u - 838, v - 361) < 17) return;
+    // The plan leaves the approach to Science Hall and the small adjoining lawn open.
+    if (!outside && u > 923 && u < 1004 && v > 267 && v < 360) return;
     if (shoreDistance(x, z) < 3 && !outside) return;
     const ix = Math.floor(x / 4),
       iz = Math.floor(z / 4);
@@ -2240,11 +4071,32 @@ function vegetation(scene) {
     const v = between(100, 687);
     tree(riverU(v) - between(6, 20), v);
   }
-  for (let n = 0; n < 55; n++) {
-    const u = between(992, 1265),
-      v = rand() > 0.55 ? between(255, 265) : between(329, 342);
-    tree(u, v);
-  }
+  // Tree symbols on the two edges of the quadrangle, including the gap opposite Breaker Hall.
+  for (const [u, v] of [
+    [1018, 262],
+    [1038, 261],
+    [1125, 259],
+    [1148, 260],
+    [1172, 259],
+    [1194, 259],
+    [1218, 258],
+    [1243, 257],
+    [1272, 257],
+    [1302, 265],
+    [1286, 292],
+    [1271, 311],
+    [1021, 334],
+    [1040, 335],
+    [1084, 334],
+    [1109, 335],
+    [1129, 334],
+    [1155, 335],
+    [1175, 335],
+    [1197, 335],
+    [1215, 335],
+    [1249, 334],
+  ])
+    tree(u, v, false, between(0.7, 1.0));
   for (let n = 0; n < 37; n++) tree(between(1210, 1358), between(121, 244));
   for (let n = 0; n < 50; n++) tree(between(365, 589), between(432, 506));
   for (let n = 0; n < 110; n++) {
@@ -2539,9 +4391,17 @@ function explore() {
   function legal(x, z) {
     if (!inPolygon(x / SCALE + 780, z / SCALE + 370, boundary) || shoreDistance(x, z) < 1.05)
       return false;
-    for (const o of obstacles)
-      if (Math.abs(x - o.x) < o.w / 2 + collisionRadius && Math.abs(z - o.z) < o.d / 2 + collisionRadius)
+    for (const o of obstacles) {
+      let dx = x - o.x,
+        dz = z - o.z;
+      if (o.angle) {
+        const co = Math.cos(o.angle),
+          si = Math.sin(o.angle);
+        [dx, dz] = [co * dx - si * dz, si * dx + co * dz];
+      }
+      if (Math.abs(dx) < o.w / 2 + collisionRadius && Math.abs(dz) < o.d / 2 + collisionRadius)
         return false;
+    }
     for (const t of treeTrunks)
       if ((x - t.x) ** 2 + (z - t.z) ** 2 < (t.r + collisionRadius) ** 2) return false;
     return true;
@@ -2606,18 +4466,29 @@ function explore() {
     el("location").textContent = "全校园";
   }
   function relocate(s) {
-    if (s.id === 121) {
-      const [x, z] = point(825, 379);
+    if (s.approach) {
+      const [x, z] = point(...s.approach);
       if (legal(x, z)) {
-        setWalk(x, z, s.x, s.z + 3);
-        pitch = 0.15;
+        setWalk(x, z, s.x, s.z + (s.id === 121 ? 3 : 0));
+        pitch = s.id === 154 ? 0.27 : 0.15;
         viewLabel = { name: s.name, x, z };
+        el("location").textContent = s.name;
         return;
       }
     }
     const distance = s.style === "gate" ? 11 : Math.max(s.w, s.d) * 0.54 + 9;
     for (const scale of [1, 1.4, 1.9])
-      for (const a of [2.52, -2.55, 1.95, -1.7, 0.5, -0.48, 0, Math.PI]) {
+      for (const a of [
+        Math.PI - (s.photoView?.azimuth ?? -0.64),
+        2.52,
+        -2.55,
+        1.95,
+        -1.7,
+        0.5,
+        -0.48,
+        0,
+        Math.PI,
+      ]) {
         const x = s.x + Math.sin(a) * distance * scale,
           z = s.z - Math.cos(a) * distance * scale;
         if (legal(x, z)) {
@@ -2637,30 +4508,32 @@ function explore() {
     el("typeline").textContent = s.year ? s.year + "　·　沪江校舍" : "沪江校园　·　1937";
     el("placeTitle").textContent = s.name;
     el("placeStory").textContent = s.story;
-    let notes =
-      "史料可证：老图中的位置与用途。合理推定：按占地描取的尺寸、层高、门窗排列与色彩。环境补景：树木个体、草叶、路面颗粒及天气。";
-    if (s.id === 121)
-      notes =
-        "史料可证：L形联体、思魏堂在北侧、双联扁拱和尖券长窗。合理推定：屋脊高度、窗格数量、砖色和背立面。环境补景：附近树木与地表细节。";
-    if (s.id === 142)
-      notes =
-        "史料可证：1928年原馆位于科学馆东隅。战后才形成对称东翼和连接塔楼。合理推定：战前原馆的窗格、山墙和檐部细节。环境补景：草坪与树丛。";
-    if (s.style === "landmark")
-      notes =
-        "史料可证：图中的区域名称和边界关系。合理推定：岸线宽度、路径宽度与地表材料。环境补景：植被个体、苗床细节与远方树线。";
-    if (s.id === 190)
-      notes =
-        "史料可证：1916年启用，位于图中门房旁。合理推定：柱身、开启的铁门、题字位置及门洞净宽。环境补景：校门外接近道路的地面与植被。";
-    el("evidence").textContent = notes;
-    el("sourceLink").href = s.source;
+    const record = s.record;
+    el("evidence").textContent = record.observed;
+    el("inference").textContent = "复原推定 · " + record.inferred;
+    const links = el("photoLinks");
+    links.replaceChildren();
+    for (const [label, url] of record.links || []) {
+      const a = document.createElement("a");
+      a.textContent = label + " ↗";
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      links.append(a);
+    }
+    el("sourceLink").href = record.source;
+    el("sourceLink").hidden = record.source === ARCHIVE;
     el("mapSource").href = ARCHIVE;
     el("location").textContent = s.name;
   }
   function focus(s) {
-    target.set(s.x, Math.min(s.h * 0.44, 8), s.z);
-    radius = Math.max(s.w, s.d, s.h) * 1.62 + 10;
-    theta = -0.74;
-    tilt = 1.12;
+    const view = s.photoView;
+    target.set(s.x, groundY(s.x, s.z) + (view?.height ?? Math.min(s.h * 0.44, 8)), s.z);
+    radius = view?.distance ?? Math.max(s.w, s.d, s.h) * 1.62 + 10;
+    // Increase distance on narrow windows so that the long façades still fit.
+    radius *= Math.max(1, 1.48 / camera.aspect);
+    theta = view?.azimuth ?? -0.64;
+    tilt = view?.tilt ?? 1.12;
     setMode("orbit");
     card(s);
   }
@@ -2936,7 +4809,7 @@ function explore() {
     const q = el("placeQuery").value.trim();
     el("placeList").replaceChildren();
     for (const s of [gate, ...sites.filter((s) => s !== gate)]) {
-      if (!s.name.includes(q)) continue;
+      if (![s.name, ...(s.aliases || [])].some((name) => name.includes(q))) continue;
       const b = document.createElement("button");
       b.textContent = s.name;
       const small = document.createElement("small");

@@ -1,6 +1,6 @@
 const obstacles = [];
-function solid(s, x, z, w, d, h, base = 0) {
-  obstacles.push({ id: s.id, x, z, w, d, h, base });
+function solid(s, x, z, w, d, h, base = 0, angle = 0) {
+  obstacles.push({ id: s.id, x, z, w, d, h, base, angle });
 }
 function profile(points) {
   const s = new T.Shape();
@@ -39,14 +39,6 @@ function pitchRoof(g, w, d, h, rise) {
     box(g, 0, h - 0.05, side * (d / 2 + 0.12), w + 0.4, 0.18, 0.32, darkStone);
   }
   box(g, 0, h + rise + 0.12, 0, w + 0.6, 0.19, 0.28, roof);
-}
-function sash(g, x, y, w, h, trim = stone) {
-  box(g, x, y + h / 2, 0.09, w + 0.23, h + 0.22, 0.2, trim);
-  box(g, x, y + h / 2, 0.201, w, h, 0.04, frame);
-  box(g, x, y + h / 2, 0.234, w - 0.15, h - 0.16, 0.04, glass);
-  box(g, x, y + h / 2, 0.268, 0.065, h, 0.075, frame);
-  for (const q of [0.36, 0.72]) box(g, x, y + h * q, 0.268, w, 0.055, 0.075, frame);
-  box(g, x, y - 0.08, 0.19, w + 0.46, 0.12, 0.42, trim);
 }
 function archPath(w, h, pointed) {
   const p = new T.Shape(),
@@ -122,9 +114,17 @@ function collectTreads(root) {
     const s = group.userData.site;
     if (!s || s.style === "gate") continue;
     const footprint = obstacles.filter((o) => o.id === s.id);
+    const angle = footprint[0]?.angle || 0;
+    const align = new T.Matrix4()
+      .makeTranslation(s.x, 0, s.z)
+      .multiply(new T.Matrix4().makeRotationY(-angle))
+      .multiply(new T.Matrix4().makeTranslation(-s.x, 0, -s.z));
+    const fromAligned = align.clone().invert();
     group.traverse((o) => {
       if (!o.isMesh || o.userData.step) return;
-      const b = new T.Box3().setFromObject(o),
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      const matrix = angle ? new T.Matrix4().multiplyMatrices(align, o.matrixWorld) : o.matrixWorld;
+      const b = o.geometry.boundingBox.clone().applyMatrix4(matrix),
         ground = group.position.y;
       if (b.max.y < ground + 0.68 || b.min.y > ground + 1.65) return;
       if (
@@ -137,9 +137,9 @@ function collectTreads(root) {
         )
       )
         return;
-      const c = b.getCenter(new V()),
+      const c = b.getCenter(new V()).applyMatrix4(fromAligned),
         size = b.getSize(new V());
-      solid(s, c.x, c.z, size.x, size.z, size.y, b.min.y);
+      solid(s, c.x, c.z, size.x, size.z, size.y, b.min.y, angle);
     });
   }
   root.traverse((o) => {
@@ -172,197 +172,6 @@ function gableEdge(g, d, h, rise) {
   for (const sign of [-1, 1])
     rod(g, new V(sign * (d * 0.5 + 0.12), h, 0.1), new V(0, h + rise + 0.13, 0.1), 0.13, 0.13, stone, 4);
 }
-function hall(s, g, base) {
-  const make = (cx, cz, w, d, h, rise, rot, chapel) => {
-    const block = sub(g, cx, 0, cz, rot);
-    wing(block, w, d, h, rise);
-    solid(s, s.x + cx, s.z + cz, rot ? d : w, rot ? w : d, h + rise, base);
-    for (const side of [-1, 1]) {
-      const f = wallFace(block, d, side);
-      box(f, 0, 4, 0.12, w, 0.2, 0.4, stone);
-      const count = Math.max(3, Math.round(w / 4.8)),
-        step = w / count;
-      for (let j = 0; j < count; j++) {
-        const x = (j + 0.5) * step - w / 2;
-        arch(f, x, 4.8, Math.min(2.1, step * 0.6), h - 5.3);
-        sash(f, x, 1, 1.6, 2.15);
-        buttress(f, x - step / 2 + 0.2, h - 0.1);
-      }
-    }
-    for (const side of [-1, 1]) {
-      const f = endFace(block, w, d, side);
-      gableEdge(f, d, h, rise);
-      box(f, 0, 4.04, 0.22, d + 0.4, 0.24, 0.54, stone);
-      const mainW = d * 0.48;
-      arch(f, 0, 4.8, mainW, h + rise - 6.9); // stone mullions within the tall gable light
-      for (const k of [-1, 1]) {
-        arch(f, k * d * 0.145, 0.46, d * 0.23, 2.95, true, false);
-        buttress(f, k * (d / 2 - 0.3), h + 0.2);
-      }
-      box(f, 0, 3.72, 0.29, d * 0.67, 0.21, 0.73, stone);
-      steps(f, d * 0.72);
-      if (chapel) box(f, 0, h + rise - 1.2, 0.18, 0.22, 0.56, 0.12, stone);
-    }
-  };
-  // The two rectangles follow the shaded L outline on the map, touching along a shared wall.
-  make(0, 7.5, 31, 15, 10.8, 5.2, 0, false);
-  make(8.78, -7.35, 15.05, 13.45, 10.9, 5.2, Math.PI / 2, true);
-}
-function yates(s, g) {
-  const { w, d, h } = s;
-  wing(g, w, d, h, 4.5);
-  for (const sign of [-1, 1]) {
-    const f = wallFace(g, d, sign);
-    for (let i = -3; i <= 3; i++) {
-      sash(f, (i * w) / 7.4, 1.1, 1.45, 2.4);
-      arch(f, (i * w) / 7.4, 5, 1.7, 3.4);
-      buttress(f, ((i + 0.35) * w) / 7.4, h * 0.83);
-    }
-    const porch = sub(f, 0, 0, 2.2);
-    box(porch, 0, 4, 0, 8, 0.42, 4.5, stone);
-    for (const x of [-3.25, -2.56, 2.56, 3.25])
-      rod(porch, new V(x, 0.4, 1.55), new V(x, 3.85, 1.55), 0.23, 0.2, stone, 12);
-    steps(porch, 8);
-    arch(f, 0, 0.35, 2.35, 3.3, true, false);
-  }
-  for (const k of [-1, 1]) {
-    const f = endFace(g, w, d, k);
-    gableEdge(f, d, h, 4.5);
-    for (const a of [-1, 1]) {
-      arch(f, a * 2.15, 4.6, 2.3, 5.1);
-      sash(f, a * 3.0, 1.0, 1.5, 2.25);
-    }
-    const o = mesh(f, new T.CylinderGeometry(1.18, 1.18, 0.2, 30), glass, 0, h + 0.45, 0.15);
-    o.rotation.x = Math.PI / 2;
-    mesh(f, new T.TorusGeometry(1.2, 0.13, 8, 30), stone, 0, h + 0.45, 0.32);
-    for (let j = 0; j < 4; j++) {
-      const bar = box(f, 0, h + 0.45, 0.34, 0.08, 2.3, 0.09, stone);
-      bar.rotation.z = (j * Math.PI) / 4;
-    }
-  }
-  const turret = sub(g, -w * 0.28, h + 2, 0);
-  box(turret, 0, 1, 0, 2.3, 2, 2.3, brick);
-  mesh(turret, new T.ConeGeometry(1.8, 5.4, 4), roof, 0, 4.65, 0).rotation.y = Math.PI / 4;
-}
-function eastHall(s, g) {
-  const core = sub(g, 0, 0, 0, Math.PI / 2);
-  regular(s, core, s.d, s.w, "dorm");
-  const f = wallFace(core, s.w, 1);
-  box(f, 0, s.h * 0.5, 0.4, 3.8, s.h + 0.6, 1.7, brick);
-  arch(sub(f, 0, 0, 1.3), 0, 0.45, 1.8, 2.9, true);
-  for (let k = -2; k <= 2; k++) box(f, k * 0.83, s.h + 0.8, 1.12, 0.49, 0.73, 0.42, stone);
-}
-function regular(s, g, w, d, kind) {
-  const h = s.h,
-    rise = Math.min(d * 0.38, kind === "chapel" ? 6 : 4.6);
-  wing(g, w, d, h, rise);
-  const small = ["house", "shed", "school", "dining"].includes(kind);
-  const floors =
-    kind === "science" ? 4 : kind === "library" ? 2 : Math.max(1, Math.round((h - 0.9) / 3.4));
-  for (const side of [-1, 1]) {
-    const f = wallFace(g, d, side),
-      count = Math.max(2, Math.floor(w / (small ? 3.2 : 3.65))),
-      space = w / count;
-    for (let i = 0; i < count; i++) {
-      const x = (i + 0.5) * space - w / 2;
-      for (let k = 0; k < floors; k++) {
-        if (k === 0 && Math.abs(x) < 2 && side === 1) continue;
-        const yy = 0.92 + (k * (h - 0.51)) / floors;
-        if (["chapel", "gym", "library"].includes(kind) && k === floors - 1)
-          arch(f, x, yy, Math.min(space * 0.61, 1.8), Math.min(3.25, (h - yy) * 0.88));
-        else
-          sash(
-            f,
-            x,
-            yy,
-            Math.min(space * 0.56, 1.6),
-            Math.min(1.93, ((h - 0.5) / floors) * 0.65),
-            small ? darkStone : stone,
-          );
-      }
-      if (kind === "science" || kind === "chapel") buttress(f, x - space / 2 + 0.16, h - 0.2);
-    }
-    if (side === 1) {
-      arch(f, 0, 0.35, small ? 1.25 : 2.1, Math.min(2.95, h - 0.45), true, !small);
-      steps(f, small ? 2.4 : 4.3);
-    }
-    if (["melrose", "richmond", "library"].includes(kind)) {
-      box(f, 0, h - 0.25, 0.14, w, 0.15, 0.4, stone);
-      const entry = sub(f, 0, 0, 0.5);
-      for (const k of [-1, 1]) buttress(entry, k * 2.25, h * 0.76);
-      if (kind !== "library") {
-        box(entry, 0, h * 0.76, 0.12, 5, 0.25, 0.8, stone);
-        gableEdge(sub(entry, 0, 0, 0.05), 4.6, h * 0.76, 1.35);
-      }
-    }
-  }
-  for (const side of [-1, 1]) {
-    const f = endFace(g, w, d, side);
-    gableEdge(f, d, h, rise);
-    for (const a of [-1, 1])
-      for (let k = 0; k < floors; k++)
-        sash(
-          f,
-          a * d * 0.24,
-          0.9 + (k * (h - 0.55)) / floors,
-          Math.min(d * 0.17, 1.6),
-          Math.min(1.82, ((h - 0.5) / floors) * 0.58),
-        );
-    if (kind === "chapel" || kind === "gym") arch(f, 0, h * 0.43, Math.min(d * 0.38, 3.45), h * 0.64);
-    else if (rise > 1.75) arch(f, 0, h + 0.13, 0.8, 1.18);
-  }
-  if (kind === "house" || kind === "dorm") {
-    box(g, w * 0.3, h + rise * 0.7, 0, 0.82, 2.8, 0.97, brick);
-    box(g, w * 0.3, h + rise * 0.7 + 1.4, 0, 1, 0.15, 1.12, stone);
-  }
-}
-function cottage(s, g) {
-  const rot = s.d > s.w ? Math.PI / 2 : 0,
-    b = sub(g, 0, 0, 0, rot),
-    w = Math.max(s.w, s.d),
-    d = Math.min(s.w, s.d);
-  regular(s, b, w, d, "house");
-  const variation = s.id % 4,
-    front = wallFace(b, d, 1);
-  if (variation === 0 || variation === 3) {
-    const porch = sub(front, (variation === 3 ? -0.18 : 0) * w, 0, 1.06),
-      pw = w * 0.48;
-    box(porch, 0, 2.88, 0, pw, 0.26, 2.15, stone);
-    for (const x of [-pw * 0.4, pw * 0.4]) {
-      box(porch, x, 1.58, 0.82, 0.2, 2.7, 0.2, wood);
-      box(porch, x, 0.28, 0.82, 0.46, 0.55, 0.46, brick);
-    }
-  } else {
-    const dorm = sub(b, w * (variation === 1 ? 0.19 : -0.18), s.h + 0.39, d * 0.16);
-    wing(dorm, 2.35, 2.45, 1.42, 1.01);
-    sash(wallFace(dorm, 2.45, 1), 0, 0.19, 1.33, 0.96);
-  }
-  if (variation === 2) {
-    const bay = sub(front, w * 0.26, 0, 0.36);
-    box(bay, 0, 1.48, 0, 2.45, 2.9, 1, brick);
-    box(bay, 0, 2.99, 0, 2.7, 0.22, 1.24, stone);
-    sash(sub(bay, 0, 0, 0.51), 0, 0.82, 1.73, 1.46);
-  }
-}
-function makeTower(s, g) {
-  const w = s.w,
-    h = s.h;
-  box(g, 0, 0.28, 0, w + 0.5, 0.56, w + 0.5, stone);
-  for (let k = 0; k < 5; k++) {
-    const floor = sub(g, 0, (k * h) / 5, 0);
-    box(floor, 0, h / 10, 0, w, h / 5, w, brick);
-    for (let j = 0; j < 4; j++) {
-      const f = sub(floor, 0, 0, 0, (j * Math.PI) / 2),
-        face = sub(f, 0, 0, w / 2);
-      sash(face, 0, 0.72, w * 0.26, 2.36);
-      box(face, 0, 0.22, 0.08, w + 0.3, 0.25, 0.3, darkStone);
-      for (const side of [-1, 1])
-        box(face, side * (w * 0.5 - 0.21), h / 10, 0.07, 0.41, h / 5, 0.24, darkStone);
-    }
-  }
-  box(g, 0, h, 0, w + 0.45, 0.36, w + 0.45, stone);
-  box(g, 0, h + 0.48, 0, w, 0.66, w, brick);
-}
 function makeGate(s, g, base) {
   const width = 6.6;
   const engraved = canvas(140, 512),
@@ -375,22 +184,41 @@ function makeGate(s, g, base) {
   [..."滬江大學"].forEach((c, i) => ctx.fillText(c, 70, 109 + i * 119));
   for (const side of [-1, 1]) {
     const z = side * width * 0.5;
-    box(g, 0, 1.65, z, 1.05, 3.3, 1.05, stone);
+    // The two inner posts carry the open leaves. The heavier rusticated gateposts flank the rails.
+    box(g, 0, 1.32, z, 0.7, 2.64, 0.7, stone);
     for (const [y, w, h] of [
-      [0.2, 1.5, 0.4],
-      [0.49, 1.28, 0.2],
-      [2.98, 1.21, 0.14],
-      [3.28, 1.44, 0.22],
-      [3.52, 1.1, 0.2],
+      [0.16, 0.94, 0.32],
+      [2.43, 0.82, 0.14],
+      [2.7, 0.95, 0.21],
     ])
-      box(g, 0, y, z, w, h, w, darkStone);
-    sphere(g, 0, 3.88, z, 0.34, stone);
+      box(g, 0, y, z, w, h, w, stone);
+    sphere(g, 0, 2.98, z, 0.19, darkStone);
+    solid(s, s.x, s.z + z, 0.94, 0.94, 3.2, base);
+    const outer = z + side * 3.3;
+    for (let course = 0; course < 8; course++) {
+      const w = course === 0 ? 1.6 : 1.19 + (course % 2) * 0.09;
+      box(g, 0, 0.23 + course * 0.44, outer, w, 0.432, w, stone);
+    }
+    for (const [y, w, h] of [
+      [3.5, 1.38, 0.2],
+      [3.68, 1.55, 0.19],
+      [3.88, 1.17, 0.25],
+      [4.08, 0.88, 0.17],
+    ])
+      box(g, 0, y, outer, w, h, w, darkStone);
+    sphere(g, 0, 4.32, outer, 0.25, stone);
+    solid(s, s.x, s.z + outer, 1.6, 1.6, 4.6, base);
     if (side === 1) {
-      const m = std(0xffffff, { map: texture(engraved) });
-      const plaque = mesh(g, new T.PlaneGeometry(0.4, 1.65), m, -0.532, 1.83, z);
+      const plaque = mesh(
+        g,
+        new T.PlaneGeometry(0.32, 1.41),
+        std(0xffffff, { map: texture(engraved) }),
+        -0.356,
+        1.48,
+        z,
+      );
       plaque.rotation.y = -Math.PI / 2;
     }
-    solid(s, s.x, s.z + z, 1.22, 1.22, 4.2, base);
     const gate = sub(g, 0.35, 0, z - side * 0.52, 0);
     for (let j = 0; j < 14; j++) {
       const x = 0.12 + j * 0.205,
@@ -408,63 +236,228 @@ function makeGate(s, g, base) {
     solid(s, s.x, s.z + z + side * 1.8, 0.16, 2.6, 1.9, base);
   }
 }
-function buildSite(s, root) {
-  const base = groundY(s.x, s.z),
-    g = sub(root, s.x, base, s.z);
-  g.userData.site = s;
-  if (s.style === "gate") {
-    makeGate(s, g, base);
-    return;
+
+// Local façade coordinates look out of the building along +Z. Dimensions are in metres.
+const casement = (() => {
+  const c = canvas(96, 144),
+    ctx = c.getContext("2d");
+  ctx.drawImage(glass.map.image, 0, 0, c.width, c.height);
+  ctx.strokeStyle = "#b8b3a6";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(1.5, 1.5, 93, 141);
+  ctx.fillStyle = "#b1aca1";
+  ctx.fillRect(47, 0, 2, 144);
+  for (const y of [35, 71, 107]) ctx.fillRect(0, y, 96, y === 71 ? 4 : 2);
+  return std(0xffffff, { map: texture(c), metalness: 0.09, roughness: 0.38 });
+})();
+const casementPlanes = new Map();
+function casementPlane(count) {
+  if (!casementPlanes.has(count)) {
+    const plane = new T.PlaneGeometry(1, 1),
+      uv = plane.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * count);
+    casementPlanes.set(count, plane);
   }
-  if (s.style === "auditorium") {
-    hall(s, g, base);
-    return;
+  return casementPlanes.get(count);
+}
+function lights(face, x, sill, width, height, count = 2, toothed = false) {
+  const cy = sill + height / 2;
+  box(face, x, cy, 0.031, width + 0.18, height + 0.17, 0.16, darkStone);
+  mesh(face, casementPlane(count), casement, x, cy, 0.116).scale.set(width, height, 1);
+  box(face, x, sill + height * 0.53, 0.133, width, 0.046, 0.054, frame);
+  box(face, x, sill + height * 0.79, 0.131, width, 0.031, 0.048, frame);
+  for (let k = 1; k < count; k++)
+    box(face, x + width * (k / count - 0.5), cy, 0.135, 0.075, height + 0.045, 0.12, stone);
+  box(face, x, sill - 0.055, 0.105, width + 0.34, 0.115, 0.34, stone);
+  if (!toothed) return;
+  box(face, x, sill + height + 0.065, 0.09, width + 0.32, 0.13, 0.24, stone);
+  for (const sign of [-1, 1]) {
+    box(face, x + sign * (width / 2 + 0.05), cy, 0.07, 0.1, height, 0.16, stone);
+    for (const q of [0.12, 0.5, 0.88])
+      box(face, x + sign * (width / 2 + 0.115), sill + q * height, 0.075, 0.2, 0.21, 0.19, stone);
   }
-  if (s.style === "pool") {
-    box(g, 0, 0.1, 0, s.w, 0.22, s.d, darkStone);
-    box(g, 0, 0.23, 0, s.w - 0.8, 0.045, s.d - 0.8, std(0x537f7b));
-  } else if (s.style === "tower") makeTower(s, g);
-  else if (s.style === "yates") yates(s, g);
-  else if (s.style === "east") eastHall(s, g);
-  else if (s.style === "house" && s.id >= 200) cottage(s, g);
-  else if (s.style === "science") {
-    regular(s, g, s.w, s.d, "science");
-    const f = sub(g, 0, 0, s.d / 2 + 0.45);
-    box(f, 0, s.h * 0.5, 0, 5.8, s.h, 1.27, brick);
-    for (const k of [-1, 1]) buttress(f, k * 2.65, s.h + 0.18);
-    for (let k = 1; k <= 3; k++) {
-      for (const xx of [-0.9, 0.9]) sash(sub(f, 0, 0, 0.58), xx, k * 3.17 + 0.73, 1.27, 2.12);
-    }
-    arch(sub(f, 0, 0, 0.62), 0, 0.35, 2.28, 3.16, true);
-    gableEdge(sub(f, 0, 0, 0.47), 5.8, s.h, 1.48);
-  } else if (s.style === "library") {
-    regular(s, g, s.w, s.d, "library");
-    const wingG = sub(g, 0, 0, 0, Math.PI / 2);
-    wing(wingG, s.d + 3.8, 6.5, s.h - 0.2, 2.65);
-    for (const side of [-1, 1]) {
-      const f = endFace(wingG, s.d + 3.8, 6.5, side);
-      gableEdge(f, 6.5, s.h - 0.2, 2.65);
-      arch(f, 0, 0.52, 2.85, 2.98, true, false);
-      arch(f, 0, 4.45, 3.25, 3.44);
-      steps(f, 5);
-    }
-    solid(s, s.x, s.z, 6.8, s.d + 4.0, s.h + 2, base);
-  } else if (s.style === "glasshouse") {
-    const frameG = sub(g, 0, 0, 0);
-    wing(frameG, s.w, s.d, 2.1, 1.1);
-    for (let i = -2; i <= 2; i++)
-      for (const k of [-1, 1]) sash(wallFace(frameG, s.d, k), (i * s.w) / 5, 0.3, s.w / 5 - 0.18, 1.55);
-  } else if (s.style === "edmands") {
-    regular(s, g, s.w, s.d * 0.55, "gym");
-    const annex = sub(g, 0, 0, 0, Math.PI / 2);
-    regular({ ...s, h: s.h * 0.84 }, annex, s.d, s.w * 0.38, "gym");
-    solid(s, s.x, s.z, s.w, s.d * 0.55, s.h + 3, base);
-    solid(s, s.x, s.z, s.w * 0.38, s.d, s.h + 3, base);
-    return;
-  } else {
-    const rotate = s.d > s.w;
-    const block = rotate ? sub(g, 0, 0, 0, Math.PI / 2) : g;
-    regular(s, block, Math.max(s.w, s.d), Math.min(s.w, s.d), s.style);
+}
+function timberDoor(face, x, y, w, h) {
+  box(face, x, y + h / 2, 0.05, w + 0.22, h + 0.2, 0.22, darkStone);
+  box(face, x, y + h / 2, 0.17, w, h, 0.055, wood);
+  for (const side of [-1, 1]) {
+    box(face, x + side * w * 0.23, y + h * 0.54, 0.205, w * 0.41, h * 0.63, 0.035, frame);
+    box(face, x + side * w * 0.23, y + h * 0.54, 0.229, w * 0.32, h * 0.54, 0.025, wood);
   }
-  solid(s, s.x, s.z, s.w + 0.75, s.d + 0.75, s.h + (s.style === "tower" ? 1 : 2.5), base);
+  box(face, x, y + h / 2, 0.24, 0.035, h, 0.04, iron);
+}
+function belt(face, w, y, material = stone, depth = 0.22) {
+  return box(face, 0, y, 0.055, w + 0.12, 0.13, depth, material);
+}
+function oculus(face, x, y, r, spokes = 0) {
+  const disk = mesh(face, new T.CircleGeometry(r, 28), glass, x, y, 0.12);
+  mesh(face, new T.TorusGeometry(r, Math.max(0.06, r * 0.12), 7, 28), stone, x, y, 0.15);
+  for (let i = 0; i < spokes; i++)
+    box(face, x, y, disk.position.z + 0.06, 0.06, r * 1.94, 0.07, stone).rotation.z =
+      (Math.PI * i) / spokes;
+}
+// The back of a cross-gable runs INTO the main roof; its front is a wall with real thickness.
+function frontGable(face, x, front, w, bottom, eave, rise, depth, coping = false) {
+  const f = sub(face, x, 0, front);
+  const shape = profile([
+    [-w / 2, bottom],
+    [w / 2, bottom],
+    [w / 2, eave],
+    [0, eave + rise],
+    [-w / 2, eave],
+  ]);
+  extrude(f, shape, depth, brick, -depth);
+  const run = Math.hypot(w / 2, rise);
+  for (const side of [-1, 1]) {
+    const p = sub(f, (side * w) / 4, eave + rise / 2, -depth / 2);
+    p.rotation.z = -side * Math.atan2(rise, w / 2);
+    box(p, 0, 0.045, 0, run + 0.13, 0.12, depth + 0.16, roof);
+  }
+  if (coping) gableEdge(f, w, eave, rise);
+  return f;
+}
+function dormer(face, x, w, eave, roofSlope, height, rise, inset = 0.45, count = 1) {
+  const bottom = eave + inset * roofSlope - 0.22;
+  const f = frontGable(
+    face,
+    x,
+    -inset,
+    w,
+    bottom,
+    bottom + height,
+    rise,
+    (height + rise) / roofSlope + 0.1,
+  );
+  lights(f, 0, bottom + 0.15, w * 0.59, height * 0.83, count);
+}
+function portico(face, width, depth, height, columns) {
+  box(face, 0, height + 0.12, depth / 2, width, 0.29, depth, stone);
+  box(face, 0, height + 0.34, depth / 2, width + 0.16, 0.13, depth + 0.15, darkStone);
+  for (const x of columns) {
+    box(face, x, 0.25, depth - 0.29, 0.56, 0.5, 0.56, stone);
+    rod(
+      face,
+      new V(x, 0.37, depth - 0.29),
+      new V(x, height - 0.2, depth - 0.29),
+      0.195,
+      0.155,
+      stone,
+      10,
+    );
+    box(face, x, height - 0.15, depth - 0.29, 0.48, 0.24, 0.48, stone);
+  }
+  steps(sub(face, 0, 0, depth - 0.21), width);
+}
+function merlons(face, width, top, count) {
+  belt(face, width, top - 0.12);
+  for (let j = 0; j < count; j++)
+    box(
+      face,
+      ((j + 0.5 - count / 2) * width) / count,
+      top + 0.15,
+      0,
+      width / (count * 2),
+      0.31,
+      0.31,
+      brick,
+    );
+}
+function ridgeStack(g, x, z, top) {
+  box(g, x, top - 0.92, z, 0.63, 1.84, 0.77, brick);
+  box(g, x, top - 0.1, z, 0.8, 0.18, 0.93, darkStone);
+}
+function pinacle(face, x, y, size = 1) {
+  box(face, x, y + size * 0.3, 0.04, size * 0.34, size * 0.65, size * 0.36, brick);
+  box(face, x, y + size * 0.58, 0.04, size * 0.43, size * 0.1, size * 0.45, stone);
+  mesh(
+    face,
+    new T.ConeGeometry(size * 0.29, size * 0.59, 4),
+    stone,
+    x,
+    y + size * 0.91,
+    0.04,
+  ).rotation.y = Math.PI / 4;
+}
+function bays(count, span) {
+  return Array.from({ length: count }, (_, i) => ((i + 0.5 - count / 2) * span) / count);
+}
+function boxedSite(s, cx, cz, w, d, height, base) {
+  solid(s, s.x + cx, s.z + cz, w, d, height, base);
+}
+
+function openingOutline(path, width, apex, spring) {
+  const a = width / 2;
+  path.lineTo(-a, spring);
+  path.bezierCurveTo(-a, spring + (apex - spring) * 0.55, -a * 0.52, apex - 0.16, 0, apex);
+  path.bezierCurveTo(a * 0.52, apex - 0.16, a, spring + (apex - spring) * 0.55, a, spring);
+  path.lineTo(a, 0);
+}
+// A cut-through porch wall exposes the timber door set behind two stepped masonry reveals.
+function recessedEntry(face, width, wallHeight, depth, doorWidth, apex, spring) {
+  const block = new T.Shape(),
+    outer = doorWidth + 0.46;
+  block.moveTo(-width / 2, 0);
+  block.lineTo(-outer / 2, 0);
+  openingOutline(block, outer, apex + 0.25, spring);
+  block.lineTo(width / 2, 0);
+  block.lineTo(width / 2, wallHeight);
+  block.lineTo(-width / 2, wallHeight);
+  block.closePath();
+  extrude(face, block, depth, brick, -depth);
+  for (const [w, top, rim, z, mat] of [
+    [outer, apex + 0.25, 0.14, 0.04, stone],
+    [doorWidth + 0.19, apex + 0.11, 0.093, -0.11, darkStone],
+  ]) {
+    const outerEdge = new T.Shape();
+    outerEdge.moveTo(-w / 2, 0);
+    openingOutline(outerEdge, w, top, spring);
+    outerEdge.lineTo(w / 2 - rim, 0);
+    outerEdge.lineTo(w / 2 - rim, spring);
+    outerEdge.bezierCurveTo(
+      w / 2 - rim,
+      spring + (top - spring) * 0.5,
+      w * 0.23,
+      top - rim - 0.16,
+      0,
+      top - rim,
+    );
+    outerEdge.bezierCurveTo(
+      -w * 0.23,
+      top - rim - 0.16,
+      -w / 2 + rim,
+      spring + (top - spring) * 0.5,
+      -w / 2 + rim,
+      spring,
+    );
+    outerEdge.lineTo(-w / 2 + rim, 0);
+    outerEdge.closePath();
+    extrude(face, outerEdge, 0.15, mat, z - 0.15);
+  }
+  const back = sub(face, 0, 0, -depth + 0.04);
+  const door = new T.Shape();
+  door.moveTo(-doorWidth / 2, 0);
+  openingOutline(door, doorWidth, apex, spring);
+  door.closePath();
+  extrude(back, door, 0.07, wood);
+  timberDoor(back, 0, 0.12, doorWidth - 0.09, spring - 0.14);
+  lights(back, 0, spring + 0.01, doorWidth * 0.69, (apex - spring) * 0.37, 3);
+}
+function compoundLight(face, width, sill, height, round) {
+  const f = sub(face, 0, sill, 0.05);
+  extrude(f, archPath(width, height, !round), 0.11, stone);
+  const span = width * 0.84,
+    unit = span / 5;
+  for (let i = 0; i < 5; i++) {
+    const x = (i - 2) * unit,
+      top = height * (0.91 - 0.072 * Math.abs(i - 2) - 0.021 * (i - 2) ** 2);
+    const low = height * 0.255,
+      mid = height * 0.35;
+    const lower = sub(f, x, 0.22, 0.117);
+    mesh(lower, casementPlane(1), casement, 0, low / 2, 0).scale.set(unit * 0.64, low, 1);
+    const upper = sub(f, x, mid, 0.117);
+    extrude(upper, archPath(unit * 0.68, top - mid, true), 0.04, glass);
+    box(upper, 0, (top - mid) * 0.4, 0.057, unit * 0.65, 0.037, 0.05, frame);
+    box(upper, 0, (top - mid) * 0.46, 0.056, 0.038, (top - mid) * 0.89, 0.05, frame);
+  }
+  belt(f, width, 0.07);
 }

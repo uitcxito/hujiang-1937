@@ -391,3 +391,13 @@ a {
   width: auto;
   accent-color: #304e3a;
 }
+
+#photoLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 5px;
+}
+#placeCard #inference {
+  color: #665846;
+}
