@@ -158,7 +158,18 @@ function makeTree(type) {
     const code = T.ShaderChunk.normal_fragment_begin.replace("normal *= faceDirection;", "");
     sh.fragmentShader = sh.fragmentShader.replace("#include <normal_fragment_begin>", code);
   };
-  return { wood: trunk.children.map((m) => m.geometry), near: sprays(false), far: sprays(true), leaves };
+  const near = sprays(false),
+    far = sprays(true);
+  let crownRadius = 0,
+    height = 0;
+  for (const canopy of [near, far]) {
+    const p = canopy.getAttribute("position");
+    for (let i = 0; i < p.count; i++) {
+      crownRadius = Math.max(crownRadius, Math.hypot(p.getX(i), p.getZ(i)));
+      height = Math.max(height, p.getY(i));
+    }
+  }
+  return { wood: trunk.children.map((m) => m.geometry), near, far, leaves, crownRadius, height };
 }
 function inPolygon(x, z, poly) {
   let yes = false;
@@ -212,7 +223,14 @@ function vegetation(scene) {
     dummy.scale.set(size * between(0.84, 1.05), size, size);
     dummy.updateMatrix();
     cells.get(name).matrices.push(dummy.matrix);
-    if (!outside) treeTrunks.push({ x, z, r: 0.4 * size });
+    const model = models[kind];
+    treeTrunks.push({
+      x,
+      z,
+      r: 0.4 * size,
+      crownRadius: model.crownRadius * Math.max(dummy.scale.x, size),
+      top: dummy.position.y + size * model.height,
+    });
   }
   for (const [u, v] of [
     [153, 326],

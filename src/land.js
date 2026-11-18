@@ -93,9 +93,10 @@ function surf(x, z) {
 function shoreDistance(x, z) {
   return (riverU(z / SCALE + 370) - (x / SCALE + 780)) * SCALE * 0.8;
 }
+const riverLevel = -1.05;
 function groundY(x, z) {
   const shore = shoreDistance(x, z);
-  if (shore < -222) return -1.05 + Math.min(4.2, (-shore - 222) * 0.18);
+  if (shore < -222) return riverLevel + Math.min(4.2, (-shore - 222) * 0.18);
   return (
     -0.06 +
     0.095 * Math.sin(x * 0.047) * Math.sin(z * 0.053) +
@@ -176,7 +177,7 @@ function terrain(scene) {
   };
   const water = new T.PlaneGeometry(7200, 7200);
   water.rotateX(-Math.PI / 2);
-  mesh(scene, water, waterMat, 0, -1.05, 0);
+  mesh(scene, water, waterMat, 0, riverLevel, 0);
 }
 function sky(scene) {
   const mat = new T.ShaderMaterial({

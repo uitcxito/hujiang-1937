@@ -71,12 +71,14 @@
     </section>
     <div id="cross" hidden>+</div>
     <div class="bottomLeft">
-      <small>当前位置</small>
+      <small id="locationLabel">当前位置</small>
       <div id="location">密氏校门</div>
     </div>
     <div id="dock">
-      <button id="walk" aria-pressed="true">步行</button
-      ><button id="orbit" aria-pressed="false">鸟瞰</button><b></b><button id="home">返回校门</button>
+      <button id="walk" aria-pressed="true">步行</button>
+      <button id="orbit" aria-pressed="false">鸟瞰</button>
+      <button id="drone" aria-pressed="false" aria-keyshortcuts="F" title="无人机飞行（F）">无人机</button>
+      <b></b><button id="home">返回校门</button>
     </div>
     <div id="hint" aria-live="polite"></div>
     <section id="loading" role="status">正在打开沪江校园…</section>
@@ -91,6 +93,7 @@
     <script src="src/garden.js"></script>
     <script src="assets/surfaces.js"></script>
     <script src="src/surfaces.js"></script>
+    <script src="src/flight.js"></script>
     <script src="src/explore.js"></script>
   </body>
 </html>

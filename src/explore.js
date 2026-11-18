@@ -28,9 +28,11 @@ function explore() {
   bake(architecture, scene);
   const buildings = scene.children.filter((o) => o.geometry?.getAttribute("siteId"));
   const trees = vegetation(scene),
+    flightSpace = makeFlightSpace(architecture, treeTrunks),
     blades = grass(scene);
   const gate = byId.get(190),
     player = new V(),
+    drone = new V(),
     target = new V(),
     ray = new T.Raycaster(),
     keys = new Set();
@@ -50,7 +52,7 @@ function explore() {
     shadowZ = Infinity,
     shadowRange = 0,
     lastArea = 0;
-  let viewLabel;
+  let viewLabel, groundLook;
   const eye = 1.66,
     collisionRadius = 0.32;
   function legal(x, z) {
@@ -96,7 +98,14 @@ function explore() {
     el("settingsPanel").hidden = true;
   }
   function hint() {
-    el("cross").hidden = !locked || mode !== "walk";
+    el("cross").hidden = !locked || mode === "orbit";
+    if (mode === "drone") {
+      let look = "拖动环顾";
+      if (locked) look = "鼠标环顾 · Esc 释放";
+      else if (!lookFallback) look += " · 点击空地锁定鼠标";
+      el("hint").textContent = "WASD 飞行 · E 上升 / Q 下降 · Shift 加速 · " + look;
+      return;
+    }
     el("hint").textContent =
       mode === "orbit"
         ? "拖动旋转 · 右键平移 · 滚轮缩放 · 点击建筑查看资料"
@@ -113,9 +122,14 @@ function explore() {
   }
   function setMode(next) {
     release();
+    if (mode === "drone" && next === "orbit") {
+      yaw = groundLook.yaw;
+      pitch = groundLook.pitch;
+    }
     mode = next;
-    el("walk").setAttribute("aria-pressed", String(mode === "walk"));
-    el("orbit").setAttribute("aria-pressed", String(mode === "orbit"));
+    for (const id of ["walk", "orbit", "drone"]) el(id).setAttribute("aria-pressed", String(id === mode));
+    el("locationLabel").textContent = "当前位置";
+    lastArea = -Infinity;
     dirty = true;
     shadowRange = 0;
     hint();
@@ -129,6 +143,49 @@ function explore() {
     tilt = 0.49;
     setMode("orbit");
     el("location").textContent = "全校园";
+  }
+  function droneMode() {
+    if (mode === "drone") {
+      screen.focus();
+      return;
+    }
+    groundLook = { yaw, pitch };
+    if (mode === "orbit") {
+      aim();
+      drone.copy(camera.position);
+      flightSpace.constrain(drone);
+      const dx = target.x - drone.x,
+        dz = target.z - drone.z;
+      yaw = Math.atan2(dx, -dz);
+      pitch = Math.atan2(target.y - drone.y, Math.hypot(dx, dz));
+    } else {
+      drone.set(player.x, flightSurface(player.x, player.z) + 18, player.z);
+      flightSpace.constrain(drone);
+      pitch = -0.22;
+    }
+    selected = null;
+    for (const id of ["placesPanel", "settingsPanel", "placeCard"]) el(id).hidden = true;
+    setMode("drone");
+    screen.focus();
+  }
+  function landDrone() {
+    function land(x, z) {
+      setWalk(x, z, x + Math.sin(yaw), z - Math.cos(yaw));
+      el("placeCard").hidden = true;
+      screen.focus();
+    }
+    if (legal(drone.x, drone.z)) return land(drone.x, drone.z);
+    // Look outward from the aircraft, even over the river. The last walking position is a known safe fallback.
+    const limit = Math.hypot(drone.x - player.x, drone.z - player.z);
+    for (let r = 2; r < limit; r += Math.max(2, r * 0.12)) {
+      for (let i = 0; i < 24; i++) {
+        const a = yaw + i * (Math.PI / 12);
+        const x = drone.x + r * Math.sin(a),
+          z = drone.z - r * Math.cos(a);
+        if (legal(x, z)) return land(x, z);
+      }
+    }
+    land(player.x, player.z);
   }
   function relocate(s) {
     if (s.approach) {
@@ -212,7 +269,9 @@ function explore() {
     return true;
   }
   function walkMode() {
-    if (mode === "orbit" && selected) {
+    if (mode === "drone") {
+      landDrone();
+    } else if (mode === "orbit" && selected) {
       relocate(selected);
       el("placeCard").hidden = true;
     } else if (mode === "orbit") {
@@ -237,9 +296,16 @@ function explore() {
     shadowRange = 0;
   }
   function setupShadows() {
-    const aerial = mode === "orbit",
-      anchor = aerial ? target : player,
-      range = aerial ? Math.min(390, Math.max(35, radius * 0.67)) : 43;
+    const aerial = mode !== "walk";
+    let anchor = player,
+      range = 43;
+    if (mode === "orbit") {
+      anchor = target;
+      range = Math.min(390, Math.max(35, radius * 0.67));
+    } else if (mode === "drone") {
+      anchor = drone;
+      range = T.MathUtils.clamp(55 + Math.ceil(drone.y / 10) * 12, 55, 390);
+    }
     if (
       Math.abs(range - shadowRange) < 0.1 &&
       Math.hypot(anchor.x - shadowX, anchor.z - shadowZ) < (aerial ? 4 : 5)
@@ -262,13 +328,14 @@ function explore() {
     renderer.shadowMap.needsUpdate = true;
   }
   function aim() {
-    if (mode === "walk") {
-      camera.position.copy(player);
+    if (mode !== "orbit") {
+      const position = mode === "drone" ? drone : player;
+      camera.position.copy(position);
       camera.up.set(0, 1, 0);
       camera.lookAt(
-        player.x + Math.sin(yaw) * Math.cos(pitch),
-        player.y + Math.sin(pitch),
-        player.z - Math.cos(yaw) * Math.cos(pitch),
+        position.x + Math.sin(yaw) * Math.cos(pitch),
+        position.y + Math.sin(pitch),
+        position.z - Math.cos(yaw) * Math.cos(pitch),
       );
     } else {
       camera.position.set(
@@ -281,26 +348,33 @@ function explore() {
     camera.updateMatrixWorld();
   }
   function advance(dt) {
-    if (mode !== "walk" || !keys.size) return;
-    let f = Number(keys.has("KeyW")) - Number(keys.has("KeyS")),
+    if (mode === "orbit" || !keys.size) return;
+    const f = Number(keys.has("KeyW")) - Number(keys.has("KeyS")),
       r = Number(keys.has("KeyD")) - Number(keys.has("KeyA"));
     const mag = Math.hypot(f, r);
-    if (!mag) return;
-    const fast = keys.has("ShiftLeft") || keys.has("ShiftRight"),
-      distance = (dt * (fast ? 3.95 : 2.0)) / mag;
+    const lift = mode === "drone" ? Number(keys.has("KeyE")) - Number(keys.has("KeyQ")) : 0;
+    if (!mag && !lift) return;
+    const fast = keys.has("ShiftLeft") || keys.has("ShiftRight");
+    const speed = mode === "drone" ? (fast ? 32 : 12) : (fast ? 3.95 : 2);
+    const distance = (dt * speed) / Math.max(1, mag);
     const dx = (Math.sin(yaw) * f + Math.cos(yaw) * r) * distance,
-      dz = (-Math.cos(yaw) * f + Math.sin(yaw) * r) * distance,
-      steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / 0.14));
+      dz = (-Math.cos(yaw) * f + Math.sin(yaw) * r) * distance;
+    dirty = true;
+    if (mode === "drone") {
+      flightSpace.move(drone, dx, lift * dt * (fast ? 16 : 7), dz);
+      return;
+    }
+    const steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / 0.14));
     for (let i = 0; i < steps; i++) {
       if (legal(player.x + dx / steps, player.z)) player.x += dx / steps;
       if (legal(player.x, player.z + dz / steps)) player.z += dz / steps;
     }
     groundPlayer();
-    dirty = true;
   }
   function rotate(dx, dy) {
     yaw += dx * 0.0021;
-    pitch = T.MathUtils.clamp(pitch - dy * 0.0021, -1.32, 1.32);
+    const limit = mode === "drone" ? Math.PI / 2 - 0.005 : 1.32;
+    pitch = T.MathUtils.clamp(pitch - dy * 0.0021, -limit, limit);
     dirty = true;
   }
   function pan(dx, dy) {
@@ -322,7 +396,7 @@ function explore() {
     if (!locked) screen.setPointerCapture(e.pointerId);
   });
   document.addEventListener("pointermove", (e) => {
-    if (mode === "walk" && locked) {
+    if (mode !== "orbit" && locked) {
       rotate(e.movementX, e.movementY);
       return;
     }
@@ -332,7 +406,7 @@ function explore() {
     drag.x = e.clientX;
     drag.y = e.clientY;
     if (Math.hypot(e.clientX - drag.ox, e.clientY - drag.oy) > 3) drag.moved = true;
-    if (mode === "walk") rotate(dx, dy);
+    if (mode !== "orbit") rotate(dx, dy);
     else if (drag.pan) pan(dx, dy);
     else {
       theta -= dx * 0.005;
@@ -348,7 +422,7 @@ function explore() {
       y = locked ? 0 : 1 - (e.clientY / innerHeight) * 2;
     if (choose(x, y)) return;
     el("placeCard").hidden = true;
-    if (mode === "walk" && !locked) {
+    if (mode !== "orbit" && !locked) {
       try {
         const result = screen.requestPointerLock();
         result?.catch(() => {
@@ -374,6 +448,7 @@ function explore() {
   );
   document.addEventListener("pointerlockchange", () => {
     locked = document.pointerLockElement === screen;
+    if (locked) lookFallback = false;
     drag = null;
     keys.clear();
     hint();
@@ -388,14 +463,14 @@ function explore() {
       for (const id of ["placesPanel", "settingsPanel", "placeCard"]) el(id).hidden = true;
       return;
     }
-    if (e.target.matches("input,select,textarea")) return;
-    if (["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight"].includes(e.code)) {
+    if (e.target.matches("input,select,textarea") || e.altKey || e.ctrlKey || e.metaKey) return;
+    const liftKey = mode === "drone" && (e.code === "KeyQ" || e.code === "KeyE");
+    if (liftKey || ["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight"].includes(e.code)) {
       e.preventDefault();
       keys.add(e.code);
     }
-    if (e.code === "KeyV" && !e.repeat) {
-      mode === "walk" ? fullView() : walkMode();
-    }
+    if (e.code === "KeyV" && !e.repeat) mode === "orbit" ? walkMode() : fullView();
+    if (e.code === "KeyF" && !e.repeat) mode === "drone" ? walkMode() : droneMode();
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
   window.addEventListener("blur", () => {
@@ -413,6 +488,7 @@ function explore() {
   });
   el("walk").onclick = walkMode;
   el("orbit").onclick = fullView;
+  el("drone").onclick = droneMode;
   el("home").onclick = gateView;
   el("quality").onchange = quality;
   for (const [button, panel] of [
@@ -504,16 +580,29 @@ function explore() {
     trees(camera.position, q);
     blades(camera.position, q, camera.position.y - groundY(camera.position.x, camera.position.z) < 8);
     setupShadows();
-    if (mode === "walk" && now - lastArea > 700 && el("placeCard").hidden) {
+    if (mode === "drone") {
+      const height = Math.round(drone.y - flightSurface(drone.x, drone.z));
+      const label = "飞行高度 " + height + " 米";
+      if (el("locationLabel").textContent !== label) el("locationLabel").textContent = label;
+    }
+    if (mode !== "orbit" && now - lastArea > 350 && el("placeCard").hidden) {
+      const pos = mode === "drone" ? drone : player;
       const nearest = sites.reduce((a, s) =>
-        Math.hypot(s.x - player.x, s.z - player.z) < Math.hypot(a.x - player.x, a.z - player.z) ? s : a,
+        Math.hypot(s.x - pos.x, s.z - pos.z) < Math.hypot(a.x - pos.x, a.z - pos.z) ? s : a,
       );
-      el("location").textContent =
-        viewLabel && Math.hypot(player.x - viewLabel.x, player.z - viewLabel.z) < 8
+      if (mode === "drone") {
+        let area = "校园上空";
+        if (groundY(pos.x, pos.z) < riverLevel) area = "黄浦江上空";
+        else if (Math.hypot(nearest.x - pos.x, nearest.z - pos.z) < 38) area = nearest.name + "上空";
+        else if (!inPolygon(pos.x / SCALE + 780, pos.z / SCALE + 370, boundary)) area = "校园外围";
+        el("location").textContent = area;
+      } else {
+        el("location").textContent = viewLabel && Math.hypot(pos.x - viewLabel.x, pos.z - viewLabel.z) < 8
           ? viewLabel.name
-          : Math.hypot(nearest.x - player.x, nearest.z - player.z) < 27
+          : Math.hypot(nearest.x - pos.x, nearest.z - pos.z) < 27
             ? nearest.name
             : "校园道路与草地";
+      }
       lastArea = now;
     }
     renderer.render(scene, camera);
