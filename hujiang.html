@@ -2749,7 +2749,7 @@ function explore() {
     const mag = Math.hypot(f, r);
     if (!mag) return;
     const fast = keys.has("ShiftLeft") || keys.has("ShiftRight"),
-      distance = (dt * (fast ? 3.95 : 1.48)) / mag;
+      distance = (dt * (fast ? 3.95 : 2.0)) / mag;
     const dx = (Math.sin(yaw) * f + Math.cos(yaw) * r) * distance,
       dz = (-Math.cos(yaw) * f + Math.sin(yaw) * r) * distance,
       steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / 0.14));
