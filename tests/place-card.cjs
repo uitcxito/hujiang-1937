@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
+const { pickBuilding } = require("./helpers/scene.cjs");
 
 async function openFromGuide(page, name, query = name) {
   await page.click("#guide");
@@ -28,6 +29,79 @@ function measureShield(card) {
   };
 }
 
+async function checkRoaming(page) {
+  const pose = () => page.evaluate(() => new Promise((done) => requestAnimationFrame(() => {
+    const { position, quaternion } = hujiang.camera;
+    done({ position: position.toArray(), rotation: quaternion.toArray() });
+  })));
+  const card = page.locator("#placeCard");
+  await page.click("#home");
+  const gateView = await pose();
+  await pickBuilding(page, 190, { height: 0.7, depth: 0.32 });
+  await pickBuilding(page, 103);
+  assert.deepEqual(await pose(), gateView);
+  assert.equal(await page.textContent("#location"), "密氏校门");
+
+  // Keep walking through a selection without pressing the held key again.
+  await page.keyboard.down("w");
+  await pickBuilding(page, 190, { height: 0.7, depth: 0.32 });
+  const startX = await page.evaluate(() => hujiang.player.x);
+  await page.waitForFunction((x) => hujiang.player.x > x + 0.15, startX);
+  await page.keyboard.up("w");
+  const beforeLook = await pose();
+  await page.mouse.move(820, 440);
+  await page.mouse.down();
+  await page.mouse.move(890, 430, { steps: 3 });
+  await page.mouse.up();
+  assert.notDeepEqual((await pose()).rotation, beforeLook.rotation);
+  assert(await card.isVisible());
+  await page.keyboard.press("v");
+  assert(await card.isHidden());
+  assert.equal(await page.evaluate(() => hujiang.mode), "orbit");
+
+  // The school courtyard has both unlabelled roofs and a clickable Georgia Hall pin.
+  await page.evaluate(() => {
+    const hall = hujiang.sites.find((s) => s.id === 104);
+    hujiang.setView(hall.x, 0, hall.z, 80, 0, 0.3);
+  });
+  const courtyard = await pose();
+  await pickBuilding(page, 105);
+  await page.locator("#pins").getByRole("button", { name: "思乔堂", exact: true }).click();
+  assert.equal(await page.textContent("#placeTitle"), "思乔堂 · 幼稚园");
+  assert.deepEqual(await pose(), courtyard);
+  await card.locator("summary").click();
+  await page.locator("#placeReading").hover();
+  await page.mouse.wheel(0, 500);
+  await page.waitForFunction(() => document.getElementById("placeReading").scrollTop > 0);
+  assert.deepEqual(await pose(), courtyard);
+  await pickBuilding(page, 105);
+  assert.equal(await page.locator("#placeReading").evaluate((e) => e.scrollTop), 0);
+  assert.deepEqual(await pose(), courtyard);
+  await page.mouse.move(820, 440);
+  await page.mouse.wheel(0, -170);
+  await page.waitForFunction((y) => hujiang.camera.position.y < y - 1, courtyard.position[1]);
+  assert(await card.isVisible());
+
+  await page.click("#landHere");
+  const landing = await pose();
+  assert(await card.isHidden());
+  await openFromGuide(page, "游戏棚");
+  await page.click("#landHere");
+  assert.deepEqual(await pose(), landing);
+
+  await openFromGuide(page, "科学馆");
+  await page.keyboard.press("f");
+  const flight = await pose();
+  assert(await card.isHidden());
+  await pickBuilding(page, 141);
+  await page.keyboard.down("e");
+  await page.waitForFunction((y) => hujiang.camera.position.y > y + 0.3, flight.position[1]);
+  await page.keyboard.up("e");
+  await page.keyboard.press("f");
+  assert(await card.isHidden());
+  assert.equal(await page.evaluate(() => hujiang.mode), "walk");
+}
+
 async function check() {
   const browser = await chromium.launch({ channel: process.platform === "win32" ? "msedge" : undefined });
   try {
@@ -41,18 +115,31 @@ async function check() {
     await page.waitForFunction(() => window.hujiang, undefined, { timeout: 60000 });
     const card = page.locator("#placeCard");
     const summary = card.locator("summary");
-    const entries = await page.evaluate(() => hujiang.sites.map((site) => {
-      hujiang.focus(site.id);
+    const entries = await page.evaluate(() => [...el("placeList").querySelectorAll("button")].map((entry) => {
+      const site = hujiang.sites.find((s) => s.name === entry.firstChild.textContent);
+      el("guide").click();
+      entry.click();
       const lead = document.querySelector("#placeStory").textContent;
       const anecdote = document.querySelector("#placeAnecdote");
+      const links = [...document.querySelectorAll("#photoLinks a")];
+      const expectedLinks = site.record.links || [];
+      const photosMatch = links.length === expectedLinks.length && expectedLinks.every(([label, url], i) =>
+        links[i].textContent === label + " ↗" && links[i].getAttribute("href") === url);
       return {
-        lead,
-        matches: lead === site.story && anecdote.textContent === site.anecdote &&
-          anecdote.hidden === !site.anecdote && document.querySelector("#placeTitle").textContent === site.name,
+        name: site.name, lead,
+        matches: !el("placeCard").hidden && el("placesPanel").hidden &&
+          lead === site.story && anecdote.textContent === site.anecdote &&
+          anecdote.hidden === !site.anecdote && el("placeTitle").textContent === site.name &&
+          el("typeline").textContent === (site.year ? site.year + " · 沪江校舍" : "沪江校园 · 1937") &&
+          el("evidence").textContent === site.record.observed &&
+          el("inference").textContent === "复原推定 · " + site.record.inferred &&
+          el("sourceLink").getAttribute("href") === site.record.source &&
+          el("sourceLink").hidden === (site.record.source === ARCHIVE) &&
+          el("mapSource").getAttribute("href") === ARCHIVE && photosMatch,
       };
     }));
     assert.equal(entries.length, 60);
-    assert(entries.every((entry) => entry.lead && entry.matches));
+    assert.deepEqual(entries.filter((entry) => !entry.lead || !entry.matches).map((entry) => entry.name), []);
     assert.equal(new Set(entries.map((entry) => entry.lead)).size, entries.length);
 
     await openFromGuide(page, "麦氏医院", "普济医院");
@@ -89,6 +176,7 @@ async function check() {
     await page.click("#landHere");
     assert(await card.isHidden());
     assert.equal(await page.evaluate(() => hujiang.mode), "walk");
+    await checkRoaming(page);
 
     for (const [width, height, place] of [
       [390, 844, "哈斯科体育馆"],

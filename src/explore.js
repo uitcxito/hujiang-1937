@@ -63,9 +63,16 @@ function explore() {
   const drawMap = makeCampusMap();
   const touch = matchMedia("(any-pointer: coarse)");
   const mapDialog = el("mapDialog");
-  const panels = ["placesPanel", "settingsPanel", "placeCard"];
-  function panelOpen() {
-    return mapDialog.open || panels.some((id) => !el(id).hidden);
+  const placeCard = el("placeCard");
+  const menus = [el("placesPanel"), el("settingsPanel")];
+  function sceneInputBlocked() {
+    return mapDialog.open || menus.some((menu) => !menu.hidden);
+  }
+  function closePanels() {
+    if (placeCard.contains(document.activeElement)) screen.focus({ preventScroll: true });
+    placeCard.hidden = true;
+    for (const menu of menus) menu.hidden = true;
+    dirty = true;
   }
   const marker = new T.Mesh(new T.RingGeometry(0.25, 0.35, 32),
     new T.MeshBasicMaterial({ color: 0xffdc80, polygonOffset: true, polygonOffsetFactor: -2 }));
@@ -98,11 +105,8 @@ function explore() {
   function gateView() {
     const [x, z] = point(116, 356);
     selected = null;
-    el("placeCard").hidden = true;
     setWalk(x, z, gate.x + 9, gate.z - 0.05);
     el("location").textContent = gate.name;
-    el("placesPanel").hidden = true;
-    el("settingsPanel").hidden = true;
   }
   function hint() {
     clearTimeout(hintTimer);
@@ -125,6 +129,7 @@ function explore() {
   }
   function setMode(next) {
     release();
+    closePanels();
     if (mode === "drone" && next === "orbit") {
       yaw = groundLook.yaw;
       pitch = groundLook.pitch;
@@ -140,9 +145,7 @@ function explore() {
     hint();
   }
   function fullView() {
-    for (const id of panels) el(id).hidden = true;
     selected = null;
-    el("placeCard").hidden = true;
     target.set(-22, 0, 3);
     radius = Math.max(338, 610 / Math.max(0.7, camera.aspect));
     theta = -0.075;
@@ -170,14 +173,12 @@ function explore() {
       pitch = -0.22;
     }
     selected = null;
-    for (const id of ["placesPanel", "settingsPanel", "placeCard"]) el(id).hidden = true;
     setMode("drone");
     screen.focus();
   }
   function landDrone() {
     function land(x, z) {
       setWalk(x, z, x + Math.sin(yaw), z - Math.cos(yaw));
-      el("placeCard").hidden = true;
       screen.focus();
     }
     if (legal(drone.x, drone.z)) return land(drone.x, drone.z);
@@ -229,11 +230,8 @@ function explore() {
     gateView();
   }
   function card(s) {
-    release();
     selected = s;
-    el("placeCard").hidden = false;
-    el("placesPanel").hidden = true;
-    el("settingsPanel").hidden = true;
+    placeCard.hidden = false;
     el("typeline").textContent = s.year ? s.year + " · 沪江校舍" : "沪江校园 · 1937";
     el("placeTitle").textContent = s.name;
     el("placeStory").textContent = s.story;
@@ -256,9 +254,8 @@ function explore() {
     el("sourceLink").href = record.source;
     el("sourceLink").hidden = record.source === ARCHIVE;
     el("mapSource").href = ARCHIVE;
-    el("location").textContent = s.name;
     el("placeReading").scrollTop = 0;
-    el("placeCard").querySelector(".close").focus({ preventScroll: true });
+    dirty = true;
   }
   function focus(s) {
     const view = s.photoView;
@@ -270,9 +267,11 @@ function explore() {
     tilt = view?.tilt ?? 1.12;
     setMode("orbit");
     card(s);
+    el("location").textContent = s.name;
+    placeCard.querySelector(".close").focus({ preventScroll: true });
   }
   async function tapScene(x, y) {
-    if (panelOpen()) return;
+    if (sceneInputBlocked()) return;
     camera.updateMatrixWorld();
     ray.setFromCamera(new T.Vector2(x, y), camera);
     const ground = ray.intersectObject(soil, false)[0];
@@ -308,18 +307,17 @@ function explore() {
     dirty = true;
   }
   function walkMode() {
-    for (const id of panels) el(id).hidden = true;
     if (mode === "drone") {
       landDrone();
     } else if (mode === "orbit" && selected) {
       relocate(selected);
-      el("placeCard").hidden = true;
     } else if (mode === "orbit") {
       setMode("walk");
       groundPlayer();
       el("location").textContent = "地面步行";
     } else {
       release();
+      closePanels();
       screen.focus();
     }
   }
@@ -400,7 +398,7 @@ function explore() {
     camera.updateMatrixWorld();
   }
   function advance(dt) {
-    if (mode === "orbit" || panelOpen()) return;
+    if (mode === "orbit" || sceneInputBlocked()) return;
     if (route.length) {
       let remaining = dt * 2;
       while (route.length && remaining > 0) {
@@ -464,7 +462,7 @@ function explore() {
   }
   const controls = bindCampusControls(screen, {
     mode: () => mode,
-    enabled: () => !panelOpen(),
+    enabled: () => !sceneInputBlocked(),
     tap: tapScene,
     unlock: () => ambience.unlock(),
     manual() { clearRoute(); ambience.unlock(); },
@@ -500,12 +498,13 @@ function explore() {
   window.addEventListener("keydown", (e) => {
     if (mapDialog.open) return;
     if (e.key === "Escape") {
-      release();
-      for (const id of ["placesPanel", "settingsPanel", "placeCard"]) el(id).hidden = true;
+      if (e.repeat) return;
+      if (placeCard.hidden) release();
+      closePanels();
       return;
     }
     if (e.target.matches("input,select,textarea") || e.altKey || e.ctrlKey || e.metaKey) return;
-    if (panelOpen()) return;
+    if (sceneInputBlocked()) return;
     const liftKey = mode === "drone" && (e.code === "KeyQ" || e.code === "KeyE");
     if (liftKey || ["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight"].includes(e.code)) {
       e.preventDefault();
@@ -543,13 +542,11 @@ function explore() {
     el(button).onclick = () => {
       release();
       const was = el(panel).hidden;
-      for (const id of ["placesPanel", "settingsPanel", "placeCard"]) el(id).hidden = true;
+      closePanels();
       el(panel).hidden = !was;
       if (panel === "placesPanel" && was) el("placeQuery").focus();
     };
-  document
-    .querySelectorAll(".close")
-    .forEach((b) => (b.onclick = () => (b.closest("section").hidden = true)));
+  for (const button of document.querySelectorAll(".close")) button.onclick = closePanels;
   const pinLayer = document.createElement("div");
   pinLayer.id = "pins";
   el("view").append(pinLayer);
@@ -557,7 +554,10 @@ function explore() {
     const s = byId.get(id),
       b = document.createElement("button");
     b.textContent = s.name.split(" · ")[0];
-    b.onclick = () => focus(s);
+    b.onclick = () => {
+      if (placeCard.hidden) focus(s);
+      else card(s);
+    };
     pinLayer.append(b);
     return { s, b };
   });
@@ -610,7 +610,6 @@ function explore() {
   list();
   el("landHere").onclick = () => {
     if (selected) relocate(selected);
-    el("placeCard").hidden = true;
   };
   for (const id of ["walk", "home", "landHere"]) el(id).addEventListener("click", ambience.unlock);
   if (touch.matches) el("quality").value = "0";
@@ -635,7 +634,7 @@ function explore() {
       const label = "飞行高度 " + height + " 米";
       if (el("locationLabel").textContent !== label) el("locationLabel").textContent = label;
     }
-    if (mode !== "orbit" && now - lastArea > 350 && el("placeCard").hidden) {
+    if (mode !== "orbit" && now - lastArea > 350) {
       const pos = mode === "drone" ? drone : player;
       const nearest = sites.reduce((a, s) =>
         Math.hypot(s.x - pos.x, s.z - pos.z) < Math.hypot(a.x - pos.x, a.z - pos.z) ? s : a,

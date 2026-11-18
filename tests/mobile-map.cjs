@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
+const { pickBuilding } = require("./helpers/scene.cjs");
 
 async function check() {
   const browser = await chromium.launch({ channel: process.platform === "win32" ? "msedge" : undefined });
@@ -44,6 +45,9 @@ async function check() {
     // Tap visible ground ahead of the gate approach. The map pauses and preserves this route.
     await page.touchscreen.tap(195, 548);
     await page.waitForFunction(([x]) => Math.abs(hujiang.player.x - x) > 0.03, start);
+    await pickBuilding(page, 190, { height: 0.7, depth: 0.32 });
+    const reading = await pos();
+    await page.waitForFunction(([x]) => hujiang.player.x > x + 0.15, reading);
     await page.tap("#mapToggle");
     assert.match(await page.textContent("#mapLegend"), /剩余路线/);
     const paused = await pos();
@@ -66,13 +70,13 @@ async function check() {
       return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
     };
     const stick = { ...await center("#stick"), id: 1 };
-    const look = { x: 275, y: 360, id: 2 };
+    const look = { x: 70, y: 535, id: 2 };
     const before = await pos();
     const heading = () => page.evaluate(() => hujiang.camera.getWorldDirection(new THREE.Vector3()).x);
     const facing = await heading();
     await touch("touchStart", [stick]);
     await touch("touchStart", [stick, look]);
-    await touch("touchMove", [{ ...stick, y: stick.y - 28 }, { ...look, x: look.x - 65 }]);
+    await touch("touchMove", [{ ...stick, y: stick.y - 28 }, { ...look, x: look.x + 235, y: look.y - 40 }]);
     await page.waitForTimeout(300);
     await touch("touchCancel", []);
     await frame();
@@ -80,9 +84,16 @@ async function check() {
     assert(distance(before, stopped) > 0.12 && Math.abs(await heading() - facing) > 0.001);
     await page.waitForTimeout(220);
     assert.deepEqual(await pos(), stopped);
+    const schoolHeading = await heading();
+    await pickBuilding(page, 103);
+    await frame();
+    assert.deepEqual(await pos(), stopped);
+    assert.equal(await heading(), schoolHeading);
 
     await page.tap("#drone");
     await frame();
+    assert(await page.locator("#placeCard").isHidden());
+    await pickBuilding(page, 103);
     const altitude = (await pose())[1];
     await touch("touchStart", [{ ...await center("#ascend"), id: 1 }]);
     await page.waitForFunction((y) => hujiang.camera.position.y > y + 0.4, altitude);
@@ -92,12 +103,21 @@ async function check() {
     await page.waitForFunction((y) => hujiang.camera.position.y < y - 0.25, raised);
     await touch("touchEnd", []);
     await page.tap("#walk");
+    assert(await page.locator("#placeCard").isHidden());
     assert(await page.evaluate(() => hujiang.mode === "walk" && hujiang.legal(hujiang.player.x, hujiang.player.z)));
 
     await page.tap("#orbit");
-    const a = { x: 110, y: 380, id: 1 }, b = { x: 260, y: 380, id: 2 };
+    await page.evaluate(() => {
+      const hall = hujiang.sites.find((s) => s.id === 104);
+      hujiang.setView(hall.x, 0, hall.z, 80, 0, 0.3);
+    });
+    const a = { x: 110, y: 500, id: 1 }, b = { x: 260, y: 500, id: 2 };
     await frame();
     const aerial = await pose();
+    await pickBuilding(page, 104);
+    await pickBuilding(page, 105);
+    await frame();
+    assert.deepEqual(await pose(), aerial);
     await touch("touchStart", [a, b]);
     await touch("touchMove", [{ ...a, x: 65 }, { ...b, x: 305 }]);
     await frame();
@@ -120,6 +140,9 @@ async function check() {
       await page.fill("#placeQuery", "水塔");
       await page.tap("#placeList button");
       assert.match(await page.textContent("#placeTitle"), /水塔/);
+      await page.tap("#mapToggle");
+      await page.tap("#mapClose");
+      assert(await page.locator("#placeCard").isVisible());
       await page.tap("#landHere");
       assert(await page.locator("#stick").isVisible());
     }
@@ -129,6 +152,7 @@ async function check() {
     await desktop.goto(pathToFileURL(path.resolve(__dirname, "..", "hujiang.html")).href);
     await desktop.waitForFunction(() => window.hujiang);
     assert(await desktop.locator("#stick").isHidden());
+    await pickBuilding(desktop, 190, { height: 0.7, depth: 0.32 });
     const targets = await desktop.evaluate(() => {
       const p = hujiang.player;
       return [[7.3, 0.8], [4.5, -0.4]].map(([dx, dz]) => {
@@ -138,6 +162,7 @@ async function check() {
       });
     });
     for (const target of targets) await desktop.mouse.click(target.screenX, target.screenY);
+    await pickBuilding(desktop, 103);
     await desktop.waitForFunction(({ x, z }) =>
       Math.hypot(hujiang.player.x - x, hujiang.player.z - z) < 0.22 &&
       !hujiang.scene.getObjectByName("walkingDestination").visible, targets[1]);
