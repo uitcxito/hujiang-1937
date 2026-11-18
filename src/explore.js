@@ -232,7 +232,7 @@ function explore() {
     el("placeCard").hidden = false;
     el("placesPanel").hidden = true;
     el("settingsPanel").hidden = true;
-    el("typeline").textContent = s.year ? s.year + "　·　沪江校舍" : "沪江校园　·　1937";
+    el("typeline").textContent = s.year ? s.year + " · 沪江校舍" : "沪江校园 · 1937";
     el("placeTitle").textContent = s.name;
     el("placeStory").textContent = s.story;
     const record = s.record;
@@ -252,6 +252,8 @@ function explore() {
     el("sourceLink").hidden = record.source === ARCHIVE;
     el("mapSource").href = ARCHIVE;
     el("location").textContent = s.name;
+    el("placeReading").scrollTop = 0;
+    el("placeCard").querySelector(".close").focus({ preventScroll: true });
   }
   function focus(s) {
     const view = s.photoView;

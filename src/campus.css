@@ -166,8 +166,7 @@ header .date {
   bottom: 25px;
   text-shadow: 0 1px 5px #17251e;
 }
-.bottomLeft small,
-.eyebrow {
+.bottomLeft small {
   font-size: 10px;
   letter-spacing: 0.17em;
 }
@@ -196,8 +195,7 @@ header .date {
   text-shadow: 0 1px 2px #333;
   pointer-events: none;
 }
-.panel,
-#placeCard {
+.panel {
   background: #f7f4e9f7;
   color: #263b32;
   border-top: 3px solid #97704b;
@@ -205,16 +203,9 @@ header .date {
   padding: 20px;
   max-height: 70vh;
   overflow: auto;
-}
-.panel {
   right: 24px;
   top: 77px;
   width: min(300px, 90vw);
-}
-#placeCard {
-  left: 24px;
-  bottom: 115px;
-  width: min(315px, 90vw);
 }
 h2 {
   font-size: 23px;
@@ -235,15 +226,7 @@ h2 {
 .close:hover {
   background: #dfdfcf;
 }
-#placeCard > .close {
-  float: right;
-}
-.eyebrow {
-  color: #85633f;
-  margin: 5px 0 9px;
-}
-.panel p,
-#placeCard p {
+.panel p {
   font-size: 13px;
   line-height: 1.85;
   margin: 10px 0;
@@ -261,12 +244,160 @@ a {
   color: #32624f;
   font-size: 12px;
 }
+#placeCard {
+  --paper: #f4efde;
+  --ink: #332a21;
+  --bronze: #7e6343;
+  --enamel: #883520;
+  --rule: #b9a78a;
+  --top-gap: 96px;
+  --bottom-gap: 112px;
+  --crown: clamp(18px, 5.5vh, 44px);
+  --shoulder: calc(var(--crown) * .88);
+  --tip: clamp(48px, 16vh, 128px);
+  --heel: calc(100% - var(--tip));
+  /* Fixed-depth caps give the reading area straight sides at every content length. */
+  --outline: polygon(
+    50% 0, 59% calc(var(--crown) * .48), 72% var(--shoulder), 94% var(--shoulder),
+    99% var(--crown), 100% calc(var(--crown) + 8px), 100% var(--heel),
+    97% calc(100% - var(--tip) * .7), 88% calc(100% - var(--tip) * .43),
+    72% calc(100% - var(--tip) * .22), 50% 100%, 28% calc(100% - var(--tip) * .22),
+    12% calc(100% - var(--tip) * .43), 3% calc(100% - var(--tip) * .7), 0 var(--heel),
+    0 calc(var(--crown) + 8px), 1% var(--crown), 6% var(--shoulder),
+    28% var(--shoulder), 41% calc(var(--crown) * .48)
+  );
+  left: 24px;
+  bottom: var(--bottom-gap);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100% - 24px));
+  max-height: calc(100% - var(--top-gap) - var(--bottom-gap));
+  padding: calc(var(--shoulder) + 8px) 23px calc(var(--tip) * .66);
+  clip-path: var(--outline);
+  background: var(--bronze);
+  color: var(--ink);
+  isolation: isolate;
+}
+@supports (clip-path: shape(from 0 0, line to 100% 100%, close)) {
+  #placeCard {
+    --outline: shape(
+      from 50% 0,
+      curve to 94% var(--shoulder) with 55% 0 / 62% var(--crown),
+      curve to 100% calc(var(--shoulder) + 13px) with 98% var(--shoulder) / 100% var(--shoulder),
+      vline to var(--heel),
+      curve to 50% 100% with 100% calc(100% - var(--tip) * .45) / 67% calc(100% - var(--tip) * .24),
+      curve to 0 var(--heel) with 33% calc(100% - var(--tip) * .24) / 0 calc(100% - var(--tip) * .45),
+      vline to calc(var(--shoulder) + 13px),
+      curve to 6% var(--shoulder) with 0 var(--shoulder) / 2% var(--shoulder),
+      curve to 50% 0 with 38% var(--crown) / 45% 0, close
+    );
+  }
+}
+#placeCard::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 2px;
+  background: var(--paper);
+  clip-path: var(--outline);
+  pointer-events: none;
+}
+.place-meta {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--bronze);
+  font: 600 14px/1.35 Georgia, "Songti SC", SimSun, serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .05em;
+}
+.place-meta .close {
+  width: 40px;
+  height: 40px;
+  margin-right: -8px;
+  color: var(--ink);
+  font: 26px/1 Arial, sans-serif;
+}
+.place-meta .close:hover,
+#placeCard summary:hover {
+  background: #e8deca;
+}
+#placeReading {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bronze) transparent;
+  margin-inline: -4px;
+  padding: 3px 4px 4px;
+  overflow-wrap: anywhere;
+}
+#placeTitle {
+  font-size: 26px;
+  line-height: 1.3;
+  letter-spacing: .025em;
+}
+#placeCard p {
+  margin: 8px 0 12px;
+  font-size: 15px;
+  line-height: 1.68;
+}
+#placeCard details {
+  border-color: var(--rule);
+  padding-top: 4px;
+  margin-top: 0;
+}
+#placeCard summary {
+  padding-block: 7px;
+  font-size: 15px;
+  font-weight: 600;
+}
+#placeCard summary::marker {
+  color: var(--bronze);
+  font-size: .82em;
+}
+.place-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  align-items: baseline;
+  border-top: 1px solid var(--rule);
+  padding-top: 7px;
+}
+#photoLinks {
+  display: contents;
+}
+.place-sources a {
+  padding-block: 4px;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.45;
+  text-underline-offset: .22em;
+  text-decoration-color: var(--bronze);
+}
+.place-sources a:hover {
+  color: var(--enamel);
+}
 #landHere {
-  margin-top: 13px;
-  background: #324c3f;
-  color: white;
-  padding: 8px 12px;
-  font-size: 12px;
+  display: block;
+  width: min(208px, 80%);
+  min-height: 42px;
+  margin: 10px auto 0;
+  padding: 8px 14px;
+  border-radius: 3px;
+  background: var(--enamel);
+  color: #fff7e6;
+  font-size: 15px;
+  font-weight: 600;
+}
+#landHere:hover {
+  background: #722c1c;
+}
+#placeCard :focus-visible {
+  outline: 2px solid var(--enamel);
+  outline-offset: 2px;
 }
 .panel label {
   display: block;
@@ -348,14 +479,47 @@ a {
     width: max-content;
   }
   #placeCard {
-    left: 10px;
-    bottom: 192px;
+    --top-gap: 74px;
+    --bottom-gap: calc(190px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
   }
   .top button {
     padding: 0 9px;
   }
   #dock button {
     padding: 9px 12px;
+  }
+}
+@media (orientation: landscape) and (max-height: 540px) and (max-width: 1000px) {
+  #placeCard {
+    left: 50%;
+    width: min(320px, calc(100% - 24px));
+    transform: translateX(-50%);
+  }
+}
+@media (max-height: 540px) {
+  #placeCard {
+    --top-gap: 78px;
+    --crown: 16px;
+    --tip: 48px;
+  }
+  .place-meta .close {
+    height: 32px;
+  }
+  #landHere {
+    min-height: 36px;
+    margin-top: 4px;
+    padding-block: 5px;
+  }
+}
+@media (max-width: 720px) and (max-height: 680px),
+       (orientation: landscape) and (max-width: 1000px) and (max-height: 540px) {
+  #placeCard {
+    --bottom-gap: calc(78px + env(safe-area-inset-bottom, 0px));
+  }
+  #placeCard:not([hidden]) ~ :is(.bottomLeft, #hint) {
+    visibility: hidden;
   }
 }
 #pins {
@@ -408,14 +572,4 @@ a {
 .sound-credits {
   padding-left: 18px;
   line-height: 1.9;
-}
-
-#photoLinks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin-bottom: 5px;
-}
-#placeCard #inference {
-  color: #665846;
 }
