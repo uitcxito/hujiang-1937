@@ -59,6 +59,30 @@
         <option value="1" selected>中 · 均衡</option>
         <option value="2">高 · 近景细节</option></select
       ><label class="check"><input id="pinToggle" type="checkbox" checked />鸟瞰显示地名</label>
+      <div class="volume-label">
+        <label for="ambientVolume">步行环境音量</label>
+        <output id="ambientValue" for="ambientVolume" aria-hidden="true">70%</output>
+      </div>
+      <input id="ambientVolume" type="range" min="0" max="100" value="70" />
+      <details>
+        <summary>环境录音来源</summary>
+        <p>
+          初夏校园的鸟鸣参考上海植物园的六月观鸟记录。以下四段当代录音经过剪辑、滤波和音量调整。
+          <a target="_blank" rel="noopener" href="https://lhsr.sh.gov.cn/shhx/20210630/069252daa6404305b53f8244f0de2d94.html">上海植物园六月鸟讯</a> ·
+          <a target="_blank" rel="license noopener" href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>
+        </p>
+        <ul class="sound-credits">
+          <li>白头鹎（上海杨浦） · <a target="_blank" rel="noopener" href="https://www.inaturalist.org/observations/270135658">© Gao Lezhe</a></li>
+          <li>乌鸫（上海） · <a target="_blank" rel="noopener" href="https://www.inaturalist.org/observations/205281613">© Yi CHEN</a></li>
+          <li>树麻雀（安徽黟县） · <a target="_blank" rel="noopener" href="https://www.inaturalist.org/observations/169747914">© Tony Tong</a></li>
+          <li>珠颈斑鸠（台南） · <a target="_blank" rel="noopener" href="https://www.inaturalist.org/observations/404084929">© MIMI</a></li>
+        </ul>
+        <p>
+          江水声取自 ceich93 在哈德逊河卵石岸录制的片段，经过剪辑和首尾交叉淡化。
+          <a target="_blank" rel="noopener" href="https://freesound.org/people/ceich93/sounds/318064/">Water_Lapping_River.wav</a> ·
+          <a target="_blank" rel="license noopener" href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>
+        </p>
+      </details>
       <details>
         <summary>关于这次复原</summary>
         <p>
@@ -94,6 +118,8 @@
     <script src="assets/surfaces.js"></script>
     <script src="src/surfaces.js"></script>
     <script src="src/flight.js"></script>
+    <script src="assets/ambience.js"></script>
+    <script src="src/ambience.js"></script>
     <script src="src/explore.js"></script>
   </body>
 </html>

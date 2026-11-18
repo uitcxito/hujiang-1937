@@ -56,6 +56,7 @@ function explore() {
     shadowRange = 0,
     lastArea = 0;
   let viewLabel, groundLook;
+  const ambience = makeWalkAmbience(treeTrunks, el("ambientVolume"), el("ambientValue"));
   const eye = 1.66,
     collisionRadius = 0.32;
   function legal(x, z) {
@@ -130,6 +131,7 @@ function explore() {
       pitch = groundLook.pitch;
     }
     mode = next;
+    ambience.setWalking(mode === "walk");
     for (const id of ["walk", "orbit", "drone"]) el(id).setAttribute("aria-pressed", String(id === mode));
     el("locationLabel").textContent = "当前位置";
     lastArea = -Infinity;
@@ -398,6 +400,7 @@ function explore() {
     dirty = true;
   }
   screen.addEventListener("pointerdown", (e) => {
+    ambience.unlock();
     screen.focus();
     drag = {
       x: e.clientX,
@@ -429,6 +432,7 @@ function explore() {
     }
   });
   screen.addEventListener("pointerup", (e) => {
+    ambience.unlock();
     const clicked = !!drag && !drag.moved && e.button === 0;
     drag = null;
     if (!clicked) return;
@@ -482,9 +486,11 @@ function explore() {
     if (liftKey || ["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight"].includes(e.code)) {
       e.preventDefault();
       keys.add(e.code);
+      ambience.unlock();
     }
     if (e.code === "KeyV" && !e.repeat) mode === "orbit" ? walkMode() : fullView();
     if (e.code === "KeyF" && !e.repeat) mode === "drone" ? walkMode() : droneMode();
+    if (e.code === "KeyV" || e.code === "KeyF") ambience.unlock();
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
   window.addEventListener("blur", () => {
@@ -580,6 +586,7 @@ function explore() {
     if (selected) relocate(selected);
     el("placeCard").hidden = true;
   };
+  for (const id of ["walk", "home", "landHere"]) el(id).addEventListener("click", ambience.unlock);
   quality();
   gateView();
   let last = performance.now();
@@ -588,6 +595,7 @@ function explore() {
     const dt = Math.min(0.12, (now - last) / 1000);
     last = now;
     advance(dt);
+    ambience.update(player, yaw);
     if (!dirty) return;
     aim();
     updatePins();

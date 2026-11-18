@@ -391,6 +391,24 @@ a {
   width: auto;
   accent-color: #304e3a;
 }
+.volume-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.volume-label output, .sound-credits {
+  color: #435448;
+  font-size: 12px;
+}
+#ambientVolume {
+  padding: 0;
+  accent-color: #304e3a;
+  cursor: pointer;
+}
+.sound-credits {
+  padding-left: 18px;
+  line-height: 1.9;
+}
 
 #photoLinks {
   display: flex;
