@@ -2,20 +2,31 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>沪江大学 · 一九三七年校园漫游</title>
     <link rel="stylesheet" href="src/campus.css" />
   </head>
   <body>
     <main id="view" aria-label="沪江大学三维校园"></main>
-    <header>
-      <div class="seal" aria-hidden="true">滬<br />江</div>
-      <div>
-        <h1>沪江大学</h1>
-        <p>UNIVERSITY OF SHANGHAI</p>
-      </div>
-      <div class="date">1937<small>初夏</small></div>
-    </header>
+    <div class="map-corner">
+      <header>
+        <div class="seal" aria-hidden="true">滬<br />江</div>
+        <div>
+          <h1>沪江大学</h1>
+          <p>UNIVERSITY OF SHANGHAI</p>
+        </div>
+        <div class="date">1937<small>初夏</small></div>
+      </header>
+      <button id="mapToggle" class="map-glass" aria-label="展开全校地图" aria-haspopup="dialog" aria-controls="mapDialog" aria-expanded="false">
+        <canvas id="nearbyMap" aria-hidden="true"></canvas>
+        <span class="map-caption" aria-hidden="true">附近地图 <span>⛶</span></span>
+      </button>
+    </div>
+    <dialog id="mapDialog" class="map-glass" aria-labelledby="mapTitle">
+      <div class="map-heading"><h2 id="mapTitle">全校地图</h2><button id="mapClose" aria-label="关闭全校地图" autofocus>×</button></div>
+      <canvas id="campusMap" aria-label="校园道路、建筑和当前位置"></canvas>
+      <p id="mapLegend"></p>
+    </dialog>
     <nav class="top">
       <button id="guide">校园导览</button
       ><button id="settings" aria-label="浏览设置" title="浏览设置">⚙</button>
@@ -95,7 +106,10 @@
         >
       </details>
     </section>
-    <div id="cross" hidden>+</div>
+    <div id="touchControls">
+      <div id="stick" aria-label="移动摇杆" role="group"><span id="stickKnob"></span></div>
+      <div id="flightLift"><button id="ascend" aria-label="上升">↑</button><button id="descend" aria-label="下降">↓</button></div>
+    </div>
     <div class="bottomLeft">
       <small id="locationLabel">当前位置</small>
       <div id="location">密氏校门</div>
@@ -122,6 +136,9 @@
     <script src="src/flight.js"></script>
     <script src="assets/ambience.js"></script>
     <script src="src/ambience.js"></script>
+    <script src="src/walking.js"></script>
+    <script src="src/minimap.js"></script>
+    <script src="src/controls.js"></script>
     <script src="src/explore.js"></script>
   </body>
 </html>

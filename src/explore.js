@@ -23,7 +23,7 @@ function explore() {
   const shadowUp = new V().crossVectors(sunDirection, shadowRight);
   const droneShadowFocus = new V();
   sky(scene, sunDirection);
-  terrain(scene);
+  const { soil, river } = terrain(scene);
   riverGarden(scene);
   const architecture = new T.Group();
   for (const s of sites.filter((s) => s.style !== "landmark")) buildSite(s, architecture);
@@ -33,6 +33,7 @@ function explore() {
   const trees = vegetation(scene),
     flightSpace = makeFlightSpace(architecture, treeTrunks),
     blades = grass(scene);
+  const treeMeshes = scene.children.filter((object) => object.isInstancedMesh && object.castShadow);
   const gate = byId.get(190),
     player = new V(),
     drone = new V(),
@@ -48,34 +49,36 @@ function explore() {
     selected = null,
     q = 1,
     dirty = true,
-    drag = null,
-    lookFallback = false,
-    locked = false,
+    route = [],
+    routeSearch = null,
+    hintTimer = 0,
     shadowX = Infinity,
     shadowZ = Infinity,
     shadowRange = 0,
     lastArea = 0;
   let viewLabel, groundLook;
   const ambience = makeWalkAmbience(treeTrunks, el("ambientVolume"), el("ambientValue"));
-  const eye = 1.66,
-    collisionRadius = 0.32;
-  function legal(x, z) {
-    if (!inPolygon(x / SCALE + 780, z / SCALE + 370, boundary) || shoreDistance(x, z) < 1.05)
-      return false;
-    for (const o of obstacles) {
-      let dx = x - o.x,
-        dz = z - o.z;
-      if (o.angle) {
-        const co = Math.cos(o.angle),
-          si = Math.sin(o.angle);
-        [dx, dz] = [co * dx - si * dz, si * dx + co * dz];
-      }
-      if (Math.abs(dx) < o.w / 2 + collisionRadius && Math.abs(dz) < o.d / 2 + collisionRadius)
-        return false;
-    }
-    for (const t of treeTrunks)
-      if ((x - t.x) ** 2 + (z - t.z) ** 2 < (t.r + collisionRadius) ** 2) return false;
-    return true;
+  const eye = 1.66;
+  const legal = makeWalkSpace(obstacles, treeTrunks, 0.32);
+  const drawMap = makeCampusMap();
+  const touch = matchMedia("(any-pointer: coarse)");
+  const mapDialog = el("mapDialog");
+  const panels = ["placesPanel", "settingsPanel", "placeCard"];
+  function panelOpen() {
+    return mapDialog.open || panels.some((id) => !el(id).hidden);
+  }
+  const marker = new T.Mesh(new T.RingGeometry(0.25, 0.35, 32),
+    new T.MeshBasicMaterial({ color: 0xffdc80, polygonOffset: true, polygonOffsetFactor: -2 }));
+  marker.name = "walkingDestination";
+  marker.rotation.x = -Math.PI / 2;
+  marker.visible = false;
+  scene.add(marker);
+  function clearRoute() {
+    routeSearch?.abort();
+    routeSearch = null;
+    route = [];
+    marker.visible = false;
+    dirty = true;
   }
   function groundPlayer() {
     let level = groundY(player.x, player.z);
@@ -102,27 +105,23 @@ function explore() {
     el("settingsPanel").hidden = true;
   }
   function hint() {
-    el("cross").hidden = !locked || mode === "orbit";
-    if (mode === "drone") {
-      let look = "拖动环顾";
-      if (locked) look = "鼠标环顾 · Esc 释放";
-      else if (!lookFallback) look += " · 点击空地锁定鼠标";
-      el("hint").textContent = "WASD 飞行 · E 上升 / Q 下降 · Shift 加速 · " + look;
-      return;
-    }
-    el("hint").textContent =
-      mode === "orbit"
-        ? "拖动旋转 · 右键平移 · 滚轮缩放 · 点击建筑查看资料"
-        : locked
-          ? "WASD 行走 · Shift 加速 · 点击建筑查看资料 · Esc 释放鼠标"
-          : lookFallback
-            ? "拖动环顾 · WASD 行走 · 点击建筑查看资料"
-            : "点击空地开始漫游 · WASD 行走 · 鼠标环顾";
+    clearTimeout(hintTimer);
+    const mobile = touch.matches;
+    el("hint").textContent = mode === "walk"
+      ? (mobile ? "点地行走 · 左侧摇杆移动 · 拖动环顾" : "点地行走 · 拖动环顾 · WASD 移动 · Shift 加速")
+      : mode === "drone"
+        ? (mobile ? "摇杆飞行 · 按住箭头升降 · 拖动环顾" : "WASD 飞行 · E / Q 升降 · Shift 加速 · 拖动环顾")
+        : (mobile ? "单指旋转 · 双指缩放或平移 · 点建筑看资料" : "拖动旋转 · 右键平移 · 滚轮缩放 · 点建筑看资料");
   }
-  function release() {
-    if (document.pointerLockElement === screen) document.exitPointerLock();
+  function unreachable() {
+    clearTimeout(hintTimer);
+    el("hint").textContent = "这里无法步行到达，请选择其他地面";
+    hintTimer = setTimeout(hint, 2400);
+  }
+  function release(cancelRoute = true) {
     keys.clear();
-    drag = null;
+    controls.reset();
+    if (cancelRoute) clearRoute();
   }
   function setMode(next) {
     release();
@@ -131,6 +130,7 @@ function explore() {
       pitch = groundLook.pitch;
     }
     mode = next;
+    document.body.dataset.mode = mode;
     ambience.setWalking(mode === "walk");
     for (const id of ["walk", "orbit", "drone"]) el(id).setAttribute("aria-pressed", String(id === mode));
     el("locationLabel").textContent = "当前位置";
@@ -140,6 +140,7 @@ function explore() {
     hint();
   }
   function fullView() {
+    for (const id of panels) el(id).hidden = true;
     selected = null;
     el("placeCard").hidden = true;
     target.set(-22, 0, 3);
@@ -228,6 +229,7 @@ function explore() {
     gateView();
   }
   function card(s) {
+    release();
     selected = s;
     el("placeCard").hidden = false;
     el("placesPanel").hidden = true;
@@ -266,16 +268,44 @@ function explore() {
     setMode("orbit");
     card(s);
   }
-  function choose(x, y) {
+  async function tapScene(x, y) {
+    if (panelOpen()) return;
     camera.updateMatrixWorld();
     ray.setFromCamera(new T.Vector2(x, y), camera);
+    const ground = ray.intersectObject(soil, false)[0];
+    const water = ray.intersectObject(river, false)[0];
+    const surfaceDistance = Math.min(ground?.distance ?? Infinity, water?.distance ?? Infinity);
     const hit = ray.intersectObjects(buildings, false)[0];
-    if (!hit || (mode === "walk" && hit.distance > 80)) return false;
-    release();
-    card(byId.get(hit.object.geometry.getAttribute("siteId").getX(hit.face.a)));
-    return true;
+    if (mode === "walk") {
+      // Grass is traversable. A visible tree in front of a target blocks the pick.
+      ray.far = Math.min(surfaceDistance, hit?.distance ?? Infinity);
+      const blocked = ray.intersectObjects(treeMeshes.filter((tree) => tree.visible), false).length > 0;
+      ray.far = Infinity;
+      if (blocked) return;
+    }
+    if (hit && hit.distance < surfaceDistance) {
+      if (mode !== "walk" || hit.distance <= 80) card(byId.get(hit.object.geometry.getAttribute("siteId").getX(hit.face.a)));
+      return;
+    }
+    if (mode !== "walk" || !Number.isFinite(surfaceDistance)) return;
+    if (controls.axes.forward || controls.axes.right || ["KeyW", "KeyA", "KeyS", "KeyD"].some((k) => keys.has(k))) return;
+    clearRoute();
+    hint();
+    if (!ground || ground.distance > surfaceDistance) return unreachable();
+    const search = new AbortController();
+    routeSearch = search;
+    const goal = { x: ground.point.x, z: ground.point.z };
+    const result = await findWalkRoute(player.clone(), goal, legal, search.signal);
+    if (search.signal.aborted) return;
+    routeSearch = null;
+    if (!result.length) return unreachable();
+    route = result;
+    marker.position.set(goal.x, groundY(goal.x, goal.z) + 0.055, goal.z);
+    marker.visible = true;
+    dirty = true;
   }
   function walkMode() {
+    for (const id of panels) el(id).hidden = true;
     if (mode === "drone") {
       landDrone();
     } else if (mode === "orbit" && selected) {
@@ -294,9 +324,10 @@ function explore() {
     q = Number(el("quality").value);
     renderer.setPixelRatio(Math.min(devicePixelRatio, [0.8, 1.25, 1.75][q]));
     renderer.setSize(innerWidth, innerHeight);
-    sun.shadow.mapSize.setScalar(Math.min([1024, 2048, 3072][q], renderer.capabilities.maxTextureSize));
-    if (sun.shadow.map) {
-      sun.shadow.map.dispose();
+    const resolution = Math.min([1024, 2048, 3072][q], renderer.capabilities.maxTextureSize);
+    if (sun.shadow.mapSize.x !== resolution) {
+      sun.shadow.mapSize.setScalar(resolution);
+      sun.shadow.map?.dispose();
       sun.shadow.map = null;
     }
     dirty = true;
@@ -366,11 +397,38 @@ function explore() {
     camera.updateMatrixWorld();
   }
   function advance(dt) {
-    if (mode === "orbit" || !keys.size) return;
-    const f = Number(keys.has("KeyW")) - Number(keys.has("KeyS")),
-      r = Number(keys.has("KeyD")) - Number(keys.has("KeyA"));
+    if (mode === "orbit" || panelOpen()) return;
+    if (route.length) {
+      let remaining = dt * 2;
+      while (route.length && remaining > 0) {
+        const next = route[0], dx = next.x - player.x, dz = next.z - player.z;
+        const distance = Math.hypot(dx, dz);
+        if (distance < 0.001) {
+          route.shift();
+          continue;
+        }
+        const step = Math.min(remaining, distance, 0.14);
+        const x = player.x + step * dx / distance, z = player.z + step * dz / distance;
+        if (!legal(x, z)) {
+          clearRoute();
+          unreachable();
+          break;
+        }
+        player.x = x;
+        player.z = z;
+        remaining -= step;
+        if (step === distance) route.shift();
+      }
+      if (!route.length) marker.visible = false;
+      groundPlayer();
+      dirty = true;
+      return;
+    }
+    const axes = controls.axes;
+    const f = axes.forward + Number(keys.has("KeyW")) - Number(keys.has("KeyS")),
+      r = axes.right + Number(keys.has("KeyD")) - Number(keys.has("KeyA"));
     const mag = Math.hypot(f, r);
-    const lift = mode === "drone" ? Number(keys.has("KeyE")) - Number(keys.has("KeyQ")) : 0;
+    const lift = mode === "drone" ? Math.sign(axes.lift + Number(keys.has("KeyE")) - Number(keys.has("KeyQ"))) : 0;
     if (!mag && !lift) return;
     const fast = keys.has("ShiftLeft") || keys.has("ShiftRight");
     const speed = mode === "drone" ? (fast ? 32 : 12) : (fast ? 3.95 : 2);
@@ -401,92 +459,54 @@ function explore() {
     target.z += (dx * Math.sin(theta) + dy * Math.cos(theta)) * k;
     dirty = true;
   }
-  screen.addEventListener("pointerdown", (e) => {
-    ambience.unlock();
-    screen.focus();
-    drag = {
-      x: e.clientX,
-      y: e.clientY,
-      ox: e.clientX,
-      oy: e.clientY,
-      pan: e.button === 2 || e.shiftKey,
-      moved: false,
-    };
-    if (!locked) screen.setPointerCapture(e.pointerId);
-  });
-  document.addEventListener("pointermove", (e) => {
-    if (mode !== "orbit" && locked) {
-      rotate(e.movementX, e.movementY);
-      return;
-    }
-    if (!drag) return;
-    const dx = e.clientX - drag.x,
-      dy = e.clientY - drag.y;
-    drag.x = e.clientX;
-    drag.y = e.clientY;
-    if (Math.hypot(e.clientX - drag.ox, e.clientY - drag.oy) > 3) drag.moved = true;
-    if (mode !== "orbit") rotate(dx, dy);
-    else if (drag.pan) pan(dx, dy);
-    else {
+  const controls = bindCampusControls(screen, {
+    mode: () => mode,
+    enabled: () => !panelOpen(),
+    tap: tapScene,
+    unlock: () => ambience.unlock(),
+    manual() { clearRoute(); ambience.unlock(); },
+    pan,
+    zoom(factor) { radius = T.MathUtils.clamp(radius * factor, 9, 900); dirty = true; },
+    rotate(dx, dy) {
+      if (mode !== "orbit") return rotate(dx, dy);
       theta -= dx * 0.005;
       tilt = T.MathUtils.clamp(tilt - dy * 0.005, 0.03, 1.51);
       dirty = true;
-    }
-  });
-  screen.addEventListener("pointerup", (e) => {
-    ambience.unlock();
-    const clicked = !!drag && !drag.moved && e.button === 0;
-    drag = null;
-    if (!clicked) return;
-    const x = locked ? 0 : (e.clientX / innerWidth) * 2 - 1,
-      y = locked ? 0 : 1 - (e.clientY / innerHeight) * 2;
-    if (choose(x, y)) return;
-    el("placeCard").hidden = true;
-    if (mode !== "orbit" && !locked) {
-      try {
-        const result = screen.requestPointerLock();
-        result?.catch(() => {
-          lookFallback = true;
-          hint();
-        });
-      } catch {
-        lookFallback = true;
-        hint();
-      }
-    }
-  });
-  screen.addEventListener("contextmenu", (e) => e.preventDefault());
-  screen.addEventListener(
-    "wheel",
-    (e) => {
-      if (mode !== "orbit") return;
-      e.preventDefault();
-      radius = T.MathUtils.clamp(radius * Math.exp(e.deltaY * 0.001), 9, 900);
-      dirty = true;
     },
-    { passive: false },
-  );
-  document.addEventListener("pointerlockchange", () => {
-    locked = document.pointerLockElement === screen;
-    if (locked) lookFallback = false;
-    drag = null;
-    keys.clear();
-    hint();
   });
-  document.addEventListener("pointerlockerror", () => {
-    lookFallback = true;
-    hint();
+  function updateMap() {
+    const mapPosition = mode === "orbit" ? target : mode === "walk" ? player : drone;
+    drawMap(mapPosition, yaw, mode, route);
+    if (mapDialog.open) {
+      const location = mode === "orbit" ? "圆点为鸟瞰中心" : mode === "walk" ? "箭头为步行位置和朝向" : "箭头为无人机位置和朝向";
+      el("mapLegend").textContent = route.length ? location + " · 虚线为剩余路线" : location;
+    }
+  }
+  el("mapToggle").onclick = () => {
+    release(false);
+    mapDialog.showModal();
+    updateMap();
+    el("mapToggle").setAttribute("aria-expanded", "true");
+    dirty = true;
+  };
+  el("mapClose").onclick = () => mapDialog.close();
+  mapDialog.addEventListener("close", () => {
+    el("mapToggle").setAttribute("aria-expanded", "false");
+    dirty = true;
   });
   window.addEventListener("keydown", (e) => {
+    if (mapDialog.open) return;
     if (e.key === "Escape") {
       release();
       for (const id of ["placesPanel", "settingsPanel", "placeCard"]) el(id).hidden = true;
       return;
     }
     if (e.target.matches("input,select,textarea") || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (panelOpen()) return;
     const liftKey = mode === "drone" && (e.code === "KeyQ" || e.code === "KeyE");
     if (liftKey || ["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight"].includes(e.code)) {
       e.preventDefault();
+      if (!e.code.startsWith("Shift")) clearRoute();
       keys.add(e.code);
       ambience.unlock();
     }
@@ -495,14 +515,14 @@ function explore() {
     if (e.code === "KeyV" || e.code === "KeyF") ambience.unlock();
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
-  window.addEventListener("blur", () => {
-    keys.clear();
-    drag = null;
-  });
-  document.addEventListener("visibilitychange", () => {
-    keys.clear();
-    dirty = true;
-  });
+  window.addEventListener("blur", () => release());
+  document.addEventListener("visibilitychange", () => release());
+  function fitPanels() {
+    document.documentElement.style.setProperty("--visible-height", (window.visualViewport?.height || innerHeight) + "px");
+  }
+  fitPanels();
+  window.visualViewport?.addEventListener("resize", fitPanels);
+  touch.addEventListener("change", hint);
   window.addEventListener("resize", () => {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
@@ -529,7 +549,7 @@ function explore() {
     .forEach((b) => (b.onclick = () => (b.closest("section").hidden = true)));
   const pinLayer = document.createElement("div");
   pinLayer.id = "pins";
-  document.body.append(pinLayer);
+  el("view").append(pinLayer);
   const pins = [121, 153, 154, 163, 141, 142, 112, 104, 180, 181, 190].map((id) => {
     const s = byId.get(id),
       b = document.createElement("button");
@@ -541,7 +561,8 @@ function explore() {
   function updatePins() {
     pinLayer.hidden = mode !== "orbit" || !el("pinToggle").checked;
     if (pinLayer.hidden) return;
-    const used = [];
+    const corner = document.querySelector(".map-corner").getBoundingClientRect();
+    const used = [[corner.left, corner.top, corner.right, corner.bottom]];
     for (const { s, b } of pins) {
       const v = new V(s.x, s.h + 2.2, s.z).project(camera),
         x = ((v.x + 1) * innerWidth) / 2,
@@ -589,6 +610,7 @@ function explore() {
     el("placeCard").hidden = true;
   };
   for (const id of ["walk", "home", "landHere"]) el(id).addEventListener("click", ambience.unlock);
+  if (touch.matches) el("quality").value = "0";
   quality();
   gateView();
   let last = performance.now();
@@ -601,6 +623,7 @@ function explore() {
     if (!dirty) return;
     aim();
     updatePins();
+    updateMap();
     if (trees(camera.position, q)) renderer.shadowMap.needsUpdate = true;
     blades(camera.position, q, camera.position.y - groundY(camera.position.x, camera.position.z) < 8);
     setupShadows();

@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>沪江大学 · 一九三七年校园漫游</title>
     <style>
 * {
@@ -61,20 +61,17 @@ body::after {
   background: linear-gradient(0deg, #141f2257, transparent 15%, transparent 84%, #20302b32);
   z-index: 1;
 }
-header,
+.map-corner,
 .top,
 #dock,
 .panel,
 #placeCard,
 .bottomLeft,
-#hint,
-#cross {
+#hint {
   position: absolute;
   z-index: 2;
 }
 header {
-  left: 24px;
-  top: 22px;
   display: flex;
   gap: 13px;
   align-items: center;
@@ -191,15 +188,6 @@ header .date {
   padding: 7px 13px;
   background: #23352cc7;
   white-space: nowrap;
-  pointer-events: none;
-}
-#cross {
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font: 18px Arial;
-  color: #fffff5a6;
-  text-shadow: 0 1px 2px #333;
   pointer-events: none;
 }
 .panel {
@@ -458,8 +446,6 @@ a {
 }
 @media (max-width: 720px) {
   header {
-    left: 10px;
-    top: 10px;
     padding: 8px 10px;
     gap: 8px;
   }
@@ -581,18 +567,160 @@ a {
   line-height: 1.9;
 }
 
+#view, #view canvas, #stick, #flightLift button {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.map-corner {
+  top: max(22px, env(safe-area-inset-top));
+  left: max(24px, env(safe-area-inset-left));
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  pointer-events: none;
+}
+.map-glass {
+  background: linear-gradient(125deg, #304e46c7, #1b372ec9);
+  color: #fff7e3;
+  border: 1px solid #e7e7ce86;
+  border-radius: 8px;
+  box-shadow: inset 0 1px #f4f5df24, 0 3px 14px #10251a36;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+#mapToggle {
+  pointer-events: auto;
+  position: relative;
+  width: 174px;
+  height: 112px;
+  padding: 0;
+  overflow: hidden;
+}
+#mapToggle:hover { border-color: #f4e6c0; }
+.map-caption {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 8px;
+  background: #19392fc2;
+  color: #fff7e3;
+  font-size: 12px;
+}
+.map-caption span { font: 16px/1.1 sans-serif; }
+#mapDialog {
+  width: min(760px, calc(100% - 28px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  padding: 8px 14px;
+  background-color: #213f35d9;
+}
+#mapDialog::backdrop { background: #11261e66; }
+.map-heading { display: flex; justify-content: space-between; align-items: center; }
+.map-heading h2 { font-size: 20px; }
+#mapClose { height: 44px; width: 44px; font: 26px/1 sans-serif; }
+#campusMap { width: 100%; height: auto; aspect-ratio: 2 / 1; max-height: 60dvh; }
+#mapLegend { margin: 4px 0 6px; font-size: 13px; }
+#touchControls { display: none; }
+.panel { z-index: 4; }
+
+@media (any-pointer: coarse) {
+  #touchControls { display: contents; }
+  #stick, #flightLift {
+    position: absolute;
+    z-index: 2;
+    bottom: calc(max(18px, env(safe-area-inset-bottom)) + 84px);
+  }
+  #stick {
+    width: clamp(78px, 12vmin, 100px);
+    aspect-ratio: 1;
+    left: max(14px, env(safe-area-inset-left));
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid #f4ead69c;
+    background: radial-gradient(circle, #f1f3dc21 46%, #1b342f66 48%);
+    box-shadow: inset 0 0 0 5px #d1d6bb1a, 0 2px 8px #19291c2b;
+  }
+  #stickKnob {
+    width: 38%;
+    aspect-ratio: 1;
+    border: 1px solid #e0dfc5cd;
+    background: #435d4fec;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  #flightLift {
+    right: max(14px, env(safe-area-inset-right));
+    display: grid;
+    gap: 5px;
+  }
+  #flightLift button {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: #27493dd1;
+    border: 1px solid #eee3bcac;
+    font-size: 22px;
+  }
+  #flightLift button:active { background: #546d5f; }
+  body:not([data-mode="drone"]) #flightLift, body[data-mode="orbit"] #stick,
+  body:has(.panel:not([hidden]), #placeCard:not([hidden]), #mapDialog[open]) #touchControls { display: none; }
+  .bottomLeft { left: max(16px, env(safe-area-inset-left)); bottom: calc(211px + env(safe-area-inset-bottom)); }
+  #hint { bottom: calc(65px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 720px), (max-height: 540px) and (max-width: 1000px), (any-pointer: coarse) {
+  .map-corner { left: max(10px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); gap: 5px; }
+  header { gap: 8px; padding: 6px 9px; min-height: 40px; }
+  header p, header .date small { display: none; }
+  h1 { font-size: 17px; letter-spacing: .07em; }
+  .seal { font-size: 10px; line-height: 11px; }
+  header .date { padding-left: 6px; font-size: 15px; }
+  #mapToggle { width: clamp(112px, 27vw, 150px); height: clamp(73px, 17vw, 96px); }
+  .top { top: max(10px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); }
+  #dock { bottom: max(8px, env(safe-area-inset-bottom)); }
+  #dock button, .top button, .panel .close, .place-meta .close, #placeList button, #landHere,
+  #placeCard summary, .panel select, .panel input[type="search"] { min-height: 44px; }
+  .panel .close, .place-meta .close, .top button { min-width: 44px; }
+  #hint { font-size: 12px; max-width: calc(100% - 20px); white-space: normal; text-align: center; }
+  .panel { right: max(10px, env(safe-area-inset-right)); top: calc(max(10px, env(safe-area-inset-top)) + 50px);
+    max-height: calc(var(--visible-height, 100dvh) - 76px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overscroll-behavior: contain; }
+  #placesPanel { display: flex; flex-direction: column; }
+  #placeList { min-height: 0; overscroll-behavior: contain; }
+  #placeQuery { font-size: 16px; flex-shrink: 0; }
+  body:has(.panel:not([hidden]), #placeCard:not([hidden])) :is(#mapToggle, .bottomLeft, #hint) { visibility: hidden; }
+}
+@media (max-height: 540px) and (max-width: 1000px) {
+  #mapToggle { width: 114px; height: 70px; }
+  #hint { bottom: max(62px, calc(56px + env(safe-area-inset-bottom))); max-width: 55%; }
+  .bottomLeft { left: auto; right: max(14px, env(safe-area-inset-right)); top: 60px; bottom: auto; text-align: right; }
+  .bottomLeft div { font-size: 16px; }
+}
+
 </style>
   </head>
   <body>
     <main id="view" aria-label="沪江大学三维校园"></main>
-    <header>
-      <div class="seal" aria-hidden="true">滬<br />江</div>
-      <div>
-        <h1>沪江大学</h1>
-        <p>UNIVERSITY OF SHANGHAI</p>
-      </div>
-      <div class="date">1937<small>初夏</small></div>
-    </header>
+    <div class="map-corner">
+      <header>
+        <div class="seal" aria-hidden="true">滬<br />江</div>
+        <div>
+          <h1>沪江大学</h1>
+          <p>UNIVERSITY OF SHANGHAI</p>
+        </div>
+        <div class="date">1937<small>初夏</small></div>
+      </header>
+      <button id="mapToggle" class="map-glass" aria-label="展开全校地图" aria-haspopup="dialog" aria-controls="mapDialog" aria-expanded="false">
+        <canvas id="nearbyMap" aria-hidden="true"></canvas>
+        <span class="map-caption" aria-hidden="true">附近地图 <span>⛶</span></span>
+      </button>
+    </div>
+    <dialog id="mapDialog" class="map-glass" aria-labelledby="mapTitle">
+      <div class="map-heading"><h2 id="mapTitle">全校地图</h2><button id="mapClose" aria-label="关闭全校地图" autofocus>×</button></div>
+      <canvas id="campusMap" aria-label="校园道路、建筑和当前位置"></canvas>
+      <p id="mapLegend"></p>
+    </dialog>
     <nav class="top">
       <button id="guide">校园导览</button
       ><button id="settings" aria-label="浏览设置" title="浏览设置">⚙</button>
@@ -672,7 +800,10 @@ a {
         >
       </details>
     </section>
-    <div id="cross" hidden>+</div>
+    <div id="touchControls">
+      <div id="stick" aria-label="移动摇杆" role="group"><span id="stickKnob"></span></div>
+      <div id="flightLift"><button id="ascend" aria-label="上升">↑</button><button id="descend" aria-label="下降">↓</button></div>
+    </div>
     <div class="bottomLeft">
       <small id="locationLabel">当前位置</small>
       <div id="location">密氏校门</div>
@@ -1946,7 +2077,9 @@ function terrain(scene) {
   };
   const water = new T.PlaneGeometry(7200, 7200);
   water.rotateX(-Math.PI / 2);
-  mesh(scene, water, waterMat, 0, riverLevel, 0).receiveShadow = true;
+  const river = mesh(scene, water, waterMat, 0, riverLevel, 0);
+  river.receiveShadow = true;
+  return { soil, river };
 }
 function sky(scene, sunDirection) {
   const mat = new T.ShaderMaterial({
@@ -4845,6 +4978,348 @@ function makeWalkAmbience(trees, volume, readout) {
 
 </script>
     <script>
+// Index the same footprints and trunks used by both manual movement and route searches.
+function makeWalkSpace(solids, trunks, clearance) {
+  const buckets = new Map(), cell = 8;
+  const key = (x, z) => x + "," + z;
+  function index(shape, rx, rz) {
+    for (let i = Math.floor((shape.x - rx) / cell); i <= Math.floor((shape.x + rx) / cell); i++)
+      for (let j = Math.floor((shape.z - rz) / cell); j <= Math.floor((shape.z + rz) / cell); j++) {
+        const id = key(i, j);
+        if (!buckets.has(id)) buckets.set(id, []);
+        buckets.get(id).push(shape);
+      }
+  }
+  for (const { x, z, w, d, angle } of solids) {
+    const co = Math.cos(angle), si = Math.sin(angle), a = w / 2 + clearance, b = d / 2 + clearance;
+    index({ x, z, a, b, co, si }, Math.abs(co) * a + Math.abs(si) * b, Math.abs(si) * a + Math.abs(co) * b);
+  }
+  for (const { x, z, r } of trunks) index({ x, z, radius: r + clearance }, r + clearance, r + clearance);
+  return (x, z) => {
+    if (!inPolygon(x / SCALE + 780, z / SCALE + 370, boundary) || shoreDistance(x, z) < 1.05) return false;
+    for (const o of buckets.get(key(Math.floor(x / cell), Math.floor(z / cell))) || []) {
+      const dx = x - o.x, dz = z - o.z;
+      if (o.radius ? dx * dx + dz * dz < o.radius ** 2 :
+          Math.abs(o.co * dx - o.si * dz) < o.a && Math.abs(o.si * dx + o.co * dz) < o.b) return false;
+    }
+    return true;
+  };
+}
+
+async function findWalkRoute(start, goal, legal, signal) {
+  function clear(a, b) {
+    const dx = b.x - a.x, dz = b.z - a.z;
+    const n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / 0.14));
+    for (let i = 1; i <= n; i++) if (!legal(a.x + dx * i / n, a.z + dz * i / n)) return false;
+    return true;
+  }
+  if (!legal(goal.x, goal.z)) return [];
+  if (clear(start, goal)) return [goal];
+
+  // A* on a local metre grid. The exact endpoints connect to nearby visible nodes.
+  const heap = [], best = new Map(), visited = new Set();
+  function push(node) {
+    let i = heap.length;
+    heap.push(node);
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if (heap[parent].score <= node.score) break;
+      heap[i] = heap[parent];
+      i = parent;
+    }
+    heap[i] = node;
+  }
+  function pop() {
+    const first = heap[0], tail = heap.pop();
+    if (heap.length) {
+      let i = 0;
+      while (2 * i + 1 < heap.length) {
+        let child = 2 * i + 1;
+        if (child + 1 < heap.length && heap[child + 1].score < heap[child].score) child++;
+        if (tail.score <= heap[child].score) break;
+        heap[i] = heap[child];
+        i = child;
+      }
+      heap[i] = tail;
+    }
+    return first;
+  }
+  function consider(x, z, parent) {
+    const key = x + "," + z;
+    const cost = parent.cost + Math.hypot(x - parent.x, z - parent.z);
+    if (visited.has(key) || cost >= (best.get(key) ?? Infinity)) return;
+    const next = { x, z, key, parent, cost, score: cost + Math.hypot(goal.x - x, goal.z - z) };
+    if (!clear(parent, next)) return;
+    best.set(key, cost);
+    push(next);
+  }
+  const origin = { x: start.x, z: start.z, cost: 0 };
+  for (let dx = -1; dx <= 1; dx++)
+    for (let dz = -1; dz <= 1; dz++) consider(Math.round(start.x) + dx, Math.round(start.z) + dz, origin);
+  let deadline = performance.now() + 6;
+  while (heap.length && !signal.aborted) {
+    if (performance.now() >= deadline) {
+      await new Promise(requestAnimationFrame);
+      if (signal.aborted) break;
+      deadline = performance.now() + 6;
+    }
+    const node = pop();
+    if (visited.has(node.key)) continue;
+    visited.add(node.key);
+    if (Math.hypot(goal.x - node.x, goal.z - node.z) <= 2 && clear(node, goal)) {
+      const path = [];
+      for (let p = node; p.parent; p = p.parent) path.push({ x: p.x, z: p.z });
+      path.reverse().push(goal);
+      // Merge straight runs while retaining checked, collision-free segments.
+      const route = [];
+      let anchor = start;
+      for (let i = 0; i < path.length; i++) {
+        if (i + 1 < path.length && clear(anchor, path[i + 1])) continue;
+        route.push(path[i]);
+        anchor = path[i];
+      }
+      return route;
+    }
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dz = -1; dz <= 1; dz++) if (dx || dz) consider(node.x + dx, node.z + dz, node);
+  }
+  return [];
+}
+
+</script>
+    <script>
+function makeCampusMap() {
+  const base = canvas(mapWidth, mapHeight), ink = base.getContext("2d");
+  function outline(points) {
+    ink.beginPath();
+    for (const [i, [x, y]] of points.entries()) i ? ink.lineTo(x, y) : ink.moveTo(x, y);
+    ink.closePath();
+  }
+  outline([[riverU(0), 0], [mapWidth, 0], [mapWidth, mapHeight], [riverU(mapHeight), mapHeight]]);
+  ink.fillStyle = "#78b9c26e";
+  ink.fill();
+  outline(boundary);
+  ink.fillStyle = "#93aa7d32";
+  ink.fill();
+  ink.strokeStyle = "#cfd5ae9c";
+  ink.lineWidth = 2;
+  ink.stroke();
+  // Read the existing road mask once, including the short garden approaches.
+  const roads = ink.createImageData(mapWidth, mapHeight);
+  for (let y = 0; y < mapHeight; y++) {
+    for (let x = 0; x < mapWidth; x++) {
+      const src = 4 * (Math.floor(y * roadMask.height / mapHeight) * roadMask.width +
+        Math.floor(x * roadMask.width / mapWidth));
+      const i = 4 * (y * mapWidth + x);
+      roads.data[i] = 235;
+      roads.data[i + 1] = 225;
+      roads.data[i + 2] = 192;
+      roads.data[i + 3] = Math.max(maskPixels[src] > 125 ? maskPixels[src] : 0, maskPixels[src + 1]);
+    }
+  }
+  const overlay = canvas(mapWidth, mapHeight);
+  overlay.getContext("2d").putImageData(roads, 0, 0);
+  ink.drawImage(overlay, 0, 0);
+  ink.fillStyle = "#c6ae81";
+  for (const b of obstacles) {
+    ink.save();
+    ink.translate(b.x / SCALE + 780, b.z / SCALE + 370);
+    ink.rotate(-b.angle);
+    ink.fillRect(-b.w / SCALE / 2, -b.d / SCALE / 2, b.w / SCALE, b.d / SCALE);
+    ink.restore();
+  }
+  const nearby = el("nearbyMap"), overview = el("campusMap");
+  return (position, yaw, mode, route) => {
+    const expanded = el("mapDialog").open;
+    const surface = expanded ? overview : nearby;
+    const w = surface.clientWidth, h = surface.clientHeight;
+    if (!w || !h) return;
+    const dpr = Math.min(window.devicePixelRatio, 2);
+    const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+    if (surface.width !== pw || surface.height !== ph) {
+      surface.width = pw;
+      surface.height = ph;
+    }
+    const g = surface.getContext("2d");
+    g.setTransform(pw / w, 0, 0, ph / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    const u = position.x / SCALE + 780, v = position.z / SCALE + 370;
+    const left = Math.min(0, u - 24), right = Math.max(mapWidth, u + 24);
+    const top = Math.min(0, v - 24), bottom = Math.max(mapHeight, v + 24);
+    const scale = expanded ? Math.min(w / (right - left), h / (bottom - top)) : w / 255;
+    const cx = expanded ? (left + right) / 2 : u, cy = expanded ? (top + bottom) / 2 : v;
+    const sx = (x) => w / 2 + (x - cx) * scale, sy = (y) => h / 2 + (y - cy) * scale;
+    g.drawImage(base, sx(0), sy(0), mapWidth * scale, mapHeight * scale);
+    if (expanded) {
+      g.font = '12px "Microsoft YaHei", sans-serif';
+      g.textAlign = "center";
+      g.lineWidth = 3;
+      for (const [id, label] of [[190, "密氏校门"], [180, "运动场"], [154, "水塔"], [182, "黄浦江岸"]]) {
+        const site = byId.get(id), x = sx(site.u), y = sy(site.v) + 16;
+        g.strokeStyle = "#253f37";
+        g.strokeText(label, x, y);
+        g.fillStyle = "#f6f0db";
+        g.fillText(label, x, y);
+      }
+    }
+    const px = sx(u), py = sy(v);
+    if (route.length) {
+      g.beginPath();
+      g.moveTo(px, py);
+      let x, y;
+      for (const step of route) {
+        x = sx(step.x / SCALE + 780);
+        y = sy(step.z / SCALE + 370);
+        g.lineTo(x, y);
+      }
+      g.strokeStyle = "#ffe58b";
+      g.lineWidth = 2.5;
+      g.setLineDash([5, 3]);
+      g.stroke();
+      g.setLineDash([]);
+      g.beginPath();
+      g.arc(x, y, 4, 0, 2 * Math.PI);
+      g.fillStyle = "#ffe58b";
+      g.fill();
+    }
+    g.save();
+    g.translate(px, py);
+    g.rotate(yaw);
+    g.beginPath();
+    if (mode === "orbit") g.arc(0, 0, 5, 0, 2 * Math.PI);
+    else {
+      g.moveTo(0, -9);
+      g.lineTo(6, 7);
+      g.lineTo(0, 4);
+      g.lineTo(-6, 7);
+      g.closePath();
+    }
+    g.strokeStyle = "#163d36";
+    g.lineWidth = 3;
+    g.stroke();
+    g.fillStyle = "#fff6c9";
+    g.fill();
+    g.restore();
+  };
+}
+
+</script>
+    <script>
+function bindCampusControls(screen, actions) {
+  const fingers = new Map(), heldLift = new Map();
+  const stick = el("stick"), knob = el("stickKnob");
+  let stickId = null;
+  const axes = { forward: 0, right: 0, lift: 0 };
+  function resetStick() {
+    stickId = null;
+    axes.forward = axes.right = 0;
+    knob.style.transform = "";
+  }
+  function reset() {
+    fingers.clear();
+    heldLift.clear();
+    axes.lift = 0;
+    resetStick();
+  }
+  function moveStick(e) {
+    if (e.pointerId !== stickId) return;
+    const box = stick.getBoundingClientRect();
+    const radius = box.width * 0.31;
+    const dx = (e.clientX - box.left - box.width / 2) / radius;
+    const dy = (e.clientY - box.top - box.height / 2) / radius;
+    const magnitude = Math.max(1, Math.hypot(dx, dy));
+    axes.right = dx / magnitude;
+    axes.forward = -dy / magnitude;
+    knob.style.transform = "translate(" + axes.right * radius + "px," + -axes.forward * radius + "px)";
+  }
+  stick.onpointerdown = (e) => {
+    if (stickId !== null || e.button !== 0) return;
+    stickId = e.pointerId;
+    stick.setPointerCapture(e.pointerId);
+    actions.manual();
+    moveStick(e);
+  };
+  stick.onpointermove = moveStick;
+  stick.onpointerup = stick.onpointercancel = stick.onlostpointercapture = (e) => {
+    if (e.pointerId === stickId) resetStick();
+  };
+  function updateLift() {
+    axes.lift = Math.sign([...heldLift.values()].reduce((sum, n) => sum + n, 0));
+  }
+  for (const [button, sign] of [[el("ascend"), 1], [el("descend"), -1]]) {
+    button.onpointerdown = (e) => {
+      if (e.button !== 0) return;
+      button.setPointerCapture(e.pointerId);
+      heldLift.set(e.pointerId, sign);
+      updateLift();
+    };
+    button.onpointerup = button.onpointercancel = button.onlostpointercapture = (e) => {
+      heldLift.delete(e.pointerId);
+      updateLift();
+    };
+    button.onkeydown = (e) => {
+      if (e.code !== "Space" && e.code !== "Enter") return;
+      e.preventDefault();
+      heldLift.set(button, sign);
+      updateLift();
+    };
+    button.onkeyup = button.onblur = () => {
+      heldLift.delete(button);
+      updateLift();
+    };
+  }
+  const sceneView = screen.parentElement;
+  sceneView.onpointerdown = (e) => {
+    if (!actions.enabled() || (e.button !== 0 && e.button !== 2)) return;
+    screen.focus({ preventScroll: true });
+    actions.unlock();
+    screen.setPointerCapture(e.pointerId);
+    fingers.set(e.pointerId, { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY,
+      pin: e.target.closest("#pins button"), pan: e.button === 2 || e.shiftKey, moved: false });
+    if (fingers.size > 1) for (const finger of fingers.values()) finger.moved = true;
+  };
+  sceneView.onpointermove = (e) => {
+    const finger = fingers.get(e.pointerId);
+    if (!finger) return;
+    const x = e.clientX, y = e.clientY;
+    const dx = x - finger.x, dy = y - finger.y;
+    if (!finger.moved && Math.hypot(x - finger.startX, y - finger.startY) < (e.pointerType === "touch" ? 7 : 3)) return;
+    finger.moved = true;
+    if (fingers.size === 2 && actions.mode() === "orbit") {
+      const other = [...fingers.values()].find((p) => p !== finger);
+      const before = Math.hypot(finger.x - other.x, finger.y - other.y);
+      const after = Math.hypot(x - other.x, y - other.y);
+      actions.pan(dx / 2, dy / 2);
+      if (after > 4 && before > 4) actions.zoom(before / after);
+    } else if (fingers.size === 1) {
+      if (finger.pan && actions.mode() === "orbit") actions.pan(dx, dy);
+      else actions.rotate(dx, dy);
+    }
+    finger.x = x;
+    finger.y = y;
+  };
+  sceneView.onpointerup = (e) => {
+    const finger = fingers.get(e.pointerId);
+    fingers.delete(e.pointerId);
+    if (finger && !finger.moved && e.button === 0 &&
+        Math.hypot(e.clientX - finger.startX, e.clientY - finger.startY) < (e.pointerType === "touch" ? 7 : 3)) {
+      if (finger.pin) return finger.pin.click();
+      const rect = screen.getBoundingClientRect();
+      actions.tap((e.clientX - rect.left) / rect.width * 2 - 1, 1 - (e.clientY - rect.top) / rect.height * 2);
+    }
+  };
+  sceneView.onpointercancel = sceneView.onlostpointercapture = (e) => fingers.delete(e.pointerId);
+  sceneView.oncontextmenu = (e) => e.preventDefault();
+  sceneView.addEventListener("wheel", (e) => {
+    if (actions.mode() !== "orbit") return;
+    e.preventDefault();
+    actions.zoom(Math.exp(e.deltaY * 0.001));
+  }, { passive: false });
+  return { axes, reset };
+}
+
+</script>
+    <script>
 const el = (id) => document.getElementById(id);
 function explore() {
   const scene = new T.Scene(),
@@ -4870,7 +5345,7 @@ function explore() {
   const shadowUp = new V().crossVectors(sunDirection, shadowRight);
   const droneShadowFocus = new V();
   sky(scene, sunDirection);
-  terrain(scene);
+  const { soil, river } = terrain(scene);
   riverGarden(scene);
   const architecture = new T.Group();
   for (const s of sites.filter((s) => s.style !== "landmark")) buildSite(s, architecture);
@@ -4880,6 +5355,7 @@ function explore() {
   const trees = vegetation(scene),
     flightSpace = makeFlightSpace(architecture, treeTrunks),
     blades = grass(scene);
+  const treeMeshes = scene.children.filter((object) => object.isInstancedMesh && object.castShadow);
   const gate = byId.get(190),
     player = new V(),
     drone = new V(),
@@ -4895,34 +5371,36 @@ function explore() {
     selected = null,
     q = 1,
     dirty = true,
-    drag = null,
-    lookFallback = false,
-    locked = false,
+    route = [],
+    routeSearch = null,
+    hintTimer = 0,
     shadowX = Infinity,
     shadowZ = Infinity,
     shadowRange = 0,
     lastArea = 0;
   let viewLabel, groundLook;
   const ambience = makeWalkAmbience(treeTrunks, el("ambientVolume"), el("ambientValue"));
-  const eye = 1.66,
-    collisionRadius = 0.32;
-  function legal(x, z) {
-    if (!inPolygon(x / SCALE + 780, z / SCALE + 370, boundary) || shoreDistance(x, z) < 1.05)
-      return false;
-    for (const o of obstacles) {
-      let dx = x - o.x,
-        dz = z - o.z;
-      if (o.angle) {
-        const co = Math.cos(o.angle),
-          si = Math.sin(o.angle);
-        [dx, dz] = [co * dx - si * dz, si * dx + co * dz];
-      }
-      if (Math.abs(dx) < o.w / 2 + collisionRadius && Math.abs(dz) < o.d / 2 + collisionRadius)
-        return false;
-    }
-    for (const t of treeTrunks)
-      if ((x - t.x) ** 2 + (z - t.z) ** 2 < (t.r + collisionRadius) ** 2) return false;
-    return true;
+  const eye = 1.66;
+  const legal = makeWalkSpace(obstacles, treeTrunks, 0.32);
+  const drawMap = makeCampusMap();
+  const touch = matchMedia("(any-pointer: coarse)");
+  const mapDialog = el("mapDialog");
+  const panels = ["placesPanel", "settingsPanel", "placeCard"];
+  function panelOpen() {
+    return mapDialog.open || panels.some((id) => !el(id).hidden);
+  }
+  const marker = new T.Mesh(new T.RingGeometry(0.25, 0.35, 32),
+    new T.MeshBasicMaterial({ color: 0xffdc80, polygonOffset: true, polygonOffsetFactor: -2 }));
+  marker.name = "walkingDestination";
+  marker.rotation.x = -Math.PI / 2;
+  marker.visible = false;
+  scene.add(marker);
+  function clearRoute() {
+    routeSearch?.abort();
+    routeSearch = null;
+    route = [];
+    marker.visible = false;
+    dirty = true;
   }
   function groundPlayer() {
     let level = groundY(player.x, player.z);
@@ -4949,27 +5427,23 @@ function explore() {
     el("settingsPanel").hidden = true;
   }
   function hint() {
-    el("cross").hidden = !locked || mode === "orbit";
-    if (mode === "drone") {
-      let look = "拖动环顾";
-      if (locked) look = "鼠标环顾 · Esc 释放";
-      else if (!lookFallback) look += " · 点击空地锁定鼠标";
-      el("hint").textContent = "WASD 飞行 · E 上升 / Q 下降 · Shift 加速 · " + look;
-      return;
-    }
-    el("hint").textContent =
-      mode === "orbit"
-        ? "拖动旋转 · 右键平移 · 滚轮缩放 · 点击建筑查看资料"
-        : locked
-          ? "WASD 行走 · Shift 加速 · 点击建筑查看资料 · Esc 释放鼠标"
-          : lookFallback
-            ? "拖动环顾 · WASD 行走 · 点击建筑查看资料"
-            : "点击空地开始漫游 · WASD 行走 · 鼠标环顾";
+    clearTimeout(hintTimer);
+    const mobile = touch.matches;
+    el("hint").textContent = mode === "walk"
+      ? (mobile ? "点地行走 · 左侧摇杆移动 · 拖动环顾" : "点地行走 · 拖动环顾 · WASD 移动 · Shift 加速")
+      : mode === "drone"
+        ? (mobile ? "摇杆飞行 · 按住箭头升降 · 拖动环顾" : "WASD 飞行 · E / Q 升降 · Shift 加速 · 拖动环顾")
+        : (mobile ? "单指旋转 · 双指缩放或平移 · 点建筑看资料" : "拖动旋转 · 右键平移 · 滚轮缩放 · 点建筑看资料");
   }
-  function release() {
-    if (document.pointerLockElement === screen) document.exitPointerLock();
+  function unreachable() {
+    clearTimeout(hintTimer);
+    el("hint").textContent = "这里无法步行到达，请选择其他地面";
+    hintTimer = setTimeout(hint, 2400);
+  }
+  function release(cancelRoute = true) {
     keys.clear();
-    drag = null;
+    controls.reset();
+    if (cancelRoute) clearRoute();
   }
   function setMode(next) {
     release();
@@ -4978,6 +5452,7 @@ function explore() {
       pitch = groundLook.pitch;
     }
     mode = next;
+    document.body.dataset.mode = mode;
     ambience.setWalking(mode === "walk");
     for (const id of ["walk", "orbit", "drone"]) el(id).setAttribute("aria-pressed", String(id === mode));
     el("locationLabel").textContent = "当前位置";
@@ -4987,6 +5462,7 @@ function explore() {
     hint();
   }
   function fullView() {
+    for (const id of panels) el(id).hidden = true;
     selected = null;
     el("placeCard").hidden = true;
     target.set(-22, 0, 3);
@@ -5075,6 +5551,7 @@ function explore() {
     gateView();
   }
   function card(s) {
+    release();
     selected = s;
     el("placeCard").hidden = false;
     el("placesPanel").hidden = true;
@@ -5113,16 +5590,44 @@ function explore() {
     setMode("orbit");
     card(s);
   }
-  function choose(x, y) {
+  async function tapScene(x, y) {
+    if (panelOpen()) return;
     camera.updateMatrixWorld();
     ray.setFromCamera(new T.Vector2(x, y), camera);
+    const ground = ray.intersectObject(soil, false)[0];
+    const water = ray.intersectObject(river, false)[0];
+    const surfaceDistance = Math.min(ground?.distance ?? Infinity, water?.distance ?? Infinity);
     const hit = ray.intersectObjects(buildings, false)[0];
-    if (!hit || (mode === "walk" && hit.distance > 80)) return false;
-    release();
-    card(byId.get(hit.object.geometry.getAttribute("siteId").getX(hit.face.a)));
-    return true;
+    if (mode === "walk") {
+      // Grass is traversable. A visible tree in front of a target blocks the pick.
+      ray.far = Math.min(surfaceDistance, hit?.distance ?? Infinity);
+      const blocked = ray.intersectObjects(treeMeshes.filter((tree) => tree.visible), false).length > 0;
+      ray.far = Infinity;
+      if (blocked) return;
+    }
+    if (hit && hit.distance < surfaceDistance) {
+      if (mode !== "walk" || hit.distance <= 80) card(byId.get(hit.object.geometry.getAttribute("siteId").getX(hit.face.a)));
+      return;
+    }
+    if (mode !== "walk" || !Number.isFinite(surfaceDistance)) return;
+    if (controls.axes.forward || controls.axes.right || ["KeyW", "KeyA", "KeyS", "KeyD"].some((k) => keys.has(k))) return;
+    clearRoute();
+    hint();
+    if (!ground || ground.distance > surfaceDistance) return unreachable();
+    const search = new AbortController();
+    routeSearch = search;
+    const goal = { x: ground.point.x, z: ground.point.z };
+    const result = await findWalkRoute(player.clone(), goal, legal, search.signal);
+    if (search.signal.aborted) return;
+    routeSearch = null;
+    if (!result.length) return unreachable();
+    route = result;
+    marker.position.set(goal.x, groundY(goal.x, goal.z) + 0.055, goal.z);
+    marker.visible = true;
+    dirty = true;
   }
   function walkMode() {
+    for (const id of panels) el(id).hidden = true;
     if (mode === "drone") {
       landDrone();
     } else if (mode === "orbit" && selected) {
@@ -5141,9 +5646,10 @@ function explore() {
     q = Number(el("quality").value);
     renderer.setPixelRatio(Math.min(devicePixelRatio, [0.8, 1.25, 1.75][q]));
     renderer.setSize(innerWidth, innerHeight);
-    sun.shadow.mapSize.setScalar(Math.min([1024, 2048, 3072][q], renderer.capabilities.maxTextureSize));
-    if (sun.shadow.map) {
-      sun.shadow.map.dispose();
+    const resolution = Math.min([1024, 2048, 3072][q], renderer.capabilities.maxTextureSize);
+    if (sun.shadow.mapSize.x !== resolution) {
+      sun.shadow.mapSize.setScalar(resolution);
+      sun.shadow.map?.dispose();
       sun.shadow.map = null;
     }
     dirty = true;
@@ -5213,11 +5719,38 @@ function explore() {
     camera.updateMatrixWorld();
   }
   function advance(dt) {
-    if (mode === "orbit" || !keys.size) return;
-    const f = Number(keys.has("KeyW")) - Number(keys.has("KeyS")),
-      r = Number(keys.has("KeyD")) - Number(keys.has("KeyA"));
+    if (mode === "orbit" || panelOpen()) return;
+    if (route.length) {
+      let remaining = dt * 2;
+      while (route.length && remaining > 0) {
+        const next = route[0], dx = next.x - player.x, dz = next.z - player.z;
+        const distance = Math.hypot(dx, dz);
+        if (distance < 0.001) {
+          route.shift();
+          continue;
+        }
+        const step = Math.min(remaining, distance, 0.14);
+        const x = player.x + step * dx / distance, z = player.z + step * dz / distance;
+        if (!legal(x, z)) {
+          clearRoute();
+          unreachable();
+          break;
+        }
+        player.x = x;
+        player.z = z;
+        remaining -= step;
+        if (step === distance) route.shift();
+      }
+      if (!route.length) marker.visible = false;
+      groundPlayer();
+      dirty = true;
+      return;
+    }
+    const axes = controls.axes;
+    const f = axes.forward + Number(keys.has("KeyW")) - Number(keys.has("KeyS")),
+      r = axes.right + Number(keys.has("KeyD")) - Number(keys.has("KeyA"));
     const mag = Math.hypot(f, r);
-    const lift = mode === "drone" ? Number(keys.has("KeyE")) - Number(keys.has("KeyQ")) : 0;
+    const lift = mode === "drone" ? Math.sign(axes.lift + Number(keys.has("KeyE")) - Number(keys.has("KeyQ"))) : 0;
     if (!mag && !lift) return;
     const fast = keys.has("ShiftLeft") || keys.has("ShiftRight");
     const speed = mode === "drone" ? (fast ? 32 : 12) : (fast ? 3.95 : 2);
@@ -5248,92 +5781,54 @@ function explore() {
     target.z += (dx * Math.sin(theta) + dy * Math.cos(theta)) * k;
     dirty = true;
   }
-  screen.addEventListener("pointerdown", (e) => {
-    ambience.unlock();
-    screen.focus();
-    drag = {
-      x: e.clientX,
-      y: e.clientY,
-      ox: e.clientX,
-      oy: e.clientY,
-      pan: e.button === 2 || e.shiftKey,
-      moved: false,
-    };
-    if (!locked) screen.setPointerCapture(e.pointerId);
-  });
-  document.addEventListener("pointermove", (e) => {
-    if (mode !== "orbit" && locked) {
-      rotate(e.movementX, e.movementY);
-      return;
-    }
-    if (!drag) return;
-    const dx = e.clientX - drag.x,
-      dy = e.clientY - drag.y;
-    drag.x = e.clientX;
-    drag.y = e.clientY;
-    if (Math.hypot(e.clientX - drag.ox, e.clientY - drag.oy) > 3) drag.moved = true;
-    if (mode !== "orbit") rotate(dx, dy);
-    else if (drag.pan) pan(dx, dy);
-    else {
+  const controls = bindCampusControls(screen, {
+    mode: () => mode,
+    enabled: () => !panelOpen(),
+    tap: tapScene,
+    unlock: () => ambience.unlock(),
+    manual() { clearRoute(); ambience.unlock(); },
+    pan,
+    zoom(factor) { radius = T.MathUtils.clamp(radius * factor, 9, 900); dirty = true; },
+    rotate(dx, dy) {
+      if (mode !== "orbit") return rotate(dx, dy);
       theta -= dx * 0.005;
       tilt = T.MathUtils.clamp(tilt - dy * 0.005, 0.03, 1.51);
       dirty = true;
-    }
-  });
-  screen.addEventListener("pointerup", (e) => {
-    ambience.unlock();
-    const clicked = !!drag && !drag.moved && e.button === 0;
-    drag = null;
-    if (!clicked) return;
-    const x = locked ? 0 : (e.clientX / innerWidth) * 2 - 1,
-      y = locked ? 0 : 1 - (e.clientY / innerHeight) * 2;
-    if (choose(x, y)) return;
-    el("placeCard").hidden = true;
-    if (mode !== "orbit" && !locked) {
-      try {
-        const result = screen.requestPointerLock();
-        result?.catch(() => {
-          lookFallback = true;
-          hint();
-        });
-      } catch {
-        lookFallback = true;
-        hint();
-      }
-    }
-  });
-  screen.addEventListener("contextmenu", (e) => e.preventDefault());
-  screen.addEventListener(
-    "wheel",
-    (e) => {
-      if (mode !== "orbit") return;
-      e.preventDefault();
-      radius = T.MathUtils.clamp(radius * Math.exp(e.deltaY * 0.001), 9, 900);
-      dirty = true;
     },
-    { passive: false },
-  );
-  document.addEventListener("pointerlockchange", () => {
-    locked = document.pointerLockElement === screen;
-    if (locked) lookFallback = false;
-    drag = null;
-    keys.clear();
-    hint();
   });
-  document.addEventListener("pointerlockerror", () => {
-    lookFallback = true;
-    hint();
+  function updateMap() {
+    const mapPosition = mode === "orbit" ? target : mode === "walk" ? player : drone;
+    drawMap(mapPosition, yaw, mode, route);
+    if (mapDialog.open) {
+      const location = mode === "orbit" ? "圆点为鸟瞰中心" : mode === "walk" ? "箭头为步行位置和朝向" : "箭头为无人机位置和朝向";
+      el("mapLegend").textContent = route.length ? location + " · 虚线为剩余路线" : location;
+    }
+  }
+  el("mapToggle").onclick = () => {
+    release(false);
+    mapDialog.showModal();
+    updateMap();
+    el("mapToggle").setAttribute("aria-expanded", "true");
+    dirty = true;
+  };
+  el("mapClose").onclick = () => mapDialog.close();
+  mapDialog.addEventListener("close", () => {
+    el("mapToggle").setAttribute("aria-expanded", "false");
+    dirty = true;
   });
   window.addEventListener("keydown", (e) => {
+    if (mapDialog.open) return;
     if (e.key === "Escape") {
       release();
       for (const id of ["placesPanel", "settingsPanel", "placeCard"]) el(id).hidden = true;
       return;
     }
     if (e.target.matches("input,select,textarea") || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (panelOpen()) return;
     const liftKey = mode === "drone" && (e.code === "KeyQ" || e.code === "KeyE");
     if (liftKey || ["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight"].includes(e.code)) {
       e.preventDefault();
+      if (!e.code.startsWith("Shift")) clearRoute();
       keys.add(e.code);
       ambience.unlock();
     }
@@ -5342,14 +5837,14 @@ function explore() {
     if (e.code === "KeyV" || e.code === "KeyF") ambience.unlock();
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
-  window.addEventListener("blur", () => {
-    keys.clear();
-    drag = null;
-  });
-  document.addEventListener("visibilitychange", () => {
-    keys.clear();
-    dirty = true;
-  });
+  window.addEventListener("blur", () => release());
+  document.addEventListener("visibilitychange", () => release());
+  function fitPanels() {
+    document.documentElement.style.setProperty("--visible-height", (window.visualViewport?.height || innerHeight) + "px");
+  }
+  fitPanels();
+  window.visualViewport?.addEventListener("resize", fitPanels);
+  touch.addEventListener("change", hint);
   window.addEventListener("resize", () => {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
@@ -5376,7 +5871,7 @@ function explore() {
     .forEach((b) => (b.onclick = () => (b.closest("section").hidden = true)));
   const pinLayer = document.createElement("div");
   pinLayer.id = "pins";
-  document.body.append(pinLayer);
+  el("view").append(pinLayer);
   const pins = [121, 153, 154, 163, 141, 142, 112, 104, 180, 181, 190].map((id) => {
     const s = byId.get(id),
       b = document.createElement("button");
@@ -5388,7 +5883,8 @@ function explore() {
   function updatePins() {
     pinLayer.hidden = mode !== "orbit" || !el("pinToggle").checked;
     if (pinLayer.hidden) return;
-    const used = [];
+    const corner = document.querySelector(".map-corner").getBoundingClientRect();
+    const used = [[corner.left, corner.top, corner.right, corner.bottom]];
     for (const { s, b } of pins) {
       const v = new V(s.x, s.h + 2.2, s.z).project(camera),
         x = ((v.x + 1) * innerWidth) / 2,
@@ -5436,6 +5932,7 @@ function explore() {
     el("placeCard").hidden = true;
   };
   for (const id of ["walk", "home", "landHere"]) el(id).addEventListener("click", ambience.unlock);
+  if (touch.matches) el("quality").value = "0";
   quality();
   gateView();
   let last = performance.now();
@@ -5448,6 +5945,7 @@ function explore() {
     if (!dirty) return;
     aim();
     updatePins();
+    updateMap();
     if (trees(camera.position, q)) renderer.shadowMap.needsUpdate = true;
     blades(camera.position, q, camera.position.y - groundY(camera.position.x, camera.position.z) < 8);
     setupShadows();

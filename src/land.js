@@ -187,7 +187,9 @@ function terrain(scene) {
   };
   const water = new T.PlaneGeometry(7200, 7200);
   water.rotateX(-Math.PI / 2);
-  mesh(scene, water, waterMat, 0, riverLevel, 0).receiveShadow = true;
+  const river = mesh(scene, water, waterMat, 0, riverLevel, 0);
+  river.receiveShadow = true;
+  return { soil, river };
 }
 function sky(scene, sunDirection) {
   const mat = new T.ShaderMaterial({
