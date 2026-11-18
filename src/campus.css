@@ -1,0 +1,393 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#view {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+body {
+  font:
+    14px "Microsoft YaHei",
+    "PingFang SC",
+    sans-serif;
+  color: #f7f3e7;
+  background: #9db1ab;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: 0;
+}
+button,
+select,
+input {
+  font: inherit;
+}
+button,
+summary,
+select {
+  cursor: pointer;
+}
+button {
+  color: inherit;
+  background: none;
+  border: 0;
+}
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid #c69d59;
+  outline-offset: 2px;
+}
+button:hover {
+  background: #ffffff20;
+}
+body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(0deg, #141f2257, transparent 15%, transparent 84%, #20302b32);
+  z-index: 1;
+}
+header,
+.top,
+#dock,
+.panel,
+#placeCard,
+.bottomLeft,
+#hint,
+#cross {
+  position: absolute;
+  z-index: 2;
+}
+header {
+  left: 24px;
+  top: 22px;
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  background: #f8f5e9f2;
+  border: 1px solid #ffffffab;
+  padding: 13px 18px 12px;
+  color: #263d35;
+  box-shadow: 0 3px 18px #202b2522;
+}
+.seal {
+  font:
+    17px/18px SimSun,
+    serif;
+  letter-spacing: 0;
+  text-align: center;
+  border: 1px solid #944c36;
+  outline: 1px solid #944c36;
+  outline-offset: 2px;
+  color: #944c36;
+  padding: 1px 2px;
+  margin: 0 2px;
+}
+h1,
+h2 {
+  font-family: "Songti SC", SimSun, serif;
+  margin: 0;
+}
+h1 {
+  font-size: 24px;
+  letter-spacing: 0.19em;
+}
+header p {
+  font:
+    8px/1.3 Georgia,
+    serif;
+  letter-spacing: 0.13em;
+  margin: 4px 0 0;
+}
+header .date {
+  font:
+    22px/1 Georgia,
+    serif;
+  border-left: 1px solid #ccc7b5;
+  padding-left: 13px;
+}
+.date small {
+  display: block;
+  font:
+    10px/1.7 SimSun,
+    serif;
+  letter-spacing: 0.3em;
+}
+.top {
+  top: 23px;
+  right: 23px;
+  display: flex;
+  gap: 6px;
+}
+.top button,
+#dock {
+  background: #253c33ed;
+  border: 1px solid #c9c8ae72;
+  box-shadow: 0 3px 14px #10251a26;
+}
+.top button {
+  min-height: 40px;
+  padding: 0 15px;
+}
+.top button:hover {
+  background: #42594a;
+}
+#dock {
+  bottom: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  white-space: nowrap;
+}
+#dock button {
+  padding: 10px 16px;
+  font-size: 13px;
+}
+#dock button[aria-pressed="true"] {
+  background: #ece8d7;
+  color: #263c33;
+}
+#dock b {
+  height: 20px;
+  border-left: 1px solid #b0bcaa66;
+  margin: 0 4px;
+}
+.bottomLeft {
+  left: 26px;
+  bottom: 25px;
+  text-shadow: 0 1px 5px #17251e;
+}
+.bottomLeft small,
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.17em;
+}
+.bottomLeft div {
+  font:
+    22px/1.6 SimSun,
+    serif;
+}
+#hint {
+  bottom: 82px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  border-radius: 2px;
+  padding: 7px 13px;
+  background: #23352cc7;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#cross {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font: 18px Arial;
+  color: #fffff5a6;
+  text-shadow: 0 1px 2px #333;
+  pointer-events: none;
+}
+.panel,
+#placeCard {
+  background: #f7f4e9f7;
+  color: #263b32;
+  border-top: 3px solid #97704b;
+  box-shadow: 0 5px 22px #18241e33;
+  padding: 20px;
+  max-height: 70vh;
+  overflow: auto;
+}
+.panel {
+  right: 24px;
+  top: 77px;
+  width: min(300px, 90vw);
+}
+#placeCard {
+  left: 24px;
+  bottom: 115px;
+  width: min(315px, 90vw);
+}
+h2 {
+  font-size: 23px;
+  letter-spacing: 0.03em;
+}
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.close {
+  font: 22px/1 Arial;
+  width: 30px;
+  height: 30px;
+  color: #576157;
+}
+.close:hover {
+  background: #dfdfcf;
+}
+#placeCard > .close {
+  float: right;
+}
+.eyebrow {
+  color: #85633f;
+  margin: 5px 0 9px;
+}
+.panel p,
+#placeCard p {
+  font-size: 13px;
+  line-height: 1.85;
+  margin: 10px 0;
+  color: #435448;
+}
+details {
+  border-top: 1px solid #dad6c6;
+  padding-top: 10px;
+  margin-top: 13px;
+}
+summary {
+  font-size: 12px;
+}
+a {
+  color: #32624f;
+  font-size: 12px;
+}
+#landHere {
+  margin-top: 13px;
+  background: #324c3f;
+  color: white;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.panel label {
+  display: block;
+  color: #58695d;
+  font-size: 12px;
+  margin: 6px 0;
+}
+.panel input,
+.panel select {
+  width: 100%;
+  background: #fffdf4;
+  color: #273b30;
+  border: 1px solid #b5bba9;
+  padding: 8px;
+}
+#placeList {
+  margin-top: 9px;
+  max-height: 43vh;
+  overflow: auto;
+}
+#placeList button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #dfddcf;
+  text-align: left;
+  padding: 9px 4px;
+}
+#placeList button:hover {
+  background: #e6e6d8;
+}
+#placeList small {
+  color: #827d69;
+}
+#loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  background: #eeeadd;
+  color: #35463b;
+  font:
+    23px SimSun,
+    serif;
+  z-index: 7;
+}
+[hidden],
+#loading[hidden] {
+  display: none !important;
+}
+@media (max-width: 720px) {
+  header {
+    left: 10px;
+    top: 10px;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  h1 {
+    font-size: 17px;
+  }
+  .top {
+    right: 10px;
+    top: 10px;
+  }
+  .bottomLeft {
+    left: 12px;
+    bottom: 100px;
+  }
+  .panel {
+    right: 10px;
+    top: 62px;
+  }
+  #hint {
+    font-size: 10px;
+    max-width: 98vw;
+    white-space: normal;
+    text-align: center;
+    width: max-content;
+  }
+  #placeCard {
+    left: 10px;
+    bottom: 155px;
+  }
+  .top button {
+    padding: 0 9px;
+  }
+  #dock button {
+    padding: 9px 12px;
+  }
+}
+#pins {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+#pins button {
+  position: absolute;
+  pointer-events: auto;
+  transform: translate(-50%, -100%);
+  padding: 3px 7px;
+  white-space: nowrap;
+  font:
+    11px/1.4 "Microsoft YaHei",
+    sans-serif;
+  background: #f4f0dfdf;
+  border-bottom: 1px solid #8e7051;
+  color: #2e4033;
+  box-shadow: 0 1px 4px #29362b24;
+}
+#pins button:hover {
+  background: #fffdf2;
+}
+.panel .check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 0;
+}
+.panel .check input {
+  width: auto;
+  accent-color: #304e3a;
+}
