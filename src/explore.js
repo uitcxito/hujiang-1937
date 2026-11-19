@@ -60,10 +60,14 @@ function explore() {
   const ambience = makeWalkAmbience(treeTrunks, el("ambientVolume"), el("ambientValue"), shrubPerches);
   const eye = 1.66;
   const legal = makeWalkSpace(obstacles, treeTrunks, 0.32);
-  const drawMap = makeCampusMap();
+  const drawNearbyMap = makeNearbyMap();
   const touch = matchMedia("(any-pointer: coarse)");
   const mapDialog = el("mapDialog");
   const placeCard = el("placeCard");
+  const drawWatercolor = makeWatercolorMap((site) => {
+    card(site);
+    placeCard.querySelector(".close").focus({ preventScroll: true });
+  }, updateMap);
   const menus = [el("placesPanel"), el("settingsPanel")];
   function sceneInputBlocked() {
     return mapDialog.open || menus.some((menu) => !menu.hidden);
@@ -475,13 +479,23 @@ function explore() {
       dirty = true;
     },
   });
+  function locationName(pos) {
+    if (mode === "walk" && viewLabel && Math.hypot(pos.x - viewLabel.x, pos.z - viewLabel.z) < 8) return viewLabel.name;
+    const nearest = sites.reduce((a, s) =>
+      Math.hypot(s.x - pos.x, s.z - pos.z) < Math.hypot(a.x - pos.x, a.z - pos.z) ? s : a,
+    );
+    const distance = Math.hypot(nearest.x - pos.x, nearest.z - pos.z);
+    if (mode === "walk") return distance < 27 ? nearest.name : "校园道路与草地";
+    const air = mode === "drone" ? "上空" : "";
+    if (groundY(pos.x, pos.z) < riverLevel) return "黄浦江" + air;
+    if (distance < 38) return nearest.name + air;
+    if (!inPolygon(pos.x / SCALE + 780, pos.z / SCALE + 370, boundary)) return "校园外围";
+    return "校园" + air;
+  }
   function updateMap() {
-    const mapPosition = mode === "orbit" ? target : mode === "walk" ? player : drone;
-    drawMap(mapPosition, yaw, mode, route);
-    if (mapDialog.open) {
-      const location = mode === "orbit" ? "圆点为鸟瞰中心" : mode === "walk" ? "箭头为步行位置和朝向" : "箭头为无人机位置和朝向";
-      el("mapLegend").textContent = route.length ? location + " · 虚线为剩余路线" : location;
-    }
+    const pos = mode === "orbit" ? target : mode === "walk" ? player : drone;
+    if (mapDialog.open) drawWatercolor(pos, yaw, mode, route, locationName(pos));
+    else drawNearbyMap(pos, yaw, mode, route);
   }
   el("mapToggle").onclick = () => {
     release(false);
@@ -635,23 +649,7 @@ function explore() {
       if (el("locationLabel").textContent !== label) el("locationLabel").textContent = label;
     }
     if (mode !== "orbit" && now - lastArea > 350) {
-      const pos = mode === "drone" ? drone : player;
-      const nearest = sites.reduce((a, s) =>
-        Math.hypot(s.x - pos.x, s.z - pos.z) < Math.hypot(a.x - pos.x, a.z - pos.z) ? s : a,
-      );
-      if (mode === "drone") {
-        let area = "校园上空";
-        if (groundY(pos.x, pos.z) < riverLevel) area = "黄浦江上空";
-        else if (Math.hypot(nearest.x - pos.x, nearest.z - pos.z) < 38) area = nearest.name + "上空";
-        else if (!inPolygon(pos.x / SCALE + 780, pos.z / SCALE + 370, boundary)) area = "校园外围";
-        el("location").textContent = area;
-      } else {
-        el("location").textContent = viewLabel && Math.hypot(pos.x - viewLabel.x, pos.z - viewLabel.z) < 8
-          ? viewLabel.name
-          : Math.hypot(nearest.x - pos.x, nearest.z - pos.z) < 27
-            ? nearest.name
-            : "校园道路与草地";
-      }
+      el("location").textContent = locationName(mode === "drone" ? drone : player);
       lastArea = now;
     }
     renderer.render(scene, camera);

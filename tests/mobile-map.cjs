@@ -22,23 +22,36 @@ async function check() {
     assert.equal(await page.inputValue("#quality"), "0");
     assert(await page.locator("#stick").isVisible());
 
-    // Verify full-map coordinates independently at three known sites.
-    for (const id of [190, 180, 182]) {
+    // Ground anchors measured on the approved watercolor, independently of the runtime transform.
+    for (const [id, mx, my] of [[190, 48.443, 231.344], [180, 452.664, 273.812], [182, 678.167, 232.103]]) {
       await page.evaluate((id) => {
         const s = hujiang.sites.find((site) => site.id === id);
         hujiang.setView(s.x, 0, s.z, 70, 0, 0.5);
       }, id);
       await page.tap("#mapToggle");
       await frame();
-      assert(await page.evaluate((id) => {
-        const c = document.querySelector("#campusMap"), site = hujiang.sites.find((s) => s.id === id);
-        const k = Math.min(c.width / 1600, c.height / 800);
-        const x = Math.round(c.width / 2 + (site.u - 800) * k);
-        const y = Math.round(c.height / 2 + (site.v - 400) * k);
-        return c.getContext("2d").getImageData(x, y, 1, 1).data.slice(0, 3).join() === "255,246,201";
-      }, id));
+      assert(await page.evaluate(([mx, my]) => {
+        const c = document.querySelector("#campusMap"), art = document.querySelector("#mapArtwork");
+        const x = Math.floor(c.width * mx / 734), y = Math.floor(c.height * my / 382);
+        return art.complete && art.naturalWidth === 2202 && art.currentSrc.startsWith("data:image/webp;") &&
+          c.getContext("2d").getImageData(x, y, 1, 1).data.join() === "73,61,50,255";
+      }, [mx, my]));
       await page.tap("#mapClose");
     }
+    await page.tap("#mapToggle");
+    assert.equal(await page.locator("#mapSites a").count(), 14);
+    await page.tap("#mapZoom");
+    assert.equal(await page.getAttribute("#mapZoom", "aria-pressed"), "true");
+    assert(await page.evaluate(() => {
+      const v = document.querySelector("#mapViewport");
+      return v.scrollWidth > v.clientWidth && v.scrollLeft > 0;
+    }));
+    await page.tap("#mapZoom");
+    assert.equal(await page.getAttribute("#mapZoom", "aria-pressed"), "false");
+    await page.locator('#mapSites a[aria-label="思晏堂"] rect').tap();
+    assert(await page.locator("#mapDialog").isHidden());
+    assert.equal(await page.textContent("#placeTitle"), "思晏堂");
+    assert.equal(await page.evaluate(() => hujiang.mode), "orbit");
     await page.tap("#home");
     await frame();
     const start = await pos();
@@ -51,7 +64,10 @@ async function check() {
     await page.tap("#mapToggle");
     assert.match(await page.textContent("#mapLegend"), /剩余路线/);
     const paused = await pos();
-    await page.tap("#campusMap");
+    const sheet = await page.locator("#campusMap").boundingBox();
+    // A tap in the open meadow keeps the route paused; labeled buildings open their records.
+    await page.tap("#campusMap", { position: { x: sheet.width * .18, y: sheet.height * .10 } });
+    assert(await page.locator("#mapDialog").isVisible());
     await page.waitForTimeout(180);
     assert.deepEqual(await pos(), paused);
     await page.keyboard.press("Escape");

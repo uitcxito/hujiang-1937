@@ -22,10 +22,24 @@
         <span class="map-caption" aria-hidden="true">附近地图 <span>⛶</span></span>
       </button>
     </div>
-    <dialog id="mapDialog" class="map-glass" aria-labelledby="mapTitle">
-      <div class="map-heading"><h2 id="mapTitle">全校地图</h2><button id="mapClose" aria-label="关闭全校地图" autofocus>×</button></div>
-      <canvas id="campusMap" aria-label="校园道路、建筑和当前位置"></canvas>
-      <p id="mapLegend"></p>
+    <dialog id="mapDialog" aria-labelledby="mapTitle">
+      <div class="map-heading">
+        <h2 id="mapTitle">沪江大学 <span>校园鸟瞰图</span></h2>
+        <span class="map-year">1937 <small>初夏</small></span>
+        <button id="mapClose" aria-label="关闭全校地图" autofocus>×</button>
+      </div>
+      <div id="mapViewport" tabindex="0" role="region" aria-label="校园鸟瞰图，可选择地标查看资料">
+        <div id="mapSheet">
+          <img id="mapArtwork" src="assets/campus-watercolor.webp" width="2202" height="1146" alt="初夏的沪江大学，从左侧密氏校门，经红砖校舍和运动场，望向右侧黄浦江岸。" />
+          <canvas id="campusMap" aria-hidden="true"></canvas>
+          <svg id="mapSites" viewBox="0 0 734 382" role="group" aria-label="地图上的建筑与地标"></svg>
+        </div>
+      </div>
+      <div class="map-footer">
+        <p id="mapLegend"><span id="mapPositionKind">所在位置</span> · <strong id="mapPlace">密氏校门</strong><span id="mapRouteHint"></span></p>
+        <span class="map-view-caption">由校门望向黄浦江</span>
+        <button id="mapZoom" aria-controls="mapViewport" aria-pressed="false">放大地图</button>
+      </div>
     </dialog>
     <nav class="top">
       <button id="guide">校园导览</button
@@ -143,6 +157,7 @@
     <script src="src/ambience.js"></script>
     <script src="src/walking.js"></script>
     <script src="src/minimap.js"></script>
+    <script src="src/watercolor-map.js"></script>
     <script src="src/controls.js"></script>
     <script src="src/explore.js"></script>
   </body>

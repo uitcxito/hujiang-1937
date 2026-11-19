@@ -576,13 +576,11 @@ a {
   pointer-events: none;
 }
 .map-glass {
-  background: linear-gradient(125deg, #304e46c7, #1b372ec9);
-  color: #fff7e3;
-  border: 1px solid #e7e7ce86;
-  border-radius: 8px;
-  box-shadow: inset 0 1px #f4f5df24, 0 3px 14px #10251a36;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: #eae0cd;
+  color: #493d32;
+  border: 1px solid #b5a58d;
+  border-radius: 3px;
+  box-shadow: 0 3px 12px #382c2030;
 }
 #mapToggle {
   pointer-events: auto;
@@ -592,7 +590,7 @@ a {
   padding: 0;
   overflow: hidden;
 }
-#mapToggle:hover { border-color: #f4e6c0; }
+#mapToggle:hover { border-color: #76634d; }
 .map-caption {
   position: absolute;
   inset: auto 0 0;
@@ -600,22 +598,67 @@ a {
   align-items: center;
   justify-content: space-between;
   padding: 3px 8px;
-  background: #19392fc2;
-  color: #fff7e3;
+  background: #f2e9d8eb;
+  color: #493d32;
+  border-top: 1px solid #b9a98e80;
+  font-family: "Songti SC", SimSun, serif;
   font-size: 12px;
 }
 .map-caption span { font: 16px/1.1 sans-serif; }
 #mapDialog {
-  width: min(760px, calc(100% - 28px - env(safe-area-inset-left) - env(safe-area-inset-right)));
-  padding: 8px 14px;
-  background-color: #213f35d9;
+  width: min(1500px, calc(100% - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)),
+    calc((100dvh - 104px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 1.92));
+  max-width: none;
+  max-height: calc(100dvh - 12px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  padding: 0 clamp(6px, .8vw, 14px);
+  margin: auto;
+  color: #493d32;
+  background: linear-gradient(108deg, #f4ebdb, #ece2ce 73%, #f1e8d9);
+  border: 1px solid #b9ab94;
+  box-shadow: 0 12px 56px #2c281f42;
+  font-family: "Songti SC", STSong, SimSun, serif;
+  overscroll-behavior: contain;
 }
-#mapDialog::backdrop { background: #11261e66; }
-.map-heading { display: flex; justify-content: space-between; align-items: center; }
-.map-heading h2 { font-size: 20px; }
-#mapClose { height: 44px; width: 44px; font: 26px/1 sans-serif; }
-#campusMap { width: 100%; height: auto; aspect-ratio: 2 / 1; max-height: 60dvh; }
-#mapLegend { margin: 4px 0 6px; font-size: 13px; }
+#mapDialog::backdrop { background: #39382c66; }
+.map-heading, .map-footer { display: flex; align-items: center; gap: clamp(8px, 1.6vw, 28px); padding-inline: clamp(2px, .8vw, 15px); }
+.map-heading { min-height: clamp(46px, 6.4dvh, 70px); }
+.map-heading h2 { font-family: "Songti SC", STZhongsong, SimSun, serif; font-weight: 500; font-size: clamp(22px, 3.1vw, 44px); letter-spacing: .08em; white-space: nowrap; }
+.map-heading h2 span, .map-year small, .map-footer { font-family: FangSong, STFangsong, "Songti SC", SimSun, serif; }
+.map-heading h2 span { margin-left: clamp(5px, 1.6vw, 30px); font-size: .62em; letter-spacing: .13em; }
+.map-year { margin-left: auto; white-space: nowrap; font: clamp(21px, 2.8vw, 40px)/1 Baskerville, Georgia, serif; letter-spacing: .06em; }
+.map-year small { margin-left: clamp(2px, 1vw, 16px); font-size: .58em; }
+#mapClose, #mapZoom { flex: none; min-height: 44px; }
+#mapClose { width: 44px; padding: 0; font: 26px/1 Georgia, serif; }
+#mapDialog button:hover { background: #a78e6421; }
+#mapDialog :focus-visible { outline: 2px solid #875b3e; outline-offset: -3px; }
+#mapViewport { position: relative; width: 100%; aspect-ratio: 734 / 382; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #a9997e #e9decb; outline: 1px solid #b9ab94; }
+#mapSheet { position: absolute; left: 0; top: 0; width: 100%; }
+#mapArtwork { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+#campusMap, #mapSites { position: absolute; inset: 0; width: 100%; height: 100%; }
+#mapSites { pointer-events: none; }
+#mapSites a { fill: transparent; cursor: pointer; }
+#mapSites :is(path, rect) { pointer-events: all; }
+#mapSites a:is(:hover, :focus-visible) rect { fill: #fcf2d91f; stroke: #794e38; stroke-width: .8; }
+#mapSites a:focus-visible { outline: none; }
+#mapDialog[data-zoomed] #mapSheet { width: max(165%, 750px); }
+.map-footer { min-height: 44px; font-size: clamp(13px, 1.35vw, 19px); letter-spacing: .045em; }
+#mapLegend { display: block; margin: 5px auto 5px 0; }
+#mapLegend::before { content: "⊙"; margin-right: .48em; font-family: Georgia, serif; }
+#mapPlace { font-family: "Songti SC", STSong, SimSun, serif; font-weight: normal; }
+#mapRouteHint { color: #79573f; }
+.map-view-caption { color: #72634f; font-size: .9em; white-space: nowrap; }
+#mapZoom { padding: 0 .3em; color: #584537; font: inherit; white-space: nowrap; text-decoration: underline; text-underline-offset: .22em; text-decoration-color: #a39277; }
+@media (max-width: 620px) {
+  .map-view-caption { display: none; }
+  .map-heading, .map-footer { gap: 6px; }
+  #mapClose { width: 36px; }
+  #mapDialog[data-zoomed] #mapViewport { aspect-ratio: 1.08; max-height: 52dvh; }
+}
+@media (max-width: 355px) {
+  .map-heading h2 { font-size: 19px; }
+  .map-heading h2 span { margin-left: 2px; }
+  .map-year small { display: none; }
+}
 #touchControls { display: none; }
 .panel { z-index: 4; }
 
