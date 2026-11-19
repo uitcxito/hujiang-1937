@@ -40,9 +40,12 @@ function explore() {
     target = new V(),
     ray = new T.Raycaster(),
     keys = new Set();
+  const walkLook = { yaw: Math.PI / 2, pitch: 0.035 };
+  const droneLook = { yaw: 0, pitch: 0 };
+  const views = { walk: walkMode, orbit: fullView, drone: droneMode };
+  const viewOrder = Object.keys(views);
   let mode = "walk",
-    yaw = Math.PI / 2,
-    pitch = 0.035,
+    look = walkLook,
     theta = 0.7,
     tilt = 0.91,
     radius = 465,
@@ -56,7 +59,7 @@ function explore() {
     shadowZ = Infinity,
     shadowRange = 0,
     lastArea = 0;
-  let viewLabel, groundLook;
+  let viewLabel;
   const ambience = makeWalkAmbience(treeTrunks, el("ambientVolume"), el("ambientValue"), shrubPerches);
   const eye = 1.66;
   const walkSpeed = 2.4;
@@ -65,19 +68,24 @@ function explore() {
   const drawNearbyMap = makeNearbyMap();
   const touch = matchMedia("(any-pointer: coarse)");
   const mapDialog = el("mapDialog");
+  const helpDialog = el("helpDialog");
   const placeCard = el("placeCard");
   const drawWatercolor = makeWatercolorMap((site) => {
+    closePanels();
     card(site);
     placeCard.querySelector(".close").focus({ preventScroll: true });
   }, updateMap);
-  const menus = [el("placesPanel"), el("settingsPanel")];
+  const menus = [[el("guide"), el("placesPanel")], [el("settings"), el("settingsPanel")]];
   function sceneInputBlocked() {
-    return mapDialog.open || menus.some((menu) => !menu.hidden);
+    return mapDialog.open || helpDialog.open || menus.some(([, panel]) => !panel.hidden);
   }
   function closePanels() {
     if (placeCard.contains(document.activeElement)) screen.focus({ preventScroll: true });
     placeCard.hidden = true;
-    for (const menu of menus) menu.hidden = true;
+    for (const [button, panel] of menus) {
+      if (panel.contains(document.activeElement)) button.focus({ preventScroll: true });
+      panel.hidden = true;
+    }
     dirty = true;
   }
   const marker = new T.Mesh(new T.RingGeometry(0.25, 0.35, 32),
@@ -104,8 +112,8 @@ function explore() {
     player.set(x, 0, z);
     groundPlayer();
     viewLabel = null;
-    yaw = Math.atan2(lookX - x, -(lookZ - z));
-    pitch = 0.018;
+    walkLook.yaw = Math.atan2(lookX - x, -(lookZ - z));
+    walkLook.pitch = 0.018;
     setMode("walk");
   }
   function gateView() {
@@ -136,14 +144,11 @@ function explore() {
   function setMode(next) {
     release();
     closePanels();
-    if (mode === "drone" && next === "orbit") {
-      yaw = groundLook.yaw;
-      pitch = groundLook.pitch;
-    }
     mode = next;
+    look = mode === "drone" ? droneLook : walkLook;
     document.body.dataset.mode = mode;
     ambience.setWalking(mode === "walk");
-    for (const id of ["walk", "orbit", "drone"]) el(id).setAttribute("aria-pressed", String(id === mode));
+    for (const id of viewOrder) el(id).setAttribute("aria-pressed", String(id === mode));
     el("locationLabel").textContent = "当前位置";
     lastArea = -Infinity;
     dirty = true;
@@ -164,48 +169,30 @@ function explore() {
       screen.focus();
       return;
     }
-    groundLook = { yaw, pitch };
     if (mode === "orbit") {
       aim();
       drone.copy(camera.position);
       flightSpace.constrain(drone);
       const dx = target.x - drone.x,
         dz = target.z - drone.z;
-      yaw = Math.atan2(dx, -dz);
-      pitch = Math.atan2(target.y - drone.y, Math.hypot(dx, dz));
+      droneLook.yaw = Math.atan2(dx, -dz);
+      droneLook.pitch = Math.atan2(target.y - drone.y, Math.hypot(dx, dz));
     } else {
       drone.set(player.x, flightSurface(player.x, player.z) + 18, player.z);
       flightSpace.constrain(drone);
-      pitch = -0.22;
+      droneLook.yaw = walkLook.yaw;
+      droneLook.pitch = -0.22;
     }
     selected = null;
     setMode("drone");
     screen.focus();
-  }
-  function landDrone() {
-    function land(x, z) {
-      setWalk(x, z, x + Math.sin(yaw), z - Math.cos(yaw));
-      screen.focus();
-    }
-    if (legal(drone.x, drone.z)) return land(drone.x, drone.z);
-    // Look outward from the aircraft, even over the river. The last walking position is a known safe fallback.
-    const limit = Math.hypot(drone.x - player.x, drone.z - player.z);
-    for (let r = 2; r < limit; r += Math.max(2, r * 0.12)) {
-      for (let i = 0; i < 24; i++) {
-        const a = yaw + i * (Math.PI / 12);
-        const x = drone.x + r * Math.sin(a),
-          z = drone.z - r * Math.cos(a);
-        if (legal(x, z)) return land(x, z);
-      }
-    }
-    land(player.x, player.z);
   }
   function relocate(s) {
     if (s.approach) {
       const [x, z] = point(...s.approach);
       if (legal(x, z)) {
         setWalk(x, z, s.x, s.z + (s.id === 121 ? 3 : 0));
-        pitch = s.id === 154 ? 0.27 : 0.15;
+        walkLook.pitch = s.id === 154 ? 0.27 : 0.15;
         viewLabel = { name: s.name, x, z };
         el("location").textContent = s.name;
         return;
@@ -228,7 +215,7 @@ function explore() {
           z = s.z - Math.cos(a) * distance * scale;
         if (legal(x, z)) {
           setWalk(x, z, s.x, s.z);
-          pitch = s.id === 154 ? 0.26 : 0.12;
+          walkLook.pitch = s.id === 154 ? 0.26 : 0.12;
           el("location").textContent = s.name;
           return;
         }
@@ -313,19 +300,8 @@ function explore() {
     dirty = true;
   }
   function walkMode() {
-    if (mode === "drone") {
-      landDrone();
-    } else if (mode === "orbit" && selected) {
-      relocate(selected);
-    } else if (mode === "orbit") {
-      setMode("walk");
-      groundPlayer();
-      el("location").textContent = "地面步行";
-    } else {
-      release();
-      closePanels();
-      screen.focus();
-    }
+    setMode("walk");
+    screen.focus({ preventScroll: true });
   }
   function quality() {
     q = Number(el("quality").value);
@@ -386,6 +362,7 @@ function explore() {
   function aim() {
     if (mode !== "orbit") {
       const position = mode === "drone" ? drone : player;
+      const { yaw, pitch } = look;
       camera.position.copy(position);
       camera.up.set(0, 1, 0);
       camera.lookAt(
@@ -440,6 +417,7 @@ function explore() {
     const fast = keys.has("ShiftLeft") || keys.has("ShiftRight");
     const speed = mode === "drone" ? (fast ? 32 : 12) : (fast ? fastWalkSpeed : walkSpeed);
     const distance = (dt * speed) / Math.max(1, mag);
+    const { yaw } = look;
     const dx = (Math.sin(yaw) * f + Math.cos(yaw) * r) * distance,
       dz = (-Math.cos(yaw) * f + Math.sin(yaw) * r) * distance;
     dirty = true;
@@ -455,9 +433,9 @@ function explore() {
     groundPlayer();
   }
   function rotate(dx, dy) {
-    yaw += dx * 0.0021;
+    look.yaw += dx * 0.0021;
     const limit = mode === "drone" ? Math.PI / 2 - 0.005 : 1.32;
-    pitch = T.MathUtils.clamp(pitch - dy * 0.0021, -limit, limit);
+    look.pitch = T.MathUtils.clamp(look.pitch - dy * 0.0021, -limit, limit);
     dirty = true;
   }
   function pan(dx, dy) {
@@ -496,30 +474,62 @@ function explore() {
   }
   function updateMap() {
     const pos = mode === "orbit" ? target : mode === "walk" ? player : drone;
-    if (mapDialog.open) drawWatercolor(pos, yaw, mode, route, locationName(pos));
-    else drawNearbyMap(pos, yaw, mode, route);
+    if (mapDialog.open) drawWatercolor(pos, look.yaw, mode, route, locationName(pos));
+    else drawNearbyMap(pos, look.yaw, mode, route);
   }
-  el("mapToggle").onclick = () => {
+  function toggleMap() {
+    if (mapDialog.open) {
+      mapDialog.close();
+      return;
+    }
     release(false);
     mapDialog.showModal();
     updateMap();
     el("mapToggle").setAttribute("aria-expanded", "true");
     dirty = true;
-  };
+  }
+  el("mapToggle").onclick = toggleMap;
   el("mapClose").onclick = () => mapDialog.close();
   mapDialog.addEventListener("close", () => {
-    el("mapToggle").setAttribute("aria-expanded", "false");
+    el("mapToggle").setAttribute("aria-expanded", String(mapDialog.open));
     dirty = true;
   });
+  function showHelp() {
+    release(false);
+    helpDialog.showModal();
+  }
+  el("showHelp").onclick = showHelp;
+  function showInitialHelp() {
+    const seen = "hujiang.controlsSeen";
+    try {
+      if (localStorage.getItem(seen) === "1") return;
+      localStorage.setItem(seen, "1");
+    } catch {
+      // Some offline and private browsing contexts restrict storage.
+    }
+    screen.focus({ preventScroll: true });
+    showHelp();
+  }
   window.addEventListener("keydown", (e) => {
-    if (mapDialog.open) return;
+    if (e.defaultPrevented || e.isComposing) return;
     if (e.key === "Escape") {
+      e.preventDefault();
       if (e.repeat) return;
-      if (placeCard.hidden) release();
-      closePanels();
+      if (helpDialog.open) helpDialog.close();
+      else if (mapDialog.open) mapDialog.close();
+      else {
+        if (placeCard.hidden) release();
+        closePanels();
+      }
       return;
     }
-    if (e.target.matches("input,select,textarea") || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.target.isContentEditable ||
+        e.target.closest?.("input,select,textarea") || helpDialog.open) return;
+    if (e.code === "KeyM") {
+      e.preventDefault();
+      if (!e.repeat) toggleMap();
+      return;
+    }
     if (sceneInputBlocked()) return;
     const liftKey = mode === "drone" && (e.code === "KeyQ" || e.code === "KeyE");
     if (liftKey || ["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight"].includes(e.code)) {
@@ -528,9 +538,16 @@ function explore() {
       keys.add(e.code);
       ambience.unlock();
     }
-    if (e.code === "KeyV" && !e.repeat) mode === "orbit" ? walkMode() : fullView();
-    if (e.code === "KeyF" && !e.repeat) mode === "drone" ? walkMode() : droneMode();
-    if (e.code === "KeyV" || e.code === "KeyF") ambience.unlock();
+    if (e.code === "KeyV" || e.code === "KeyF") {
+      e.preventDefault();
+      if (e.repeat) return;
+      if (e.code === "KeyV") {
+        const nextIndex = (viewOrder.indexOf(mode) + 1) % viewOrder.length;
+        views[viewOrder[nextIndex]]();
+      } else if (mode === "drone") walkMode();
+      else droneMode();
+      ambience.unlock();
+    }
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
   window.addEventListener("blur", () => release());
@@ -546,22 +563,18 @@ function explore() {
     camera.updateProjectionMatrix();
     quality();
   });
-  el("walk").onclick = walkMode;
-  el("orbit").onclick = fullView;
-  el("drone").onclick = droneMode;
+  for (const id of viewOrder) el(id).onclick = views[id];
   el("home").onclick = gateView;
   el("quality").onchange = quality;
-  for (const [button, panel] of [
-    ["guide", "placesPanel"],
-    ["settings", "settingsPanel"],
-  ])
-    el(button).onclick = () => {
+  for (const [button, panel] of menus) {
+    button.onclick = () => {
       release();
-      const was = el(panel).hidden;
+      const opening = panel.hidden;
       closePanels();
-      el(panel).hidden = !was;
-      if (panel === "placesPanel" && was) el("placeQuery").focus();
+      panel.hidden = !opening;
+      if (panel.id === "placesPanel" && opening) el("placeQuery").focus();
     };
+  }
   for (const button of document.querySelectorAll(".close")) button.onclick = closePanels;
   const pinLayer = document.createElement("div");
   pinLayer.id = "pins";
@@ -637,7 +650,7 @@ function explore() {
     const dt = Math.min(0.12, (now - last) / 1000);
     last = now;
     advance(dt);
-    ambience.update(player, yaw);
+    ambience.update(player, walkLook.yaw);
     if (!dirty) return;
     aim();
     updatePins();
@@ -659,6 +672,7 @@ function explore() {
   }
   render(performance.now());
   el("loading").hidden = true;
+  showInitialHelp();
   window.hujiang = {
     sites,
     scene,

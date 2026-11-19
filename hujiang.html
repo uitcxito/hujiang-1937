@@ -626,7 +626,43 @@ a {
   font-family: "Songti SC", STSong, SimSun, serif;
   overscroll-behavior: contain;
 }
-#mapDialog::backdrop { background: #39382c66; }
+#mapDialog::backdrop, #helpDialog::backdrop { background: #39382c66; }
+#helpDialog {
+  width: min(420px, calc(100% - 28px));
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  margin: auto;
+  padding: clamp(18px, 4vw, 28px);
+  color: #263b32;
+  background: #f7f4e9;
+  border: 1px solid #b9ab94;
+  border-top: 3px solid #97704b;
+  box-shadow: 0 8px 32px #18241e42;
+  line-height: 1.65;
+  overscroll-behavior: contain;
+}
+#helpDialog dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 12px 18px;
+  margin: 16px 0;
+  padding: 16px 0;
+  border-block: 1px solid #d6ceba;
+}
+#helpDialog dt { font-weight: 600; }
+#helpDialog dd, #helpDialog p { margin: 0; }
+.help-shortcuts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; }
+.help-shortcuts kbd {
+  padding: 1px 5px;
+  border: 1px solid #bab7a4;
+  border-radius: 3px;
+  background: #fffdf4;
+  font-family: inherit;
+}
+#helpDialog form { margin-top: 18px; text-align: right; }
+#helpClose { min-height: 44px; padding: 6px 22px; background: #304e3e; color: #fffdf4; }
+#helpClose:hover { background: #425f4d; }
+#showHelp { min-height: 44px; padding: 0; color: #32624f; text-decoration: underline; text-underline-offset: .2em; }
+.help-touch { display: none; }
 .map-heading, .map-footer { display: flex; align-items: center; gap: clamp(8px, 1.6vw, 28px); padding-inline: clamp(2px, .8vw, 15px); }
 .map-heading { min-height: clamp(46px, 6.4dvh, 70px); }
 .map-heading h2 { font-family: "Songti SC", STZhongsong, SimSun, serif; font-weight: 500; font-size: clamp(22px, 3.1vw, 44px); letter-spacing: .08em; white-space: nowrap; }
@@ -670,6 +706,9 @@ a {
 .panel { z-index: 4; }
 
 @media (any-pointer: coarse) {
+  .help-keyboard { display: none; }
+  .help-touch { display: inline; }
+  p.help-touch { display: block; }
   #touchControls { display: contents; }
   #stick, #flightLift {
     position: absolute;
@@ -710,7 +749,7 @@ a {
   }
   #flightLift button:active { background: #546d5f; }
   body:not([data-mode="drone"]) #flightLift, body[data-mode="orbit"] #stick,
-  body:has(.panel:not([hidden]), #mapDialog[open]) #touchControls { display: none; }
+  body:has(.panel:not([hidden]), dialog[open]) #touchControls { display: none; }
   .bottomLeft { left: max(16px, env(safe-area-inset-left)); bottom: calc(211px + env(safe-area-inset-bottom)); }
   #hint { bottom: calc(65px + env(safe-area-inset-bottom)); }
 }
@@ -780,7 +819,7 @@ a {
         </div>
         <div class="date">1937<small>初夏</small></div>
       </header>
-      <button id="mapToggle" class="map-glass" aria-label="展开全校地图" aria-haspopup="dialog" aria-controls="mapDialog" aria-expanded="false">
+      <button id="mapToggle" class="map-glass" aria-label="展开全校地图" aria-haspopup="dialog" aria-controls="mapDialog" aria-expanded="false" aria-keyshortcuts="M" title="全校地图（M）">
         <canvas id="nearbyMap" aria-hidden="true"></canvas>
         <span class="map-caption" aria-hidden="true">附近地图 <span>⛶</span></span>
       </button>
@@ -803,6 +842,22 @@ a {
         <span class="map-view-caption">由校门望向黄浦江</span>
         <button id="mapZoom" aria-controls="mapViewport" aria-pressed="false">放大地图</button>
       </div>
+    </dialog>
+    <dialog id="helpDialog" aria-labelledby="helpTitle">
+      <h2 id="helpTitle">漫游操作提示</h2>
+      <dl>
+        <dt>步行</dt>
+        <dd>点地面自动行走，拖动环顾。<span class="help-keyboard">WASD 移动，Shift 加速。</span><span class="help-touch">也可推左下摇杆移动。</span></dd>
+        <dt>鸟瞰</dt>
+        <dd><span class="help-keyboard">拖动旋转，滚轮缩放，右键拖动平移。</span><span class="help-touch">单指旋转，双指缩放或平移。</span>点建筑查看介绍。</dd>
+        <dt>无人机</dt>
+        <dd><span class="help-keyboard">WASD 飞行，E 上升，Q 下降。</span><span class="help-touch">摇杆飞行，按住右侧箭头升降。</span>切回步行可回到离开时的位置。</dd>
+      </dl>
+      <p class="help-keyboard help-shortcuts">
+        <span><kbd>V</kbd> 切换视角</span><span><kbd>M</kbd> 开关地图</span><span><kbd>Esc</kbd> 关闭窗口</span>
+      </p>
+      <p class="help-touch">点底部按钮切换视角，点左上角小地图查看全校。</p>
+      <form method="dialog"><button id="helpClose" autofocus>知道了</button></form>
     </dialog>
     <nav class="top">
       <button id="guide">校园导览</button
@@ -844,6 +899,7 @@ a {
         <h2>浏览设置</h2>
         <button class="close" aria-label="关闭设置">×</button>
       </div>
+      <button id="showHelp" aria-haspopup="dialog" aria-controls="helpDialog">查看操作提示</button>
       <label for="quality">画面质量</label
       ><select id="quality">
         <option value="0">低 · 优先流畅</option>
@@ -893,7 +949,7 @@ a {
       <small id="locationLabel">当前位置</small>
       <div id="location">密氏校门</div>
     </div>
-    <div id="dock">
+    <div id="dock" role="group" aria-label="漫游视角与位置" aria-keyshortcuts="V">
       <button id="walk" aria-pressed="true">步行</button>
       <button id="orbit" aria-pressed="false">鸟瞰</button>
       <button id="drone" aria-pressed="false" aria-keyshortcuts="F" title="无人机飞行（F）">无人机</button>
@@ -6000,9 +6056,12 @@ function explore() {
     target = new V(),
     ray = new T.Raycaster(),
     keys = new Set();
+  const walkLook = { yaw: Math.PI / 2, pitch: 0.035 };
+  const droneLook = { yaw: 0, pitch: 0 };
+  const views = { walk: walkMode, orbit: fullView, drone: droneMode };
+  const viewOrder = Object.keys(views);
   let mode = "walk",
-    yaw = Math.PI / 2,
-    pitch = 0.035,
+    look = walkLook,
     theta = 0.7,
     tilt = 0.91,
     radius = 465,
@@ -6016,7 +6075,7 @@ function explore() {
     shadowZ = Infinity,
     shadowRange = 0,
     lastArea = 0;
-  let viewLabel, groundLook;
+  let viewLabel;
   const ambience = makeWalkAmbience(treeTrunks, el("ambientVolume"), el("ambientValue"), shrubPerches);
   const eye = 1.66;
   const walkSpeed = 2.4;
@@ -6025,19 +6084,24 @@ function explore() {
   const drawNearbyMap = makeNearbyMap();
   const touch = matchMedia("(any-pointer: coarse)");
   const mapDialog = el("mapDialog");
+  const helpDialog = el("helpDialog");
   const placeCard = el("placeCard");
   const drawWatercolor = makeWatercolorMap((site) => {
+    closePanels();
     card(site);
     placeCard.querySelector(".close").focus({ preventScroll: true });
   }, updateMap);
-  const menus = [el("placesPanel"), el("settingsPanel")];
+  const menus = [[el("guide"), el("placesPanel")], [el("settings"), el("settingsPanel")]];
   function sceneInputBlocked() {
-    return mapDialog.open || menus.some((menu) => !menu.hidden);
+    return mapDialog.open || helpDialog.open || menus.some(([, panel]) => !panel.hidden);
   }
   function closePanels() {
     if (placeCard.contains(document.activeElement)) screen.focus({ preventScroll: true });
     placeCard.hidden = true;
-    for (const menu of menus) menu.hidden = true;
+    for (const [button, panel] of menus) {
+      if (panel.contains(document.activeElement)) button.focus({ preventScroll: true });
+      panel.hidden = true;
+    }
     dirty = true;
   }
   const marker = new T.Mesh(new T.RingGeometry(0.25, 0.35, 32),
@@ -6064,8 +6128,8 @@ function explore() {
     player.set(x, 0, z);
     groundPlayer();
     viewLabel = null;
-    yaw = Math.atan2(lookX - x, -(lookZ - z));
-    pitch = 0.018;
+    walkLook.yaw = Math.atan2(lookX - x, -(lookZ - z));
+    walkLook.pitch = 0.018;
     setMode("walk");
   }
   function gateView() {
@@ -6096,14 +6160,11 @@ function explore() {
   function setMode(next) {
     release();
     closePanels();
-    if (mode === "drone" && next === "orbit") {
-      yaw = groundLook.yaw;
-      pitch = groundLook.pitch;
-    }
     mode = next;
+    look = mode === "drone" ? droneLook : walkLook;
     document.body.dataset.mode = mode;
     ambience.setWalking(mode === "walk");
-    for (const id of ["walk", "orbit", "drone"]) el(id).setAttribute("aria-pressed", String(id === mode));
+    for (const id of viewOrder) el(id).setAttribute("aria-pressed", String(id === mode));
     el("locationLabel").textContent = "当前位置";
     lastArea = -Infinity;
     dirty = true;
@@ -6124,48 +6185,30 @@ function explore() {
       screen.focus();
       return;
     }
-    groundLook = { yaw, pitch };
     if (mode === "orbit") {
       aim();
       drone.copy(camera.position);
       flightSpace.constrain(drone);
       const dx = target.x - drone.x,
         dz = target.z - drone.z;
-      yaw = Math.atan2(dx, -dz);
-      pitch = Math.atan2(target.y - drone.y, Math.hypot(dx, dz));
+      droneLook.yaw = Math.atan2(dx, -dz);
+      droneLook.pitch = Math.atan2(target.y - drone.y, Math.hypot(dx, dz));
     } else {
       drone.set(player.x, flightSurface(player.x, player.z) + 18, player.z);
       flightSpace.constrain(drone);
-      pitch = -0.22;
+      droneLook.yaw = walkLook.yaw;
+      droneLook.pitch = -0.22;
     }
     selected = null;
     setMode("drone");
     screen.focus();
-  }
-  function landDrone() {
-    function land(x, z) {
-      setWalk(x, z, x + Math.sin(yaw), z - Math.cos(yaw));
-      screen.focus();
-    }
-    if (legal(drone.x, drone.z)) return land(drone.x, drone.z);
-    // Look outward from the aircraft, even over the river. The last walking position is a known safe fallback.
-    const limit = Math.hypot(drone.x - player.x, drone.z - player.z);
-    for (let r = 2; r < limit; r += Math.max(2, r * 0.12)) {
-      for (let i = 0; i < 24; i++) {
-        const a = yaw + i * (Math.PI / 12);
-        const x = drone.x + r * Math.sin(a),
-          z = drone.z - r * Math.cos(a);
-        if (legal(x, z)) return land(x, z);
-      }
-    }
-    land(player.x, player.z);
   }
   function relocate(s) {
     if (s.approach) {
       const [x, z] = point(...s.approach);
       if (legal(x, z)) {
         setWalk(x, z, s.x, s.z + (s.id === 121 ? 3 : 0));
-        pitch = s.id === 154 ? 0.27 : 0.15;
+        walkLook.pitch = s.id === 154 ? 0.27 : 0.15;
         viewLabel = { name: s.name, x, z };
         el("location").textContent = s.name;
         return;
@@ -6188,7 +6231,7 @@ function explore() {
           z = s.z - Math.cos(a) * distance * scale;
         if (legal(x, z)) {
           setWalk(x, z, s.x, s.z);
-          pitch = s.id === 154 ? 0.26 : 0.12;
+          walkLook.pitch = s.id === 154 ? 0.26 : 0.12;
           el("location").textContent = s.name;
           return;
         }
@@ -6273,19 +6316,8 @@ function explore() {
     dirty = true;
   }
   function walkMode() {
-    if (mode === "drone") {
-      landDrone();
-    } else if (mode === "orbit" && selected) {
-      relocate(selected);
-    } else if (mode === "orbit") {
-      setMode("walk");
-      groundPlayer();
-      el("location").textContent = "地面步行";
-    } else {
-      release();
-      closePanels();
-      screen.focus();
-    }
+    setMode("walk");
+    screen.focus({ preventScroll: true });
   }
   function quality() {
     q = Number(el("quality").value);
@@ -6346,6 +6378,7 @@ function explore() {
   function aim() {
     if (mode !== "orbit") {
       const position = mode === "drone" ? drone : player;
+      const { yaw, pitch } = look;
       camera.position.copy(position);
       camera.up.set(0, 1, 0);
       camera.lookAt(
@@ -6400,6 +6433,7 @@ function explore() {
     const fast = keys.has("ShiftLeft") || keys.has("ShiftRight");
     const speed = mode === "drone" ? (fast ? 32 : 12) : (fast ? fastWalkSpeed : walkSpeed);
     const distance = (dt * speed) / Math.max(1, mag);
+    const { yaw } = look;
     const dx = (Math.sin(yaw) * f + Math.cos(yaw) * r) * distance,
       dz = (-Math.cos(yaw) * f + Math.sin(yaw) * r) * distance;
     dirty = true;
@@ -6415,9 +6449,9 @@ function explore() {
     groundPlayer();
   }
   function rotate(dx, dy) {
-    yaw += dx * 0.0021;
+    look.yaw += dx * 0.0021;
     const limit = mode === "drone" ? Math.PI / 2 - 0.005 : 1.32;
-    pitch = T.MathUtils.clamp(pitch - dy * 0.0021, -limit, limit);
+    look.pitch = T.MathUtils.clamp(look.pitch - dy * 0.0021, -limit, limit);
     dirty = true;
   }
   function pan(dx, dy) {
@@ -6456,30 +6490,62 @@ function explore() {
   }
   function updateMap() {
     const pos = mode === "orbit" ? target : mode === "walk" ? player : drone;
-    if (mapDialog.open) drawWatercolor(pos, yaw, mode, route, locationName(pos));
-    else drawNearbyMap(pos, yaw, mode, route);
+    if (mapDialog.open) drawWatercolor(pos, look.yaw, mode, route, locationName(pos));
+    else drawNearbyMap(pos, look.yaw, mode, route);
   }
-  el("mapToggle").onclick = () => {
+  function toggleMap() {
+    if (mapDialog.open) {
+      mapDialog.close();
+      return;
+    }
     release(false);
     mapDialog.showModal();
     updateMap();
     el("mapToggle").setAttribute("aria-expanded", "true");
     dirty = true;
-  };
+  }
+  el("mapToggle").onclick = toggleMap;
   el("mapClose").onclick = () => mapDialog.close();
   mapDialog.addEventListener("close", () => {
-    el("mapToggle").setAttribute("aria-expanded", "false");
+    el("mapToggle").setAttribute("aria-expanded", String(mapDialog.open));
     dirty = true;
   });
+  function showHelp() {
+    release(false);
+    helpDialog.showModal();
+  }
+  el("showHelp").onclick = showHelp;
+  function showInitialHelp() {
+    const seen = "hujiang.controlsSeen";
+    try {
+      if (localStorage.getItem(seen) === "1") return;
+      localStorage.setItem(seen, "1");
+    } catch {
+      // Some offline and private browsing contexts restrict storage.
+    }
+    screen.focus({ preventScroll: true });
+    showHelp();
+  }
   window.addEventListener("keydown", (e) => {
-    if (mapDialog.open) return;
+    if (e.defaultPrevented || e.isComposing) return;
     if (e.key === "Escape") {
+      e.preventDefault();
       if (e.repeat) return;
-      if (placeCard.hidden) release();
-      closePanels();
+      if (helpDialog.open) helpDialog.close();
+      else if (mapDialog.open) mapDialog.close();
+      else {
+        if (placeCard.hidden) release();
+        closePanels();
+      }
       return;
     }
-    if (e.target.matches("input,select,textarea") || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.target.isContentEditable ||
+        e.target.closest?.("input,select,textarea") || helpDialog.open) return;
+    if (e.code === "KeyM") {
+      e.preventDefault();
+      if (!e.repeat) toggleMap();
+      return;
+    }
     if (sceneInputBlocked()) return;
     const liftKey = mode === "drone" && (e.code === "KeyQ" || e.code === "KeyE");
     if (liftKey || ["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight"].includes(e.code)) {
@@ -6488,9 +6554,16 @@ function explore() {
       keys.add(e.code);
       ambience.unlock();
     }
-    if (e.code === "KeyV" && !e.repeat) mode === "orbit" ? walkMode() : fullView();
-    if (e.code === "KeyF" && !e.repeat) mode === "drone" ? walkMode() : droneMode();
-    if (e.code === "KeyV" || e.code === "KeyF") ambience.unlock();
+    if (e.code === "KeyV" || e.code === "KeyF") {
+      e.preventDefault();
+      if (e.repeat) return;
+      if (e.code === "KeyV") {
+        const nextIndex = (viewOrder.indexOf(mode) + 1) % viewOrder.length;
+        views[viewOrder[nextIndex]]();
+      } else if (mode === "drone") walkMode();
+      else droneMode();
+      ambience.unlock();
+    }
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
   window.addEventListener("blur", () => release());
@@ -6506,22 +6579,18 @@ function explore() {
     camera.updateProjectionMatrix();
     quality();
   });
-  el("walk").onclick = walkMode;
-  el("orbit").onclick = fullView;
-  el("drone").onclick = droneMode;
+  for (const id of viewOrder) el(id).onclick = views[id];
   el("home").onclick = gateView;
   el("quality").onchange = quality;
-  for (const [button, panel] of [
-    ["guide", "placesPanel"],
-    ["settings", "settingsPanel"],
-  ])
-    el(button).onclick = () => {
+  for (const [button, panel] of menus) {
+    button.onclick = () => {
       release();
-      const was = el(panel).hidden;
+      const opening = panel.hidden;
       closePanels();
-      el(panel).hidden = !was;
-      if (panel === "placesPanel" && was) el("placeQuery").focus();
+      panel.hidden = !opening;
+      if (panel.id === "placesPanel" && opening) el("placeQuery").focus();
     };
+  }
   for (const button of document.querySelectorAll(".close")) button.onclick = closePanels;
   const pinLayer = document.createElement("div");
   pinLayer.id = "pins";
@@ -6597,7 +6666,7 @@ function explore() {
     const dt = Math.min(0.12, (now - last) / 1000);
     last = now;
     advance(dt);
-    ambience.update(player, yaw);
+    ambience.update(player, walkLook.yaw);
     if (!dirty) return;
     aim();
     updatePins();
@@ -6619,6 +6688,7 @@ function explore() {
   }
   render(performance.now());
   el("loading").hidden = true;
+  showInitialHelp();
   window.hujiang = {
     sites,
     scene,

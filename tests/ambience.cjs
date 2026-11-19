@@ -78,6 +78,7 @@ async function check() {
     const ready = () => page.waitForFunction(() => window.hujiang, undefined, { timeout: 60000 });
     const quiet = () => page.waitForFunction(() => soundProbe.context.state === "suspended");
     await ready();
+    await page.keyboard.press("Escape");
     assert(await page.evaluate(() => !soundProbe.context));
     await page.evaluate(() => {
       let seed = 19;
@@ -169,6 +170,7 @@ async function check() {
       if (action === "ground") await mobile.addInitScript(rejectOgg);
       await mobile.goto(url);
       await mobile.waitForFunction(() => window.hujiang && !soundProbe.context);
+      await mobile.keyboard.press("Escape");
       if (action === "walk") await mobile.locator("#walk").tap();
       else {
         const x = 206, y = 505;

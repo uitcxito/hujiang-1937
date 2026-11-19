@@ -11,6 +11,7 @@ async function check() {
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(pathToFileURL(path.join(__dirname, "..", "hujiang.html")).href);
     await page.waitForFunction(() => window.hujiang);
+    await page.keyboard.press("Escape");
     const frame = () => page.evaluate(() => new Promise(requestAnimationFrame));
     const position = () => page.evaluate(() => hujiang.camera.position.toArray());
     const direction = () =>
@@ -32,10 +33,26 @@ async function check() {
     }
 
     const gate = await position();
+    const walking = await hold(["w"], 450);
+    assert(distance(walking, gate) > 0.25);
+    await page.mouse.move(650, 340);
+    await page.mouse.down();
+    await page.mouse.move(700, 325);
+    await page.mouse.up();
+    await frame();
+    const walkingHeading = await direction();
+    async function checkWalkingPose() {
+      await frame();
+      assert.equal(await page.getAttribute("#walk", "aria-pressed"), "true");
+      assert(await page.evaluate(() => hujiang.mode === "walk" && hujiang.legal(hujiang.player.x, hujiang.player.z)));
+      assert.deepEqual(await position(), walking);
+      assert.deepEqual(await page.evaluate(() => hujiang.player.toArray()), walking);
+      assert(distance(await direction(), walkingHeading) < 0.000001);
+    }
     await page.getByRole("button", { name: "无人机", exact: true }).click();
     await frame();
     const start = await position();
-    assert(start[1] > gate[1] + 10 && start[0] === gate[0] && start[2] === gate[2]);
+    assert(start[1] > walking[1] + 10 && start[0] === walking[0] && start[2] === walking[2]);
     assert.equal(await page.getAttribute("#drone", "aria-pressed"), "true");
     assert.match(await page.textContent("#locationLabel"), /飞行高度/);
     const up = await hold(["e"], 400);
@@ -54,12 +71,19 @@ async function check() {
     await page.mouse.up();
     await frame();
     assert(distance(await direction(), heading) > 0.1 && distance(await position(), hover) < 0.001);
+    assert.deepEqual(await page.evaluate(() => hujiang.player.toArray()), walking);
     await page.keyboard.press("v");
+    await checkWalkingPose();
+    await page.keyboard.down("v");
+    await page.keyboard.down("v");
+    await page.keyboard.up("v");
     await frame();
+    assert.equal(await page.getAttribute("#orbit", "aria-pressed"), "true");
     const orbit = await position(),
       orbitHeading = await direction();
-    await page.keyboard.press("f");
+    await page.keyboard.press("v");
     await frame();
+    assert.equal(await page.getAttribute("#drone", "aria-pressed"), "true");
     assert(distance(await position(), orbit) < 0.001 && distance(await direction(), orbitHeading) < 0.001);
 
     const tower = await page.evaluate(() => hujiang.sites.find((s) => s.id === 154));
@@ -71,12 +95,7 @@ async function check() {
     assert(roof[1] >= tower.h && roof[1] < above[1] - 1);
     assert(distance(await hold(["q"], 220), roof) < 0.01);
     await page.keyboard.press("f");
-    await frame();
-    assert(
-      await page.evaluate(() => hujiang.mode === "walk" && hujiang.legal(hujiang.player.x, hujiang.player.z)),
-    );
-    const landed = await position();
-    assert(Math.hypot(landed[0] - tower.x, landed[2] - tower.z) < 16 && landed[1] < 4);
+    await checkWalkingPose();
 
     const tree = await page.evaluate(() =>
       hujiang.treeTrunks.find(
@@ -94,13 +113,14 @@ async function check() {
     await flyFrom(river[0], 5, river[1]);
     const water = await hold(["Shift", "q"], 650);
     assert(Math.abs(water[1] - (await page.evaluate(() => riverLevel + 1.5))) < 0.01);
+    await page.keyboard.press("m");
+    assert.equal(await page.textContent("#mapPositionKind"), "无人机位置");
+    await page.keyboard.press("m");
     await page.click("#walk");
-    await frame();
-    assert(
-      await page.evaluate(() => hujiang.mode === "walk" && hujiang.legal(hujiang.player.x, hujiang.player.z)),
-    );
-    const bank = await position();
-    assert(Math.hypot(bank[0] - river[0], bank[2] - river[1]) < 80);
+    await checkWalkingPose();
+    await page.evaluate(() => hujiang.focus(154));
+    await page.click("#walk");
+    await checkWalkingPose();
 
     await flyFrom(0, 900, 0);
     assert.equal((await hold(["e"], 160))[1], 360);
@@ -109,7 +129,7 @@ async function check() {
     assert(distance(await position(), gate) < 0.001);
     assert.deepEqual(errors, []);
     console.log(
-      "Offline drone controls, hover, orbit handoff, tower and canopy clearance, river landing and home passed.",
+      "Offline view cycling, flight controls, orbit handoff, obstacle clearance and walking pose restoration passed.",
     );
   } finally {
     await browser.close();

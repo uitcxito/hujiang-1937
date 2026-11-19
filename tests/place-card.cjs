@@ -113,6 +113,7 @@ async function check() {
     });
     await page.goto(pathToFileURL(path.join(__dirname, "..", "hujiang.html")).href);
     await page.waitForFunction(() => window.hujiang, undefined, { timeout: 60000 });
+    await page.keyboard.press("Escape");
     const card = page.locator("#placeCard");
     const summary = card.locator("summary");
     const entries = await page.evaluate(() => [...el("placeList").querySelectorAll("button")].map((entry) => {

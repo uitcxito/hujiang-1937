@@ -15,6 +15,8 @@ async function check() {
     page.on("request", (r) => { if (/^https?:/.test(r.url())) errors.push(r.url()); });
     await page.goto(pathToFileURL(path.resolve(__dirname, "..", "hujiang.html")).href);
     await page.waitForFunction(() => window.hujiang, undefined, { timeout: 60000 });
+    assert(await page.locator("#helpDialog .help-touch").first().isVisible());
+    await page.tap("#helpClose");
     const pos = () => page.evaluate(() => hujiang.player.toArray());
     const pose = () => page.evaluate(() => hujiang.camera.position.toArray());
     const frame = () => page.evaluate(() => new Promise(requestAnimationFrame));
@@ -121,6 +123,7 @@ async function check() {
     await page.tap("#walk");
     assert(await page.locator("#placeCard").isHidden());
     assert(await page.evaluate(() => hujiang.mode === "walk" && hujiang.legal(hujiang.player.x, hujiang.player.z)));
+    assert.deepEqual(await pos(), stopped);
 
     await page.tap("#orbit");
     await page.evaluate(() => {
@@ -167,8 +170,54 @@ async function check() {
     desktop.on("pageerror", (e) => errors.push(e.message));
     await desktop.goto(pathToFileURL(path.resolve(__dirname, "..", "hujiang.html")).href);
     await desktop.waitForFunction(() => window.hujiang);
+    const help = desktop.getByRole("dialog", { name: "漫游操作提示" });
+    assert(await help.isVisible());
+    await desktop.keyboard.press("v");
+    await desktop.keyboard.press("m");
+    assert(await desktop.evaluate(() => hujiang.mode === "walk" && !el("mapDialog").open));
+    await desktop.keyboard.press("Escape");
+    assert(await help.isHidden());
+    await desktop.reload();
+    await desktop.waitForFunction(() => window.hujiang);
+    assert(await help.isHidden());
+    await desktop.click("#settings");
+    await desktop.click("#showHelp");
+    assert(await help.isVisible());
+    await desktop.keyboard.press("Escape");
+    assert(await help.isHidden());
+    assert(await desktop.locator("#showHelp").evaluate((button) => document.activeElement === button));
+    await desktop.keyboard.press("Escape");
+    assert(await desktop.locator("#settingsPanel").isHidden());
+    await desktop.click("#guide");
+    await desktop.keyboard.type("vmf");
+    assert.equal(await desktop.inputValue("#placeQuery"), "vmf");
+    assert(await desktop.evaluate(() => hujiang.mode === "walk" && !el("mapDialog").open));
+    await desktop.keyboard.press("Escape");
+    assert(await desktop.locator("#placesPanel").isHidden());
+    await desktop.click("#settings");
+    await desktop.keyboard.press("m");
+    await desktop.locator('#mapSites a[aria-label="思晏堂"] rect').click();
+    assert.equal(await desktop.textContent("#placeTitle"), "思晏堂");
+    assert(await desktop.locator("#settingsPanel").isHidden());
+    await desktop.keyboard.press("Escape");
+    assert(await desktop.locator("#placeCard").isHidden());
     assert(await desktop.locator("#stick").isHidden());
     await pickBuilding(desktop, 190, { height: 0.7, depth: 0.32 });
+    await desktop.keyboard.down("m");
+    await desktop.keyboard.down("m");
+    await desktop.keyboard.up("m");
+    assert(await desktop.locator("#mapDialog").isVisible());
+    await desktop.keyboard.press("v");
+    assert.equal(await desktop.evaluate(() => hujiang.mode), "walk");
+    await desktop.keyboard.press("m");
+    assert(await desktop.locator("#mapDialog").isHidden());
+    assert(await desktop.locator("#placeCard").isVisible());
+    await desktop.keyboard.press("m");
+    await desktop.keyboard.press("Escape");
+    assert(await desktop.locator("#mapDialog").isHidden());
+    assert(await desktop.locator("#placeCard").isVisible());
+    await desktop.keyboard.press("Escape");
+    assert(await desktop.locator("#placeCard").isHidden());
     const targets = await desktop.evaluate(() => {
       const p = hujiang.player;
       return [[7.3, 0.8], [4.5, -0.4]].map(([dx, dz]) => {
