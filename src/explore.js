@@ -59,6 +59,8 @@ function explore() {
   let viewLabel, groundLook;
   const ambience = makeWalkAmbience(treeTrunks, el("ambientVolume"), el("ambientValue"), shrubPerches);
   const eye = 1.66;
+  const walkSpeed = 2.4;
+  const fastWalkSpeed = 4.8;
   const legal = makeWalkSpace(obstacles, treeTrunks, 0.32);
   const drawNearbyMap = makeNearbyMap();
   const touch = matchMedia("(any-pointer: coarse)");
@@ -404,7 +406,7 @@ function explore() {
   function advance(dt) {
     if (mode === "orbit" || sceneInputBlocked()) return;
     if (route.length) {
-      let remaining = dt * 2;
+      let remaining = dt * walkSpeed;
       while (route.length && remaining > 0) {
         const next = route[0], dx = next.x - player.x, dz = next.z - player.z;
         const distance = Math.hypot(dx, dz);
@@ -436,7 +438,7 @@ function explore() {
     const lift = mode === "drone" ? Math.sign(axes.lift + Number(keys.has("KeyE")) - Number(keys.has("KeyQ"))) : 0;
     if (!mag && !lift) return;
     const fast = keys.has("ShiftLeft") || keys.has("ShiftRight");
-    const speed = mode === "drone" ? (fast ? 32 : 12) : (fast ? 3.95 : 2);
+    const speed = mode === "drone" ? (fast ? 32 : 12) : (fast ? fastWalkSpeed : walkSpeed);
     const distance = (dt * speed) / Math.max(1, mag);
     const dx = (Math.sin(yaw) * f + Math.cos(yaw) * r) * distance,
       dz = (-Math.cos(yaw) * f + Math.sin(yaw) * r) * distance;
