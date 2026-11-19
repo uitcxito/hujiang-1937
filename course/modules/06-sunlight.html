@@ -1,0 +1,164 @@
+<section class="module" id="module-6" aria-labelledby="sunlight-title" style="background:var(--color-bg-warm);padding-top:calc(var(--nav-height) + clamp(1rem,4vw,var(--space-12)))">
+  <div class="module-content">
+    <header class="module-header">
+      <h2 class="module-title" id="sunlight-title">校门的长影从哪里来？</h2>
+      <p class="module-subtitle">站在密氏校门外，看右边的石柱。它的柱头在砂石路上投下一个清楚的轮廓。切换同一机位的两张漫游截图，看看路面和柱面各有什么变化。</p>
+    </header>
+
+    <section class="screen" aria-label="同一机位的校门投影对照">
+      <div class="layer-demo">
+        <div class="layer-tabs" role="group" aria-label="选择校门画面">
+          <label class="layer-tab active"><input type="radio" name="gate-shadow-view" checked aria-controls="gate-shadow-on" onchange="showLayer('gate-shadow-on', this.parentElement)"> 显示投影</label>
+          <label class="layer-tab"><input type="radio" name="gate-shadow-view" aria-controls="gate-shadow-off" onchange="showLayer('gate-shadow-off', this.parentElement)"> 关闭投影</label>
+        </div>
+        <div class="layer-viewport">
+          <figure class="layer" id="gate-shadow-on">
+            <img src="images/gate-shadows.webp" width="1280" height="736" loading="lazy" alt="晨光从画面右上方照来，右侧石柱的长影斜落在门前的路上。" style="display:block;width:100%;height:auto">
+            <figcaption style="padding:.75rem 1rem;background:var(--color-surface)">门柱和铁栏截住直射光。顺着影子往回看，可以找到挡光的物体。</figcaption>
+          </figure>
+          <figure class="layer" id="gate-shadow-off" style="display:none">
+            <img src="images/gate-light-only.webp" width="1280" height="736" loading="lazy" alt="同一机位暂停接收投影后，门柱的长影消失，柱面仍有向阳与背光之分。" style="display:block;width:100%;height:auto">
+            <figcaption style="padding:.75rem 1rem;background:var(--color-surface)">这一帧只关闭了物体接收投影的开关。路面变亮了，石柱各面的亮度仍取决于朝向。</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" aria-labelledby="sunlight-direction">
+      <h3 class="screen-heading" id="sunlight-direction">日轮和影子怎样对齐？</h3>
+      <p>程序保存了一支从校园指向江岸上空的箭头。<code>sky(scene, sunDirection)</code> 把它交给天空，在箭头指向的地方画出日轮和光晕。<button type="button" class="term" style="font:inherit;background:none;border-width:0 0 1.5px" data-definition="模拟来自很远处的光。校园里各处接到的光线互相平行，角度相同。">方向光</button>的灯也沿这支箭头放置，光从那里照回校园。<a href="../src/land.js">天空源码</a></p>
+      <div class="translation-block">
+        <div class="translation-code">
+          <a class="translation-label" style="position:static;display:block;color:#e9d8bb;opacity:1;text-transform:none;letter-spacing:0;margin-bottom:.6rem" href="../src/explore.js">src/explore.js · 第 18–21 行</a>
+          <pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code>  <span class="code-keyword">const</span> sunDirection = <span class="code-keyword">new</span> V(<span class="code-number">0.89, 0.43, 0.4</span>).normalize();
+  <span class="code-keyword">const</span> sun = <span class="code-keyword">new</span> T.DirectionalLight(<span class="code-number">0xffe4bc, 3.95</span>);
+  scene.add(sun, sun.target);
+  sun.castShadow = <span class="code-keyword">true</span>;</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="color:var(--color-text-secondary);opacity:1">逐段读懂</span>
+          <p>三个数是从校园指向太阳的箭头，第二个数表示向上。<code>normalize()</code> 把箭头缩成单位长度，保留它的朝向。</p>
+          <p><code>0xffe4bc</code> 指定暖色，<code>3.95</code> 指定强度。最后两行把灯与目标加入场景，并开启这盏灯的投影。</p>
+        </div>
+      </div>
+      <p>这支箭头对应约 <strong>24°</strong> 的太阳仰角。试着在下图升高太阳，观察同一根杆的影子缩短多少。</p>
+      <form aria-label="平地上的标杆影长实验" style="--metre:min(7vw,44px);--shadow-length:4.492;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:clamp(1rem,3vw,1.6rem)"
+            oninput="
+              const degrees = this.elements.elevation.valueAsNumber;
+              const lengthInMetres = 2 / Math.tan(degrees * Math.PI / 180);
+              this.elements.angleReadout.value = degrees + '°';
+              this.elements.shadowReadout.value = lengthInMetres.toFixed(1) + ' 米';
+              this.style.setProperty('--shadow-length', lengthInMetres);
+            ">
+        <div style="display:flex;justify-content:space-between;gap:.6rem;align-items:baseline;flex-wrap:wrap">
+          <label for="sun-elevation">太阳仰角 <output name="angleReadout" for="sun-elevation">24°</output></label>
+          <strong>影长 <output name="shadowReadout" for="sun-elevation">4.5 米</output></strong>
+        </div>
+        <input id="sun-elevation" name="elevation" aria-describedby="pole-caption" type="range" min="12" max="72" step="1" value="24" style="width:100%;accent-color:var(--color-accent);margin:.8rem 0">
+        <div aria-hidden="true" style="border-bottom:1px solid var(--color-border);display:flex;justify-content:flex-end;padding-right:8%;margin:.5rem 0">
+          <div style="position:relative;width:calc(var(--metre) * var(--shadow-length));height:calc(var(--metre) * 2);box-sizing:content-box;border-right:6px solid #806749;border-bottom:5px solid #6b7063">
+            <span style="position:absolute;inset:0;background:#ae7623;clip-path:polygon(100% 0,100% 2px,0 100%,0 calc(100% - 2px))"></span>
+          </div>
+        </div>
+        <p class="layer-description" id="pole-caption">棕杆高 2 米，金线掠过杆顶，灰线是地上的影子。在平地上，影长 = 杆高 ÷ tan(太阳仰角)。当仰角为 45°，影长恰好等于杆高。</p>
+      </form>
+    </section>
+
+    <section class="screen" aria-labelledby="sunlight-depth">
+      <h3 class="screen-heading" id="sunlight-depth">路面怎样知道门柱挡住了光？</h3>
+      <p>先站到太阳的位置想一想。一条射向路面的光线要是先碰到门柱，就照不到柱后那一小块砂石。程序把沿各条光线最先遇到的距离存进一张<button type="button" class="term" style="font:inherit;background:none;border-width:0 0 1.5px" data-definition="从灯光方向绘制的一张距离图。每一格记录最近挡光表面的深度，供画面里的物体查询。">阴影贴图</button>。</p>
+      <form class="flow-animation" aria-label="追踪一条照向路面的光线"
+            onreset="this.querySelector('.flow-step-label').textContent = '沿一条照向路面的光线，依次查看三个位置。'"
+            data-steps='[
+              {"highlight":"flow-sun-pillar","label":"从太阳看过来，这条光线先碰到了门柱。门柱开启了 castShadow，会被画进距离图。"},
+              {"highlight":"flow-sun-map","packet":true,"from":"sun-pillar","to":"sun-map","label":"阴影贴图在对应的格子里记下门柱离灯光相机的深度。"},
+              {"highlight":"flow-sun-road","packet":true,"from":"sun-map","to":"sun-road","label":"路面开启了 receiveShadow。把这点路面的深度和图里一比，它比门柱更远，于是直射光受到遮挡。"}
+            ]'>
+        <div class="flow-actors">
+          <div class="flow-actor" id="flow-sun-pillar"><b class="flow-actor-icon" aria-hidden="true">柱</b>门柱挡光</div>
+          <div class="flow-actor" id="flow-sun-map"><b class="flow-actor-icon" aria-hidden="true">图</b>记录深度</div>
+          <div class="flow-actor" id="flow-sun-road"><b class="flow-actor-icon" aria-hidden="true">路</b>路面取样</div>
+        </div>
+        <div class="flow-packet" aria-hidden="true"></div>
+        <p class="flow-step-label" aria-live="polite">沿一条照向路面的光线，依次查看三个位置。</p>
+        <div class="flow-controls">
+          <button type="button" class="btn flow-next-btn">下一步</button>
+          <button type="reset" class="btn flow-reset-btn">从头看</button>
+        </div>
+      </form>
+      <aside class="callout callout-accent">
+        <div class="callout-content"><strong class="callout-title">为什么影子里还能看见砂石？</strong>
+          <p><button type="button" class="term" style="font:inherit;background:none;border-width:0 0 1.5px" data-definition="用上、下两种颜色近似天空和地面的柔和补光，表面朝向哪边会影响它接到的颜色。">半球光</button>给阴影留了一层天光与地面反光。画影子边缘时，<code>PCFSoftShadowMap</code> 综合附近几格的遮挡结果，让边缘柔和一些。<a href="../src/explore.js">灯光设置</a> · <a href="../src/materials.js">建筑的投影与接收开关</a></p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="screen" aria-labelledby="sunlight-surfaces">
+      <h3 class="screen-heading" id="sunlight-surfaces">同一束光，遇上树叶和江水</h3>
+      <div class="pattern-cards">
+        <figure class="pattern-card" style="min-width:0">
+          <img src="images/leaf-spray.png" width="256" height="256" loading="lazy" alt="项目实际用在树冠薄片上的枝叶图案，叶片之间留有透明空隙。" style="display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;background:var(--color-bg)">
+          <figcaption><h4 style="margin:.8rem 0 .4rem">叶缝让光穿过</h4>
+            <p>树冠由许多贴着这张枝叶图的薄片组成。<code>alphaTest: 0.27</code> 让不透明度低于门槛的部分被跳过，影子里便能留下空隙。迎光看树时，受直射的叶片还会透出一点黄绿色。<a href="../src/garden.js">枝叶源码</a></p>
+          </figcaption>
+        </figure>
+        <figure class="pattern-card" style="min-width:0">
+          <img src="images/river-glint.webp" width="1280" height="736" loading="lazy" alt="沿着太阳方向望向黄浦江，许多相邻小波面在水上连成一道亮带。" style="display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover">
+          <figcaption><h4 style="margin:.8rem 0 .4rem">水纹把光送向镜头</h4>
+            <p>项目用一张平面来画江水。程序为水面各点计算略有差别的<button type="button" class="term" style="font:inherit;background:none;border-width:0 0 1.5px" data-definition="垂直于一小块表面的箭头。绘图时用它表示这块表面朝向哪里。">法线</button>，模拟波纹的倾斜。沿岸换个站位，恰好把阳光反射向眼睛的那一组小波面也随之改变。<a href="../src/land.js">江面源码</a></p>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="screen" aria-labelledby="sunlight-scale">
+      <h3 class="screen-heading" id="sunlight-scale">飞高以后，怎样装下更多树影？</h3>
+      <p>阴影贴图的格子有限。步行时，程序把它对准行人附近。拉远鸟瞰或升高无人机，覆盖区域就会扩大。飞行时还会向镜头前方多留一段距离，让远处即将飞过的树也能投影。</p>
+      <details style="background:var(--color-surface);padding:1rem 1.25rem;border-radius:var(--radius-md);border:1px solid var(--color-border)">
+        <summary style="cursor:pointer;font-weight:600">算一算中画质的一格有多大</summary>
+        <p style="margin-top:.8rem">步行时，阴影相机的画幅宽 110 米。低、中、高画质分别申请每边 1024、2048、3072 格，实际值受设备上限约束。按中档 2048 格算，一格在阴影相机的平面上约宽 5.4 厘米。</p>
+        <p>移动覆盖区域时，程序把中心对齐到整格，减少静止栏杆的影子抖动。视点小幅移动可以复用上一张图，覆盖范围或投影树冠的细节发生变化时再重画。<a href="../src/explore.js">查看 setupShadows</a></p>
+      </details>
+    </section>
+
+    <section class="screen" aria-labelledby="sunlight-quiz">
+      <h3 class="screen-heading" id="sunlight-quiz">换三个场景试试</h3>
+      <div class="quiz-container" id="quiz-sunlight">
+        <div class="quiz-question-block" data-correct="angle" data-explanation-right="提高太阳仰角会缩短平地上的投影，共用的方向也会带动天空日轮移动。" data-explanation-wrong="灯的强度决定亮度。影子的长度由杆高和入射角决定。">
+          <h4 class="quiz-question">想让固定高度的门柱投出更短的影子，应该调什么？</h4>
+          <div class="quiz-options">
+            <button type="button" class="quiz-option" data-value="power" onclick="selectOption(this)"><span class="quiz-option-radio"></span>增加阳光的强度</button>
+            <button type="button" class="quiz-option" data-value="angle" onclick="selectOption(this)"><span class="quiz-option-radio"></span>提高共用太阳方向的仰角</button>
+          </div>
+          <div class="quiz-feedback" aria-live="polite"></div>
+        </div>
+        <div class="quiz-question-block" data-correct="receiver" data-explanation-right="同一片树影已经落在草地上，说明树参与了投影。接下来检查新路面是否接收遮挡。" data-explanation-wrong="草地上的影子表明树已经挡住了光。遗漏接收阴影的开关会只影响那块新路面。">
+          <h4 class="quiz-question">一片树影在草地上清楚可见，到了新铺的石板就突然消失。先查哪里？</h4>
+          <div class="quiz-options">
+            <button type="button" class="quiz-option" data-value="receiver" onclick="selectOption(this)"><span class="quiz-option-radio"></span>石板是否开启了接收阴影</button>
+            <button type="button" class="quiz-option" data-value="tree" onclick="selectOption(this)"><span class="quiz-option-radio"></span>树干是否开启了投射阴影</button>
+          </div>
+          <div class="quiz-feedback" aria-live="polite"></div>
+        </div>
+        <div class="quiz-question-block" data-correct="normals" data-explanation-right="给各处的水纹不同朝向，再结合太阳与观察者的位置，就能算出哪些小波面应当发亮。" data-explanation-wrong="画在水面颜色里的白纹会跟着水面固定。观察者换位置后，需要按新的视线计算反光。">
+          <h4 class="quiz-question">沿岸走动时，希望江面的亮带随站位改变，该让哪一项参与计算？</h4>
+          <div class="quiz-options">
+            <button type="button" class="quiz-option" data-value="paint" onclick="selectOption(this)"><span class="quiz-option-radio"></span>水面颜色里画好的白纹</button>
+            <button type="button" class="quiz-option" data-value="normals" onclick="selectOption(this)"><span class="quiz-option-radio"></span>水纹法线、光线和视线的方向</button>
+          </div>
+          <div class="quiz-feedback" aria-live="polite"></div>
+        </div>
+        <button type="button" class="quiz-check-btn" onclick="
+          checkQuiz('quiz-sunlight');
+          for (const feedback of this.parentElement.querySelectorAll('.quiz-feedback')) {
+            const verdict = feedback.querySelector('strong');
+            if (verdict) verdict.textContent = feedback.classList.contains('success') ? '答对了。' : '再看一下。';
+            else feedback.textContent = '先选一个答案，再核对。';
+          }
+        ">核对答案</button>
+        <button type="button" class="quiz-reset-btn" onclick="resetQuiz('quiz-sunlight')">重试</button>
+      </div>
+      <p>项目也用画面对照验收光影。测试沿真实光源方向找日轮，再在同一机位开关接收投影、比较变暗的画面小格，覆盖三种视角与三档画质。<a href="../tests/sunlight.cjs">查看光影测试</a> · <a href="../hujiang.html">去校门看晨光</a></p>
+    </section>
+  </div>
+</section>

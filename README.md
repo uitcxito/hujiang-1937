@@ -67,5 +67,6 @@ node --test --test-concurrency=1 "tests/*.cjs"
 ## 课程与素材来源
 
 - 下载仓库后打开 `course/index.html`，可通过交互示例了解地图坐标换算、水塔建模、无人机避障和单文件打包。[校园源码漫游课程](course/index.html)
+- 在第六课切换同一机位的校门投影、调节标杆的影长，了解树荫和江面波光怎样形成。[第六课 · 校门的长影从哪里来？](course/index.html#module-6)
 - 复原所依据的档案、推定范围和素材授权见项目验收说明。环境录音的逐条署名可在漫游页面的「浏览设置 → 环境录音来源」查看。[复原与验收说明](REVIEW.md)
 - Three.js 使用 MIT 许可。扫描纹理来自 Poly Haven，按 CC0 分发。鸟鸣按各条录音的 CC BY 4.0 或 CC0 1.0 许可使用，江水和树叶声使用 CC0。[Three.js 许可](vendor/THREE-LICENSE.txt) · [鸟鸣原作者与许可](试听/鸟鸣库/catalog.json)
