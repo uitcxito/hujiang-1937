@@ -392,6 +392,7 @@ function grass(scene) {
 
 // Herbaceous planting at the river margin and in the mapped Biological Garden.
 function riverGarden(scene) {
+  const shrubPerches = [];
   const root = new T.Group(),
     soil = std(0x66583f),
     stems = [],
@@ -449,6 +450,7 @@ function riverGarden(scene) {
     for (let u = lo; u < hi; u += 18) {
       const [x, z] = point(u, v);
       const len = Math.min(15, hi - u) * SCALE;
+      shrubPerches.push({ x: x + len / 2, z });
       box(root, x + len / 2, groundY(x, z) + 0.024, z, len, 0.08, 1.48, soil);
       for (let i = 0; i < len * 1.8; i++)
         cluster(x + between(0, len), z + between(-0.48, 0.48), between(0.27, 0.64), false);
@@ -468,6 +470,7 @@ function riverGarden(scene) {
       sites.some((s) => Math.abs(s.x - x) < s.w / 2 + 1.2 && Math.abs(s.z - z) < s.d / 2 + 1.2)
     )
       continue;
+    shrubPerches.push({ x, z });
     for (let j = 0; j < 7; j++)
       cluster(x + between(-1.5, 1.5), z + between(-1, 1), between(0.35, 0.75), false);
   }
@@ -483,4 +486,5 @@ function riverGarden(scene) {
     const o = mesh(scene, g, new T.MeshLambertMaterial({ vertexColors: true, side: T.DoubleSide }));
     o.receiveShadow = true;
   }
+  return shrubPerches;
 }

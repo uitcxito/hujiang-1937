@@ -33,6 +33,9 @@ function bindCampusControls(screen, actions) {
     moveStick(e);
   };
   stick.onpointermove = moveStick;
+  stick.addEventListener("pointerup", (e) => {
+    if (e.pointerId === stickId && e.pointerType !== "mouse") actions.unlock();
+  });
   stick.onpointerup = stick.onpointercancel = stick.onlostpointercapture = (e) => {
     if (e.pointerId === stickId) resetStick();
   };
@@ -94,6 +97,7 @@ function bindCampusControls(screen, actions) {
   sceneView.onpointerup = (e) => {
     const finger = fingers.get(e.pointerId);
     fingers.delete(e.pointerId);
+    if (finger && e.pointerType !== "mouse") actions.unlock();
     if (finger && !finger.moved && e.button === 0 &&
         Math.hypot(e.clientX - finger.startX, e.clientY - finger.startY) < (e.pointerType === "touch" ? 7 : 3)) {
       if (finger.pin) return finger.pin.click();

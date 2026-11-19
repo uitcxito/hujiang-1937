@@ -1,6 +1,7 @@
 // Run the page's own mixer against a repeatable walk. A virtual clock advances
 // quiet minutes quickly. For an audition the same events drive native Web Audio.
-async function simulateWalkAudio({ seconds, seed, poses, probes = [], trees = hujiang.treeTrunks, render = false }) {
+async function simulateWalkAudio({ seconds, seed, poses, probes = [], trees = hujiang.treeTrunks,
+  shrubs = [], render = false, soloWater = false, volumePercent, traceBirds = false }) {
   const rate = 48000;
   const offline = new OfflineAudioContext(render ? 4 : 2, render ? seconds * rate : 1, rate);
   const bytesByURL = new Map(), clips = new Map(), names = new Map();
@@ -14,22 +15,41 @@ async function simulateWalkAudio({ seconds, seed, poses, probes = [], trees = hu
 
   const mix = offline.createGain(), outputs = new Map(), pending = [], gusts = [], samples = [];
   let now = 0, filter;
-  const levels = {};
+  const levels = {}, birds = [], values = new WeakMap();
   function track(node) {
     const connect = node.connect.bind(node);
     node.connect = (dest) => { outputs.set(node, dest); return connect(dest); };
+    const param = node.gain || node.pan;
+    if (traceBirds && param) for (const kind of ["setValueAtTime", "setTargetAtTime"]) {
+      const apply = param[kind].bind(param);
+      param[kind] = (value, ...args) => { values.set(param, value); return apply(value, ...args); };
+    }
     return node;
   }
   function createSource() {
-    const source = offline.createBufferSource();
+    const source = track(offline.createBufferSource());
     const start = source.start.bind(source);
+    const stop = source.stop.bind(source);
+    let started = false;
     source.start = () => {
-      if (render) start(now);
+      if (render && (source.loop || !soloWater)) { start(now); started = true; }
       if (source.loop) return;
       const end = now + source.buffer.duration;
-      pending.push({ source, end });
       const name = names.get(source.buffer);
+      const item = { source, end, name };
+      pending.push(item);
       if (name.startsWith("leaves-")) gusts.push({ name, start: now, end, ...levels });
+      else if (traceBirds) {
+        const gain = outputs.get(source), tone = outputs.get(gain);
+        item.pan = outputs.get(tone).pan;
+        birds.push({ name, start: now, end, hz: tone.frequency.value,
+          pan: values.get(item.pan), gain: values.get(gain.gain) });
+      }
+    };
+    source.stop = () => {
+      if (started) stop(now);
+      const item = pending.find(e => e.source === source);
+      if (item) item.end = now;
     };
     // These connections must still exist when the scheduled audio is rendered.
     if (render) source.disconnect = () => {};
@@ -42,6 +62,7 @@ async function simulateWalkAudio({ seconds, seed, poses, probes = [], trees = hu
     createBufferSource: createSource,
     createBiquadFilter: () => (filter = track(offline.createBiquadFilter())),
     createGain: () => track(offline.createGain()),
+    createWaveShaper: () => offline.createWaveShaper(),
     createStereoPanner: () => track(offline.createStereoPanner()),
     createDynamicsCompressor: () => offline.createDynamicsCompressor(),
   };
@@ -55,8 +76,8 @@ async function simulateWalkAudio({ seconds, seed, poses, probes = [], trees = hu
     };
     const volume = document.createElement("input");
     volume.type = "range";
-    const controller = makeWalkAmbience(trees, volume, document.createElement("output"));
-    volume.value = document.querySelector("#ambientVolume").defaultValue;
+    const controller = makeWalkAmbience(trees, volume, document.createElement("output"), shrubs);
+    volume.value = volumePercent ?? document.querySelector("#ambientVolume").defaultValue;
     controller.unlock();
     await new Promise(resolve => setTimeout(resolve, 0));
     const leafGain = outputs.get(filter), pan = outputs.get(leafGain);
@@ -91,7 +112,11 @@ async function simulateWalkAudio({ seconds, seed, poses, probes = [], trees = hu
       const a = poses[segment], b = poses[segment + 1] || a;
       const u = b === a ? 0 : (now - a.at) / (b.at - a.at);
       controller.update({ x: a.x + (b.x - a.x) * u, z: a.z + (b.z - a.z) * u }, a.yaw + (b.yaw - a.yaw) * u);
-      if (samples.length < probes.length && now >= probes[samples.length]) samples.push({ ...levels });
+      if (samples.length < probes.length && now >= probes[samples.length]) {
+        const sample = { ...levels };
+        if (traceBirds) sample.birds = pending.filter(n => n.pan).map(n => [n.name, values.get(n.pan)]);
+        samples.push(sample);
+      }
     }
   } finally {
     window.AudioContext = original.AudioContext;
@@ -99,7 +124,7 @@ async function simulateWalkAudio({ seconds, seed, poses, probes = [], trees = hu
     Math.random = original.random;
   }
   if (render) window.walkAudioRender = await offline.startRendering();
-  return { gusts, samples };
+  return { gusts, samples, birds };
 }
 
 module.exports = { simulateWalkAudio };

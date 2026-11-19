@@ -1,4 +1,6 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
@@ -6,6 +8,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 // Tap the real audio graph so a successful play request with silent output fails the test.
 function meterAudio() {
   const connect = AudioNode.prototype.connect;
+  const outputs = new Map();
   function meter(node) {
     const analyser = node.context.createAnalyser();
     connect.call(node, analyser);
@@ -22,6 +25,7 @@ function meterAudio() {
     },
   };
   AudioNode.prototype.connect = function (target, ...ports) {
+    outputs.set(this, target);
     if (target === this.context.destination) {
       probe.context = this.context;
       probe.output = meter(this);
@@ -31,8 +35,12 @@ function meterAudio() {
     } else if (this instanceof AudioBufferSourceNode) {
       if (this.loop) {
         probe.loops++;
-        probe.river = meter(target);
-        probe.riverGain = target.gain;
+        let distanceGain = target;
+        while (outputs.has(distanceGain) && !(outputs.get(distanceGain) instanceof WaveShaperNode)) {
+          distanceGain = outputs.get(distanceGain);
+        }
+        probe.river = meter(distanceGain);
+        probe.riverGain = distanceGain.gain;
       } else if (target instanceof BiquadFilterNode) {
         probe.gusts.push(this.buffer);
       } else {
@@ -44,20 +52,29 @@ function meterAudio() {
 }
 
 async function check() {
-  const browser = await chromium.launch({ channel: process.platform === "win32" ? "msedge" : undefined });
+  const browser = await chromium.launch({
+    channel: process.platform === "win32" ? "msedge" : undefined,
+    args: ["--autoplay-policy=document-user-activation-required"],
+  });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hujiang-"));
+  const file = path.join(dir, "hujiang.html");
   try {
+    fs.copyFileSync(path.resolve(__dirname, "..", process.argv[2] || "hujiang.html"), file);
     const page = await browser.newPage({ offline: true, viewport: { width: 1280, height: 800 } });
     await page.addInitScript(meterAudio);
     const errors = [];
-    page.on("pageerror", (e) => errors.push(e.message));
-    page.on("console", (msg) => {
-      if (msg.text().includes("无法读取环境录音")) errors.push(msg.text());
-    });
-    page.on("request", (r) => {
-      if (/^https?:/.test(r.url())) errors.push(r.url());
-    });
-    const file = process.argv[2] || "hujiang.html";
-    await page.goto(pathToFileURL(path.join(__dirname, "..", file)).href);
+    function watch(tab) {
+      tab.on("pageerror", (e) => errors.push(e.message));
+      tab.on("console", (msg) => {
+        if (msg.text().includes("无法读取环境录音")) errors.push(msg.text());
+      });
+      tab.on("request", (r) => {
+        if (/^https?:/.test(r.url())) errors.push(r.url());
+      });
+    }
+    watch(page);
+    const url = pathToFileURL(file).href;
+    await page.goto(url);
     const ready = () => page.waitForFunction(() => window.hujiang, undefined, { timeout: 60000 });
     const quiet = () => page.waitForFunction(() => soundProbe.context.state === "suspended");
     await ready();
@@ -80,9 +97,9 @@ async function check() {
       await page.click("#landHere");
     }
     await visit("生物园");
-    await page.waitForFunction(() => soundProbe.riverGain.value > 0.24 && soundProbe.riverGain.value < 0.4);
+    await page.waitForFunction(() => soundProbe.riverGain.value > 0.047 && soundProbe.riverGain.value < 0.06);
     await page.waitForFunction(() => soundProbe.gusts.length && soundProbe.leafGain.value > 0.7 &&
-      soundProbe.rms(soundProbe.leaves) > 0.007 && soundProbe.rms(soundProbe.river) > 0.004,
+      soundProbe.rms(soundProbe.leaves) > 0.007 && soundProbe.rms(soundProbe.river) > 0.002,
       undefined, { timeout: 115000 });
     // Interrupt an audible gust. Returning to the same trees keeps the quiet interval.
     await page.click("#orbit");
@@ -95,23 +112,24 @@ async function check() {
     // From the garden approach, strafe inland and then back towards the bank.
     await page.keyboard.down("Shift");
     await page.keyboard.down("a");
-    await page.waitForFunction(() => soundProbe.riverGain.value < 0.19);
+    await page.waitForFunction(() => soundProbe.riverGain.value < 0.0505);
     await page.keyboard.up("a");
     await page.keyboard.down("d");
-    await page.waitForFunction(() => soundProbe.riverGain.value > 0.37);
+    await page.waitForFunction(() => soundProbe.riverGain.value > 0.053);
     await page.keyboard.up("d");
     await page.keyboard.up("Shift");
-    await visit("黄浦江岸");
+    await visit("生物园");
+    await walkToRiver(page);
     await page.waitForFunction(() =>
-      soundProbe.riverGain.value > 0.85 && soundProbe.rms(soundProbe.river) > 0.02 &&
-      soundProbe.rms(soundProbe.output) > 0.009
+      soundProbe.riverGain.value > 0.18 && soundProbe.rms(soundProbe.river) > 0.005 &&
+      soundProbe.rms(soundProbe.output) > 0.003
     );
     for (const mode of ["orbit", "drone"]) {
       await page.click("#" + mode);
       await quiet();
       await page.click("#walk");
       await page.waitForFunction(() =>
-        soundProbe.context.state === "running" && soundProbe.rms(soundProbe.river) > 0.02
+        soundProbe.context.state === "running" && soundProbe.rms(soundProbe.river) > 0.005
       );
     }
     // Headless Chromium keeps tabs visible, so deliver both visibility events explicitly.
@@ -143,11 +161,87 @@ async function check() {
     await page.click("#settings");
     await volume.press("End");
     await page.waitForFunction(() => soundProbe.output && soundProbe.rms(soundProbe.output) > 0.008);
+    await page.close();
+    for (const action of ["walk", "ground"]) {
+      const mobile = await browser.newPage({ offline: true, hasTouch: true, isMobile: true, viewport: { width: 412, height: 800 } });
+      watch(mobile);
+      await mobile.addInitScript(meterAudio);
+      if (action === "ground") await mobile.addInitScript(rejectOgg);
+      await mobile.goto(url);
+      await mobile.waitForFunction(() => window.hujiang && !soundProbe.context);
+      if (action === "walk") await mobile.locator("#walk").tap();
+      else {
+        const x = 206, y = 505;
+        assert(await mobile.evaluate(([x, y]) => document.elementFromPoint(x, y).tagName === "CANVAS", [x, y]));
+        await mobile.touchscreen.tap(x, y);
+      }
+      await mobile.waitForFunction(() => soundProbe.output && soundProbe.rms(soundProbe.output) > 0.006);
+      if (action === "ground") {
+        await mobile.waitForFunction(() => codecs.mp3 === 4 && codecs.flac === 14 && soundProbe.loops === 1);
+        assert.equal(await mobile.evaluate(() => codecs.ogg), 4);
+        // The fallback must play the water, as well as decode the file.
+        await mobile.evaluate(() => hujiang.focus(181));
+        await mobile.locator("#landHere").tap();
+        await mobile.waitForFunction(() => soundProbe.rms(soundProbe.river) > 0.001);
+      }
+      await mobile.close();
+    }
     assert.deepEqual(errors, []);
-    console.log(file + " passed offline birdsong, simultaneous water and leaves, mode changes, mute and volume restoration.");
+    assert.deepEqual(fs.readdirSync(dir), ["hujiang.html"]);
+    console.log("Isolated offline HTML passed keyboard, touch, MP3 fallback, garden walk, mode changes, mute and volume restoration.");
   } finally {
     await browser.close();
+    if (fs.existsSync(file)) fs.unlinkSync(file);
+    fs.rmdirSync(dir);
   }
+}
+
+async function walkToRiver(page) {
+  const target = { x: 279.558566, z: -81.778839 };
+  await page.waitForFunction(() => hujiang.mode === "walk" && hujiang.camera.position.equals(hujiang.player));
+  const dx = await page.evaluate(target => {
+    const p = hujiang.player, dir = hujiang.camera.getWorldDirection(new THREE.Vector3());
+    const yaw = Math.atan2(dir.x, -dir.z), desired = Math.atan2(target.x - p.x, p.z - target.z);
+    const delta = desired - yaw;
+    return Math.atan2(Math.sin(delta), Math.cos(delta)) / 0.0021;
+  }, target);
+  const steps = Math.max(1, Math.ceil(Math.abs(dx) / 320));
+  for (let i = 0; i < steps; i++) {
+    await page.mouse.move(640, 430);
+    await page.mouse.down();
+    await page.mouse.move(640 + dx / steps, 430);
+    await page.mouse.up();
+  }
+  const depths = [30, 20, 10, 4.1];
+  let previousGain = 0;
+  await page.keyboard.down("w");
+  try {
+    for (const d of depths) {
+      await page.waitForFunction(d => shoreDistance(hujiang.player.x, hujiang.player.z) <= d, d,
+        { polling: 50, timeout: 60000 });
+      const gain = await page.evaluate(() => soundProbe.riverGain.value);
+      assert(gain > previousGain, "Water grew while walking to " + d + " m");
+      previousGain = gain;
+    }
+  } finally { await page.keyboard.up("w"); }
+  assert(await page.evaluate(p => Math.hypot(hujiang.player.x - p.x, hujiang.player.z - p.z) < 1, target));
+}
+
+function rejectOgg() {
+  const decode = AudioContext.prototype.decodeAudioData;
+  window.codecs = { ogg: 0, flac: 0, mp3: 0 };
+  AudioContext.prototype.decodeAudioData = async function (data, ...callbacks) {
+    const bytes = new Uint8Array(data, 0, 4), magic = String.fromCharCode(...bytes);
+    if (magic === "OggS") {
+      codecs.ogg++;
+      throw new DOMException("Ogg unavailable", "EncodingError");
+    }
+    const mp3 = magic.startsWith("ID3") || (bytes[0] === 255 && (bytes[1] & 224) === 224);
+    const buffer = await decode.call(this, data, ...callbacks);
+    if (magic === "fLaC") codecs.flac++;
+    if (mp3) codecs.mp3++;
+    return buffer;
+  };
 }
 check().catch((error) => {
   console.error(error);

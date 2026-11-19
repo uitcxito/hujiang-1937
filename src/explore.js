@@ -24,7 +24,7 @@ function explore() {
   const droneShadowFocus = new V();
   sky(scene, sunDirection);
   const { soil, river } = terrain(scene);
-  riverGarden(scene);
+  const shrubPerches = riverGarden(scene);
   const architecture = new T.Group();
   for (const s of sites.filter((s) => s.style !== "landmark")) buildSite(s, architecture);
   collectTreads(architecture);
@@ -57,7 +57,7 @@ function explore() {
     shadowRange = 0,
     lastArea = 0;
   let viewLabel, groundLook;
-  const ambience = makeWalkAmbience(treeTrunks, el("ambientVolume"), el("ambientValue"));
+  const ambience = makeWalkAmbience(treeTrunks, el("ambientVolume"), el("ambientValue"), shrubPerches);
   const eye = 1.66;
   const legal = makeWalkSpace(obstacles, treeTrunks, 0.32);
   const drawMap = makeCampusMap();
