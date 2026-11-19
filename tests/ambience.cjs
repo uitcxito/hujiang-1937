@@ -13,6 +13,7 @@ function meterAudio() {
   }
   const probe = window.soundProbe = {
     birds: [],
+    gusts: [],
     loops: 0,
     rms(analyser) {
       const samples = new Float32Array(analyser.fftSize);
@@ -24,11 +25,16 @@ function meterAudio() {
     if (target === this.context.destination) {
       probe.context = this.context;
       probe.output = meter(this);
+    } else if (this instanceof BiquadFilterNode && target instanceof GainNode) {
+      probe.leaves = meter(target);
+      probe.leafGain = target.gain;
     } else if (this instanceof AudioBufferSourceNode) {
       if (this.loop) {
         probe.loops++;
         probe.river = meter(target);
         probe.riverGain = target.gain;
+      } else if (target instanceof BiquadFilterNode) {
+        probe.gusts.push(this.buffer);
       } else {
         probe.birds.push(this.buffer);
       }
@@ -56,6 +62,10 @@ async function check() {
     const quiet = () => page.waitForFunction(() => soundProbe.context.state === "suspended");
     await ready();
     assert(await page.evaluate(() => !soundProbe.context));
+    await page.evaluate(() => {
+      let seed = 19;
+      Math.random = () => ((seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296);
+    });
     await page.keyboard.press("w");
     await page.waitForFunction(() => soundProbe.output && soundProbe.rms(soundProbe.output) > 0.008);
     await page.waitForFunction(() => soundProbe.river && soundProbe.birds.length >= 2);
@@ -71,6 +81,17 @@ async function check() {
     }
     await visit("生物园");
     await page.waitForFunction(() => soundProbe.riverGain.value > 0.24 && soundProbe.riverGain.value < 0.4);
+    await page.waitForFunction(() => soundProbe.gusts.length && soundProbe.leafGain.value > 0.7 &&
+      soundProbe.rms(soundProbe.leaves) > 0.007 && soundProbe.rms(soundProbe.river) > 0.004,
+      undefined, { timeout: 115000 });
+    // Interrupt an audible gust. Returning to the same trees keeps the quiet interval.
+    await page.click("#orbit");
+    await quiet();
+    const gustCount = await page.evaluate(() => soundProbe.gusts.length);
+    await page.click("#walk");
+    await page.waitForFunction(() => soundProbe.context.state === "running" && soundProbe.rms(soundProbe.leaves) < 0.0001);
+    assert.equal(await page.evaluate(() => soundProbe.gusts.length), gustCount);
+    await visit("生物园");
     // From the garden approach, strafe inland and then back towards the bank.
     await page.keyboard.down("Shift");
     await page.keyboard.down("a");
@@ -123,7 +144,7 @@ async function check() {
     await volume.press("End");
     await page.waitForFunction(() => soundProbe.output && soundProbe.rms(soundProbe.output) > 0.008);
     assert.deepEqual(errors, []);
-    console.log(file + " passed offline birdsong, shore-distance mixing, mode changes, mute and volume restoration.");
+    console.log(file + " passed offline birdsong, simultaneous water and leaves, mode changes, mute and volume restoration.");
   } finally {
     await browser.close();
   }

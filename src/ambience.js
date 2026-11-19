@@ -7,10 +7,12 @@ function makeWalkAmbience(trees, volume, readout) {
   } catch {
     // File URLs and private browsing can restrict storage.
   }
-  let context, master, waterGain, waterPan, birdGain, birdPan;
+  let context, master, waterGain, waterPan, birdGain, birdPan, leafFilter, leafGain, leafPan;
   let walking = true, pauseTimer;
-  let bird, perch, lastCall, nextCall = 0, nextMix = 0;
-  const calls = [];
+  let perch, nextCall = 0, nextGust, nextMix = 0;
+  let canopyX, canopyZ, canopyYaw;
+  const birds = { clips: [], source: null, last: null };
+  const leaves = { clips: [], source: null, last: null };
   const targets = new Map();
 
   function showVolume() {
@@ -38,7 +40,8 @@ function makeWalkAmbience(trees, volume, readout) {
     master.gain.setTargetAtTime(0, now, 0.045);
     function pause() {
       if (audible()) return;
-      if (bird) bird.stop();
+      birds.source?.stop();
+      leaves.source?.stop();
       nextCall = 0;
       context.suspend().catch(() => {});
     }
@@ -56,7 +59,8 @@ function makeWalkAmbience(trees, volume, readout) {
         water.connect(waterGain);
         water.start();
       } else {
-        calls.push(buffer);
+        const voice = name.startsWith("leaves-") ? leaves : birds;
+        voice.clips.push(buffer);
       }
     } catch (error) {
       console.warn("无法读取环境录音", name, error);
@@ -69,7 +73,7 @@ function makeWalkAmbience(trees, volume, readout) {
       master = context.createGain();
       master.gain.value = 0;
       master.connect(context.destination);
-      // Leave room for a nearby call and a wave crest to coincide, even at full volume.
+      // All three sounds can coincide at a tree beside the river.
       const limiter = context.createDynamicsCompressor();
       limiter.threshold.value = -7;
       limiter.knee.value = 3;
@@ -84,6 +88,12 @@ function makeWalkAmbience(trees, volume, readout) {
       birdGain = context.createGain();
       birdPan = context.createStereoPanner();
       birdGain.connect(birdPan).connect(limiter);
+      leafFilter = context.createBiquadFilter();
+      leafFilter.type = "lowpass";
+      leafGain = context.createGain();
+      leafGain.gain.value = 0;
+      leafPan = context.createStereoPanner();
+      leafFilter.connect(leafGain).connect(leafPan).connect(limiter);
       for (const [name, url] of Object.entries(campusRecordings)) loadRecording(name, url);
     }
     syncPlayback();
@@ -111,24 +121,50 @@ function makeWalkAmbience(trees, volume, readout) {
     }
     return nearby[Math.floor(Math.random() * nearby.length)] || nearest;
   }
-  function sing(now) {
-    const choices = calls.length > 1 ? calls.filter((c) => c !== lastCall) : calls;
-    lastCall = choices[Math.floor(Math.random() * choices.length)];
+  function playClip(voice, output) {
+    const choices = voice.clips.length > 1 ? voice.clips.filter((c) => c !== voice.last) : voice.clips;
+    voice.last = choices[Math.floor(Math.random() * choices.length)];
     const source = context.createBufferSource();
-    source.buffer = lastCall;
-    source.connect(birdGain);
+    source.buffer = voice.last;
+    source.connect(output);
     source.onended = () => {
       source.disconnect();
-      if (bird === source) bird = null;
+      if (voice.source === source) voice.source = null;
     };
-    bird = source;
+    voice.source = source;
     source.start();
-    nextCall = now + source.buffer.duration + 1.7 + Math.random() * 3.8;
+    return source.buffer.duration;
+  }
+  function leafQuietTime() {
+    return Math.random() < 0.75 ? 20 + 30 * Math.random() : 65 + 35 * Math.random();
   }
   function blend(param, target, now, seconds) {
     if (targets.get(param) === target) return;
     param.setTargetAtTime(target, now, seconds);
     targets.set(param, target);
+  }
+  function mixCanopies(x, z, yaw, rightX, rightZ, now) {
+    if (x === canopyX && z === canopyZ && yaw === canopyYaw) return;
+    canopyX = x;
+    canopyZ = z;
+    canopyYaw = yaw;
+    let nearestLevel = 0, weightSum = 0, panSum = 0;
+    for (const tree of trees) {
+      const dx = tree.x - x, dz = tree.z - z;
+      const radius = tree.crownRadius ?? 0, reach = radius + 20;
+      const distanceSq = dx * dx + dz * dz;
+      if (distanceSq >= reach * reach) continue;
+      const distance = Math.sqrt(distanceSq);
+      const level = 1 - T.MathUtils.smoothstep(distance - radius, 0, 20);
+      const weight = level * level;
+      // Blend nearby directions and centre the sound as the listener passes under a crown.
+      panSum += weight * (dx * rightX + dz * rightZ) / Math.max(distance, radius, 1);
+      weightSum += weight;
+      nearestLevel = Math.max(nearestLevel, level);
+    }
+    blend(leafGain.gain, nearestLevel, now, 0.14);
+    blend(leafFilter.frequency, 2200 + 9000 * nearestLevel, now, 0.16);
+    blend(leafPan.pan, weightSum ? 0.8 * panSum / weightSum : 0, now, 0.12);
   }
   function update(player, yaw) {
     if (context?.state !== "running" || !audible()) return;
@@ -146,16 +182,22 @@ function makeWalkAmbience(trees, volume, readout) {
       const pan = (dx * rightX + dz * rightZ) / (Math.hypot(dx, dz) || 1);
       blend(waterPan.pan, 0.6 * pan, now, 0.12);
     }
-    if (!bird && calls.length && now >= nextCall) {
+    if (!birds.source && birds.clips.length && now >= nextCall) {
       perch = pickPerch(x, z);
-      if (perch) sing(now);
+      if (perch) nextCall = now + playClip(birds, birdGain) + 1.7 + Math.random() * 3.8;
     }
-    if (bird) {
+    if (birds.source) {
       const dx = perch.x - x, dz = perch.z - z;
       const distance = Math.max(1, Math.hypot(dx, dz));
       const level = Math.min(1, 14 / distance) * (1 - 0.45 * nearWater);
       blend(birdGain.gain, level, now, 0.1);
       blend(birdPan.pan, 0.8 * (dx * rightX + dz * rightZ) / distance, now, 0.09);
+    }
+    mixCanopies(x, z, yaw, rightX, rightZ, now);
+    // One breeze passes through the campus. Entering another crown only changes the mix.
+    if (nextGust === undefined) nextGust = now + leafQuietTime();
+    if (!leaves.source && leaves.clips.length && now >= nextGust) {
+      nextGust = now + playClip(leaves, leafFilter) + leafQuietTime();
     }
   }
   return {
