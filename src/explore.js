@@ -108,10 +108,13 @@ function explore() {
         level = Math.max(level, step.y);
     player.y = level + eye;
   }
-  function setWalk(x, z, lookX, lookZ) {
+  function placePlayer(x, z) {
     player.set(x, 0, z);
     groundPlayer();
     viewLabel = null;
+  }
+  function setWalk(x, z, lookX, lookZ) {
+    placePlayer(x, z);
     walkLook.yaw = Math.atan2(lookX - x, -(lookZ - z));
     walkLook.pitch = 0.018;
     setMode("walk");
@@ -128,12 +131,12 @@ function explore() {
     el("hint").textContent = mode === "walk"
       ? (mobile ? "点地行走 · 左侧摇杆移动 · 拖动环顾" : "点地行走 · 拖动环顾 · WASD 移动 · Shift 加速")
       : mode === "drone"
-        ? (mobile ? "摇杆飞行 · 按住箭头升降 · 拖动环顾" : "WASD 飞行 · E / Q 升降 · Shift 加速 · 拖动环顾")
+        ? (mobile ? "摇杆飞行 · 箭头升降 · 拖动环顾 · 点「步行」降落" : "WASD 飞行 · E / Q 升降 · Shift 加速 · 拖动环顾 · F 降落")
         : (mobile ? "单指旋转 · 双指缩放或平移 · 点建筑看资料" : "拖动旋转 · 右键平移 · 滚轮缩放 · 点建筑看资料");
   }
-  function unreachable() {
+  function showMovementError(message = "这里无法步行到达，请选择其他地面") {
     clearTimeout(hintTimer);
-    el("hint").textContent = "这里无法步行到达，请选择其他地面";
+    el("hint").textContent = message;
     hintTimer = setTimeout(hint, 2400);
   }
   function release(cancelRoute = true) {
@@ -169,20 +172,10 @@ function explore() {
       screen.focus();
       return;
     }
-    if (mode === "orbit") {
-      aim();
-      drone.copy(camera.position);
-      flightSpace.constrain(drone);
-      const dx = target.x - drone.x,
-        dz = target.z - drone.z;
-      droneLook.yaw = Math.atan2(dx, -dz);
-      droneLook.pitch = Math.atan2(target.y - drone.y, Math.hypot(dx, dz));
-    } else {
-      drone.set(player.x, flightSurface(player.x, player.z) + 18, player.z);
-      flightSpace.constrain(drone);
-      droneLook.yaw = walkLook.yaw;
-      droneLook.pitch = -0.22;
-    }
+    drone.set(player.x, flightSurface(player.x, player.z) + 18, player.z);
+    flightSpace.constrain(drone);
+    droneLook.yaw = walkLook.yaw;
+    droneLook.pitch = -0.22;
     selected = null;
     setMode("drone");
     screen.focus();
@@ -286,22 +279,33 @@ function explore() {
     if (controls.axes.forward || controls.axes.right || ["KeyW", "KeyA", "KeyS", "KeyD"].some((k) => keys.has(k))) return;
     clearRoute();
     hint();
-    if (!ground || ground.distance > surfaceDistance) return unreachable();
+    if (!ground || ground.distance > surfaceDistance) return showMovementError();
     const search = new AbortController();
     routeSearch = search;
     const goal = { x: ground.point.x, z: ground.point.z };
     const result = await findWalkRoute(player.clone(), goal, legal, search.signal);
     if (search.signal.aborted) return;
     routeSearch = null;
-    if (!result.length) return unreachable();
+    if (!result.length) return showMovementError();
     route = result;
     marker.position.set(goal.x, groundY(goal.x, goal.z) + 0.055, goal.z);
     marker.visible = true;
     dirty = true;
   }
   function walkMode() {
-    setMode("walk");
     screen.focus({ preventScroll: true });
+    if (mode === "drone") {
+      const landing = findDroneLanding(drone.x, drone.z, legal);
+      if (!landing) {
+        closePanels();
+        showMovementError("请飞到可步行地面上方再降落");
+        return;
+      }
+      placePlayer(landing.x, landing.z);
+      walkLook.yaw = droneLook.yaw;
+      walkLook.pitch = 0;
+    }
+    setMode("walk");
   }
   function quality() {
     q = Number(el("quality").value);
@@ -395,7 +399,7 @@ function explore() {
         const x = player.x + step * dx / distance, z = player.z + step * dz / distance;
         if (!legal(x, z)) {
           clearRoute();
-          unreachable();
+          showMovementError();
           break;
         }
         player.x = x;

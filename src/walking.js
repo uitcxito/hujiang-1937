@@ -26,6 +26,50 @@ function makeWalkSpace(solids, trunks, clearance) {
   };
 }
 
+function findDroneLanding(x, z, legal) {
+  if (legal(x, z)) return { x, z };
+  const limit = 15, spacing = 0.25, epsilon = 1e-10;
+  let best = null, nearest = Infinity;
+  // Track the first walkable point along a ray. Distances are horizontal metres.
+  function edge(dx, dz, radius) {
+    if (!legal(x + radius * dx, z + radius * dz)) return null;
+    let blocked = 0, clear = radius;
+    while (clear - blocked > 1e-12) {
+      const middle = (blocked + clear) / 2;
+      if (legal(x + middle * dx, z + middle * dz)) clear = middle;
+      else blocked = middle;
+    }
+    const offset = { x: clear * dx, z: clear * dz };
+    if (clear <= limit + epsilon && clear < nearest) {
+      nearest = clear;
+      best = { x: x + offset.x, z: z + offset.z };
+    }
+    return offset;
+  }
+  // One extra ring supplies directions when a sloping edge just touches the landing radius.
+  for (let radius = spacing; radius <= limit + spacing; radius += spacing) {
+    const samples = Math.max(32, 4 * Math.ceil(Math.PI * radius / (2 * spacing)));
+    let previous = null;
+    for (let i = 0; i <= samples; i++) {
+      const angle = 2 * Math.PI * (i % samples) / samples;
+      const next = edge(Math.cos(angle), Math.sin(angle), radius);
+      if (previous && next) {
+        // Project onto the segment between adjacent hits, then verify that direction against the actual ground.
+        const dx = next.x - previous.x, dz = next.z - previous.z;
+        const t = -(previous.x * dx + previous.z * dz) / (dx * dx + dz * dz);
+        if (t > 0 && t < 1) {
+          const px = previous.x + t * dx, pz = previous.z + t * dz;
+          const length = Math.hypot(px, pz);
+          edge(px / length, pz / length, Math.min(radius, limit + epsilon));
+        }
+      }
+      previous = next;
+    }
+    if (best) return best;
+  }
+  return null;
+}
+
 async function findWalkRoute(start, goal, legal, signal) {
   function clear(a, b) {
     const dx = b.x - a.x, dz = b.z - a.z;

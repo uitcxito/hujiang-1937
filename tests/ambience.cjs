@@ -4,6 +4,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
+const { facePoint } = require("./helpers/scene.cjs");
 
 // Tap the real audio graph so a successful play request with silent output fails the test.
 function meterAudio() {
@@ -201,19 +202,7 @@ async function check() {
 async function walkToRiver(page) {
   const target = { x: 279.558566, z: -81.778839 };
   await page.waitForFunction(() => hujiang.mode === "walk" && hujiang.camera.position.equals(hujiang.player));
-  const dx = await page.evaluate(target => {
-    const p = hujiang.player, dir = hujiang.camera.getWorldDirection(new THREE.Vector3());
-    const yaw = Math.atan2(dir.x, -dir.z), desired = Math.atan2(target.x - p.x, p.z - target.z);
-    const delta = desired - yaw;
-    return Math.atan2(Math.sin(delta), Math.cos(delta)) / 0.0021;
-  }, target);
-  const steps = Math.max(1, Math.ceil(Math.abs(dx) / 320));
-  for (let i = 0; i < steps; i++) {
-    await page.mouse.move(640, 430);
-    await page.mouse.down();
-    await page.mouse.move(640 + dx / steps, 430);
-    await page.mouse.up();
-  }
+  await facePoint(page, target);
   const depths = [30, 20, 10, 4.1];
   let previousGain = 0;
   await page.keyboard.down("w");

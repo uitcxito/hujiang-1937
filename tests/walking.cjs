@@ -9,6 +9,30 @@ vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../src/walking.js"), "u
 const start = { x: -6.6, z: 0.1 }, goal = { x: 6.2, z: 0.3 };
 const within = (x, z) => Math.abs(x) < 9 && Math.abs(z) < 8;
 const plan = (legal) => scope.findWalkRoute(start, goal, legal, new AbortController().signal);
+test("land directly below the drone when its exact ground point is walkable", () => {
+  const landing = scope.findDroneLanding(2.017, -4.256, (x, z) => x === 2.017 && z === -4.256);
+  assert.equal(landing.x, 2.017);
+  assert.equal(landing.z, -4.256);
+});
+
+test("choose the closer walkable edge when two exits are on the same search ring", () => {
+  const legal = (x, z) => x >= 2.24 || z >= 2.07;
+  const p = scope.findDroneLanding(0, 0, legal);
+  assert(legal(p.x, p.z));
+  assert(Math.hypot(p.x, p.z) < 2.073);
+});
+
+test("include the 15 metre landing limit and reject ground beyond it", () => {
+  for (const distance of [14.99, 14.99999, 15]) {
+    const legal = (x, z) => 0.6 * x + 0.8 * z >= distance;
+    const p = scope.findDroneLanding(0, 0, legal);
+    assert(p && legal(p.x, p.z));
+    assert(Math.hypot(p.x - 0.6 * distance, p.z - 0.8 * distance) < 0.000001);
+  }
+  assert.equal(scope.findDroneLanding(0, 0, (x) => x >= 15).x, 15);
+  assert.equal(scope.findDroneLanding(0, 0, (x, z) => 0.6 * x + 0.8 * z >= 15.00001), null);
+});
+
 test("walk directly to the exact ground point", async () => {
   const route = await plan(within);
   assert.equal(route.length, 1);

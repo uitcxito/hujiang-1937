@@ -90,6 +90,8 @@ async function checkRoaming(page) {
   assert.deepEqual(await pose(), landing);
 
   await openFromGuide(page, "科学馆");
+  await page.click("#landHere");
+  await page.evaluate(() => hujiang.focus(141));
   await page.keyboard.press("f");
   const flight = await pose();
   assert(await card.isHidden());

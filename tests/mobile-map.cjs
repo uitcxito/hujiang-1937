@@ -108,8 +108,12 @@ async function check() {
     assert.deepEqual(await pos(), stopped);
     assert.equal(await heading(), schoolHeading);
 
+    await page.tap("#orbit");
     await page.tap("#drone");
     await frame();
+    const launched = await pose();
+    assert.equal(launched[0], stopped[0]);
+    assert.equal(launched[2], stopped[2]);
     assert(await page.locator("#placeCard").isHidden());
     await pickBuilding(page, 103);
     const altitude = (await pose())[1];

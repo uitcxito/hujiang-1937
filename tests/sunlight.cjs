@@ -55,7 +55,10 @@ async function check() {
     await page.waitForFunction(() => window.hujiang, undefined, { timeout: 60000 });
     await page.keyboard.press("Escape");
     for (const mode of ["walk", "orbit", "drone"]) {
-      if (mode === "drone") await page.evaluate(() => hujiang.focus(121));
+      if (mode === "drone") {
+        await page.evaluate(() => hujiang.focus(121));
+        await page.click("#landHere");
+      }
       await page.click("#" + mode);
       await page.click("#settings");
       for (const quality of ["0", "1", "2"]) {
