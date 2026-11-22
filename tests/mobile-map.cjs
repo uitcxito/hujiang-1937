@@ -54,6 +54,7 @@ async function check() {
     assert(await page.locator("#mapDialog").isHidden());
     assert.equal(await page.textContent("#placeTitle"), "思晏堂");
     assert.equal(await page.evaluate(() => hujiang.mode), "orbit");
+    assert(await page.locator("#placeIntro").isHidden());
     await page.tap("#home");
     await frame();
     const start = await pos();
@@ -81,6 +82,10 @@ async function check() {
     await page.tap("#mapClose");
 
     // Send two independent physical touch contacts through Chromium's input pipeline.
+    // Restart at the gate so the previous route cannot put a pillar in front of the school.
+    await page.tap("#home");
+    await frame();
+    await pickBuilding(page, 190, { height: 0.7, depth: 0.32 });
     const cdp = await context.newCDPSession(page);
     const touch = (type, touchPoints) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints });
     const center = async (id) => {
@@ -152,6 +157,52 @@ async function check() {
     assert(Math.abs((await pose())[0] - zoomed[0]) > 1);
     assert(await page.locator("#stick").isHidden());
 
+    // Compare horizontal metres per simulation second using the same full joystick deflection.
+    await page.tap("#home");
+    const forwardStick = { ...stick, y: stick.y - 30 };
+    const sprint = { ...await center("#sprint"), id: 2 };
+    const walkSpeed = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(start => {
+      const from = hujiang.player;
+      requestAnimationFrame(end => {
+        const p = hujiang.player;
+        resolve(Math.hypot(p.x - from.x, p.z - from.z) / Math.min(0.12, (end - start) / 1000));
+      });
+    })));
+    await touch("touchStart", [forwardStick]);
+    assert(Math.abs(await walkSpeed() - 2.4) < 0.01);
+    await touch("touchStart", [forwardStick, sprint]);
+    assert.equal(await page.getAttribute("#sprint", "aria-pressed"), "true");
+    assert(Math.abs(await walkSpeed() - 4.8) < 0.01);
+    await touch("touchEnd", []);
+    assert.equal(await page.getAttribute("#sprint", "aria-pressed"), "false");
+    await touch("touchStart", [forwardStick]);
+    assert(Math.abs(await walkSpeed() - 2.4) < 0.01);
+    await touch("touchStart", [forwardStick, sprint]);
+    await page.keyboard.press("v");
+    assert.equal(await page.getAttribute("#sprint", "aria-pressed"), "false");
+    await touch("touchCancel", []);
+    await page.tap("#drone");
+    assert(await page.locator("#sprint").isHidden());
+    const takeoff = await pos();
+    await touch("touchStart", [forwardStick]);
+    await page.waitForFunction(([x, , z]) => {
+      const p = hujiang.camera.position;
+      return Math.hypot(p.x - x, p.z - z) > 4 && hujiang.legal(p.x, p.z);
+    }, takeoff);
+    await touch("touchEnd", []);
+    await frame();
+    const flight = await pose();
+    await page.tap("#orbit");
+    await page.tap("#drone");
+    await frame();
+    assert.deepEqual(await pose(), flight);
+    await page.tap("#orbit");
+    await page.tap("#walk");
+    await frame();
+    const landing = await pos();
+    assert.equal(landing[0], flight[0]);
+    assert.equal(landing[2], flight[2]);
+
     for (const [width, height] of [[320, 568], [844, 390], [768, 1024]]) {
       await page.setViewportSize({ width, height });
       await page.tap("#home");
@@ -168,7 +219,44 @@ async function check() {
       assert(await page.locator("#placeCard").isVisible());
       await page.tap("#landHere");
       assert(await page.locator("#stick").isVisible());
+
+      // Teleport out of a flight, including an orbit detour, via the real map hotspot.
+      await page.tap("#drone");
+      await page.tap("#orbit");
+      await page.tap("#mapToggle");
+      await page.locator('#mapSites a[aria-label="思晏堂"] rect').tap();
+      assert(await page.locator("#placeIntro").isHidden());
+      assert(await page.locator("#landHere").evaluate(button => {
+        const r = button.getBoundingClientRect();
+        return el("placeReading").scrollTop === 0 && [r.left + 5, r.right - 5].every(x =>
+          [r.top + 5, r.bottom - 5].every(y => document.elementFromPoint(x, y) === button));
+      }), "The whole teleport button must be tappable before scrolling");
+      await page.tap("#readPlace");
+      assert(await page.locator("#placeStory").isVisible());
+      assert(await page.evaluate(() => {
+        const r = el("placeCard").getBoundingClientRect(), p = el("placeStory").getBoundingClientRect();
+        const reading = el("placeReading").getBoundingClientRect();
+        return Math.abs(r.left + r.width / 2 - innerWidth / 2) < 1 &&
+          Math.min(p.bottom, reading.bottom) - Math.max(p.top, reading.top) > 20;
+      }));
     }
+    await page.tap("#landHere");
+    await frame();
+    const destination = await pos();
+    assert.equal(await page.textContent("#location"), "思晏堂");
+    assert(await page.evaluate(() => {
+      const s = hujiang.sites.find(s => s.name === "思晏堂"), p = hujiang.player;
+      return hujiang.legal(p.x, p.z) && Math.hypot(p.x - s.x, p.z - s.z) < 40;
+    }));
+    await page.tap("#orbit");
+    await page.tap("#walk");
+    await frame();
+    assert.deepEqual(await pose(), destination);
+    await page.tap("#drone");
+    await frame();
+    const departure = await pose();
+    assert.equal(departure[0], destination[0]);
+    assert.equal(departure[2], destination[2]);
     await context.close();
     const desktop = await browser.newPage({ offline: true, viewport: { width: 1280, height: 800 } });
     desktop.on("pageerror", (e) => errors.push(e.message));
@@ -231,10 +319,16 @@ async function check() {
       });
     });
     for (const target of targets) await desktop.mouse.click(target.screenX, target.screenY);
+    // The camera can advance between taps. Follow the second tap's actual ground hit.
+    const goal = await desktop.evaluate(() => {
+      const { x, z } = hujiang.scene.getObjectByName("walkingDestination").position;
+      return { x, z };
+    });
+    assert(Math.hypot(goal.x - targets[1].x, goal.z - targets[1].z) < 1);
     await pickBuilding(desktop, 103);
     await desktop.waitForFunction(({ x, z }) =>
-      Math.hypot(hujiang.player.x - x, hujiang.player.z - z) < 0.22 &&
-      !hujiang.scene.getObjectByName("walkingDestination").visible, targets[1]);
+      Math.hypot(hujiang.player.x - x, hujiang.player.z - z) < 0.01 &&
+      !hujiang.scene.getObjectByName("walkingDestination").visible, goal, { timeout: 90000 });
     await desktop.click("#mapToggle");
     assert.doesNotMatch(await desktop.textContent("#mapLegend"), /剩余路线/);
     await desktop.keyboard.press("Escape");

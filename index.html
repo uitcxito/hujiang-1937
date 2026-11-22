@@ -45,7 +45,7 @@
       <h2 id="helpTitle">漫游操作提示</h2>
       <dl>
         <dt>步行</dt>
-        <dd>点地面自动行走，拖动环顾。<span class="help-keyboard">WASD 移动，Shift 加速。</span><span class="help-touch">也可推左下摇杆移动。</span></dd>
+        <dd>点地面自动行走，拖动环顾。<span class="help-keyboard">WASD 移动，Shift 加速。</span><span class="help-touch">也可推左下摇杆移动，按住右侧「疾跑」加速。</span></dd>
         <dt>鸟瞰</dt>
         <dd><span class="help-keyboard">拖动旋转，滚轮缩放，右键拖动平移。</span><span class="help-touch">单指旋转，双指缩放或平移。</span>点建筑查看介绍。</dd>
         <dt>无人机</dt>
@@ -68,19 +68,24 @@
       </div>
       <div id="placeReading">
         <h2 id="placeTitle" aria-live="polite"></h2>
-        <p id="placeStory"></p>
-        <p id="placeAnecdote" hidden></p>
-        <details>
-          <summary>老照片与复原依据</summary>
-          <p id="evidence"></p>
-          <p id="inference"></p>
-          <div class="place-sources">
-            <div id="photoLinks"></div>
-            <a id="sourceLink" target="_blank" rel="noopener">校史与建筑资料 ↗</a>
-            <a id="mapSource" target="_blank" rel="noopener">档案馆平面图 ↗</a>
-          </div>
-        </details>
-        <button id="landHere">到建筑旁步行 →</button>
+        <div class="place-actions">
+          <button id="landHere">到建筑旁步行 →</button>
+          <button id="readPlace" aria-controls="placeIntro" aria-expanded="false" hidden>建筑介绍</button>
+        </div>
+        <div id="placeIntro">
+          <p id="placeStory"></p>
+          <p id="placeAnecdote" hidden></p>
+          <details>
+            <summary>老照片与复原依据</summary>
+            <p id="evidence"></p>
+            <p id="inference"></p>
+            <div class="place-sources">
+              <div id="photoLinks"></div>
+              <a id="sourceLink" target="_blank" rel="noopener">校史与建筑资料 ↗</a>
+              <a id="mapSource" target="_blank" rel="noopener">档案馆平面图 ↗</a>
+            </div>
+          </details>
+        </div>
       </div>
     </section>
     <section class="panel" id="placesPanel" hidden>
@@ -141,6 +146,7 @@
     </section>
     <div id="touchControls">
       <div id="stick" aria-label="移动摇杆" role="group"><span id="stickKnob"></span></div>
+      <button id="sprint" aria-pressed="false" title="按住疾跑">疾跑</button>
       <div id="flightLift"><button id="ascend" aria-label="上升">↑</button><button id="descend" aria-label="下降">↓</button></div>
     </div>
     <div class="bottomLeft">

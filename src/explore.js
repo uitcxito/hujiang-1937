@@ -44,6 +44,8 @@ function explore() {
   const droneLook = { yaw: 0, pitch: 0 };
   const views = { walk: walkMode, orbit: fullView, drone: droneMode };
   const viewOrder = Object.keys(views);
+  // Bird's-eye is an observation camera. A flight stays in progress while looking around.
+  let airborne = false;
   let mode = "walk",
     look = walkLook,
     theta = 0.7,
@@ -72,8 +74,8 @@ function explore() {
   const placeCard = el("placeCard");
   const drawWatercolor = makeWatercolorMap((site) => {
     closePanels();
-    card(site);
-    placeCard.querySelector(".close").focus({ preventScroll: true });
+    card(site, true);
+    el("landHere").focus({ preventScroll: true });
   }, updateMap);
   const menus = [[el("guide"), el("placesPanel")], [el("settings"), el("settingsPanel")]];
   function sceneInputBlocked() {
@@ -111,25 +113,25 @@ function explore() {
   function placePlayer(x, z) {
     player.set(x, 0, z);
     groundPlayer();
-    viewLabel = null;
   }
-  function setWalk(x, z, lookX, lookZ) {
+  function setWalk(x, z, site, { lookX = site.x, lookZ = site.z, pitch = 0.018 } = {}) {
     placePlayer(x, z);
+    viewLabel = { name: site.name, x, z };
     walkLook.yaw = Math.atan2(lookX - x, -(lookZ - z));
-    walkLook.pitch = 0.018;
+    walkLook.pitch = pitch;
     setMode("walk");
+    el("location").textContent = site.name;
   }
   function gateView() {
     const [x, z] = point(116, 356);
     selected = null;
-    setWalk(x, z, gate.x + 9, gate.z - 0.05);
-    el("location").textContent = gate.name;
+    setWalk(x, z, gate, { lookX: gate.x + 9, lookZ: gate.z - 0.05 });
   }
   function hint() {
     clearTimeout(hintTimer);
     const mobile = touch.matches;
     el("hint").textContent = mode === "walk"
-      ? (mobile ? "点地行走 · 左侧摇杆移动 · 拖动环顾" : "点地行走 · 拖动环顾 · WASD 移动 · Shift 加速")
+      ? (mobile ? "点地行走 · 摇杆移动 · 按住疾跑 · 拖动环顾" : "点地行走 · 拖动环顾 · WASD 移动 · Shift 加速")
       : mode === "drone"
         ? (mobile ? "摇杆飞行 · 箭头升降 · 拖动环顾 · 点「步行」降落" : "WASD 飞行 · E / Q 升降 · Shift 加速 · 拖动环顾 · F 降落")
         : (mobile ? "单指旋转 · 双指缩放或平移 · 点建筑看资料" : "拖动旋转 · 右键平移 · 滚轮缩放 · 点建筑看资料");
@@ -148,6 +150,7 @@ function explore() {
     release();
     closePanels();
     mode = next;
+    if (next !== "orbit") airborne = next === "drone";
     look = mode === "drone" ? droneLook : walkLook;
     document.body.dataset.mode = mode;
     ambience.setWalking(mode === "walk");
@@ -172,10 +175,12 @@ function explore() {
       screen.focus();
       return;
     }
-    drone.set(player.x, flightSurface(player.x, player.z) + 18, player.z);
-    flightSpace.constrain(drone);
-    droneLook.yaw = walkLook.yaw;
-    droneLook.pitch = -0.22;
+    if (!airborne) {
+      drone.set(player.x, flightSurface(player.x, player.z) + 18, player.z);
+      flightSpace.constrain(drone);
+      droneLook.yaw = walkLook.yaw;
+      droneLook.pitch = -0.22;
+    }
     selected = null;
     setMode("drone");
     screen.focus();
@@ -184,10 +189,7 @@ function explore() {
     if (s.approach) {
       const [x, z] = point(...s.approach);
       if (legal(x, z)) {
-        setWalk(x, z, s.x, s.z + (s.id === 121 ? 3 : 0));
-        walkLook.pitch = s.id === 154 ? 0.27 : 0.15;
-        viewLabel = { name: s.name, x, z };
-        el("location").textContent = s.name;
+        setWalk(x, z, s, { lookZ: s.z + (s.id === 121 ? 3 : 0), pitch: s.id === 154 ? 0.27 : 0.15 });
         return;
       }
     }
@@ -207,17 +209,29 @@ function explore() {
         const x = s.x + Math.sin(a) * distance * scale,
           z = s.z - Math.cos(a) * distance * scale;
         if (legal(x, z)) {
-          setWalk(x, z, s.x, s.z);
-          walkLook.pitch = s.id === 154 ? 0.26 : 0.12;
-          el("location").textContent = s.name;
+          setWalk(x, z, s, { pitch: s.id === 154 ? 0.26 : 0.12 });
           return;
         }
       }
-    gateView();
+    closePanels();
+    showMovementError("建筑附近没有可步行的落点，请选择其他地点");
   }
-  function card(s) {
+  function showIntroduction(open) {
+    el("placeIntro").hidden = !open;
+    el("readPlace").setAttribute("aria-expanded", String(open));
+    el("readPlace").textContent = open ? "收起介绍" : "建筑介绍";
+  }
+  el("readPlace").onclick = () => {
+    const opening = el("placeIntro").hidden;
+    showIntroduction(opening);
+    if (opening) el("placeStory").scrollIntoView({ block: "nearest" });
+  };
+  function card(s, fromMap = false) {
     selected = s;
     placeCard.hidden = false;
+    el("readPlace").hidden = !fromMap;
+    showIntroduction(!fromMap);
+    if (fromMap) placeCard.querySelector("details").open = false;
     el("typeline").textContent = s.year ? s.year + " · 沪江校舍" : "沪江校园 · 1937";
     el("placeTitle").textContent = s.name;
     el("placeStory").textContent = s.story;
@@ -294,10 +308,11 @@ function explore() {
   }
   function walkMode() {
     screen.focus({ preventScroll: true });
-    if (mode === "drone") {
+    if (airborne) {
       const landing = findDroneLanding(drone.x, drone.z, legal);
       if (!landing) {
-        closePanels();
+        if (mode === "orbit") droneMode();
+        else closePanels();
         showMovementError("请飞到可步行地面上方再降落");
         return;
       }
@@ -386,8 +401,11 @@ function explore() {
   }
   function advance(dt) {
     if (mode === "orbit" || sceneInputBlocked()) return;
+    const axes = controls.axes;
+    const fast = axes.sprint || keys.has("ShiftLeft") || keys.has("ShiftRight");
+    const speed = mode === "drone" ? (fast ? 32 : 12) : (fast ? fastWalkSpeed : walkSpeed);
     if (route.length) {
-      let remaining = dt * walkSpeed;
+      let remaining = dt * speed;
       while (route.length && remaining > 0) {
         const next = route[0], dx = next.x - player.x, dz = next.z - player.z;
         const distance = Math.hypot(dx, dz);
@@ -412,14 +430,11 @@ function explore() {
       dirty = true;
       return;
     }
-    const axes = controls.axes;
     const f = axes.forward + Number(keys.has("KeyW")) - Number(keys.has("KeyS")),
       r = axes.right + Number(keys.has("KeyD")) - Number(keys.has("KeyA"));
     const mag = Math.hypot(f, r);
     const lift = mode === "drone" ? Math.sign(axes.lift + Number(keys.has("KeyE")) - Number(keys.has("KeyQ"))) : 0;
     if (!mag && !lift) return;
-    const fast = keys.has("ShiftLeft") || keys.has("ShiftRight");
-    const speed = mode === "drone" ? (fast ? 32 : 12) : (fast ? fastWalkSpeed : walkSpeed);
     const distance = (dt * speed) / Math.max(1, mag);
     const { yaw } = look;
     const dx = (Math.sin(yaw) * f + Math.cos(yaw) * r) * distance,

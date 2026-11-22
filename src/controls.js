@@ -1,8 +1,8 @@
 function bindCampusControls(screen, actions) {
-  const fingers = new Map(), heldLift = new Map();
+  const fingers = new Map(), heldButtons = new Map();
   const stick = el("stick"), knob = el("stickKnob");
   let stickId = null;
-  const axes = { forward: 0, right: 0, lift: 0 };
+  const axes = { forward: 0, right: 0, lift: 0, sprint: false };
   function resetStick() {
     stickId = null;
     axes.forward = axes.right = 0;
@@ -10,8 +10,8 @@ function bindCampusControls(screen, actions) {
   }
   function reset() {
     fingers.clear();
-    heldLift.clear();
-    axes.lift = 0;
+    heldButtons.clear();
+    updateButtons();
     resetStick();
   }
   function moveStick(e) {
@@ -39,29 +39,34 @@ function bindCampusControls(screen, actions) {
   stick.onpointerup = stick.onpointercancel = stick.onlostpointercapture = (e) => {
     if (e.pointerId === stickId) resetStick();
   };
-  function updateLift() {
-    axes.lift = Math.sign([...heldLift.values()].reduce((sum, n) => sum + n, 0));
+  function updateButtons() {
+    const held = [...heldButtons.values()];
+    axes.lift = Math.sign(held.filter(id => id === "ascend").length - held.filter(id => id === "descend").length);
+    axes.sprint = held.includes("sprint");
+    el("sprint").setAttribute("aria-pressed", String(axes.sprint));
   }
-  for (const [button, sign] of [[el("ascend"), 1], [el("descend"), -1]]) {
+  for (const id of ["ascend", "descend", "sprint"]) {
+    const button = el(id);
     button.onpointerdown = (e) => {
       if (e.button !== 0) return;
       button.setPointerCapture(e.pointerId);
-      heldLift.set(e.pointerId, sign);
-      updateLift();
+      heldButtons.set(e.pointerId, id);
+      updateButtons();
     };
     button.onpointerup = button.onpointercancel = button.onlostpointercapture = (e) => {
-      heldLift.delete(e.pointerId);
-      updateLift();
+      heldButtons.delete(e.pointerId);
+      updateButtons();
     };
     button.onkeydown = (e) => {
       if (e.code !== "Space" && e.code !== "Enter") return;
       e.preventDefault();
-      heldLift.set(button, sign);
-      updateLift();
+      heldButtons.set(button, id);
+      updateButtons();
     };
-    button.onkeyup = button.onblur = () => {
-      heldLift.delete(button);
-      updateLift();
+    button.onkeyup = button.onblur = (e) => {
+      if (e.type === "keyup" && e.code !== "Space" && e.code !== "Enter") return;
+      heldButtons.delete(button);
+      updateButtons();
     };
   }
   const sceneView = screen.parentElement;

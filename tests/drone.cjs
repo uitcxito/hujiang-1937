@@ -22,7 +22,17 @@ async function check() {
     const horizontal = ([x, , z]) => [x / Math.hypot(x, z), 0, z / Math.hypot(x, z)];
     async function hold(keys, ms) {
       for (const key of keys) await page.keyboard.down(key);
-      await page.waitForTimeout(ms);
+      // The simulation caps long frames at 120 ms, including on software WebGL.
+      await page.evaluate(ms => new Promise(resolve => requestAnimationFrame(start => {
+        let last = start, elapsed = 0;
+        function tick(now) {
+          elapsed += Math.min(120, now - last);
+          last = now;
+          if (elapsed >= ms) resolve();
+          else requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      })), ms);
       for (const key of [...keys].reverse()) await page.keyboard.up(key);
       await frame();
       return position();
@@ -144,6 +154,11 @@ async function check() {
     const fieldFlight = await position(), fieldHeading = await direction();
     assert(Math.hypot(fieldFlight[0] - field.x, fieldFlight[2] - field.z) < 4);
     assert.deepEqual(await player(), walking);
+    await page.click("#orbit");
+    await page.click("#drone");
+    await frame();
+    assert.deepEqual(await position(), fieldFlight);
+    assert.deepEqual(await direction(), fieldHeading);
     await page.keyboard.press("v");
     const fieldLanding = await checkLanding(fieldFlight, fieldHeading, true);
     await page.keyboard.press("f");
@@ -201,6 +216,11 @@ async function check() {
     await flyTo({ x: riverX, z: riverZ });
     const water = await hold(["Shift", "q"], 3200);
     assert(Math.abs(water[1] - (await page.evaluate(() => riverLevel + 1.5))) < 0.01);
+    await page.click("#orbit");
+    await page.click("#walk");
+    await frame();
+    assert.equal(await page.evaluate(() => hujiang.mode), "drone");
+    assert.deepEqual(await position(), water);
     for (const entry of ["v", "f", "button"]) {
       if (entry === "button") await page.click("#walk");
       else await page.keyboard.press(entry);
@@ -217,6 +237,7 @@ async function check() {
     assert.equal((await hold(["e"], 160))[1], 360);
     await flyTo(field);
     const retry = await position(), retryHeading = await direction();
+    await page.click("#orbit");
     await page.click("#walk");
     const afterRiver = await checkLanding(retry, retryHeading, true);
     await page.evaluate(() => hujiang.focus(154));
