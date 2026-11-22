@@ -229,6 +229,10 @@ function explore() {
   function card(s, fromMap = false) {
     selected = s;
     placeCard.hidden = false;
+    const actions = placeCard.querySelector(".place-actions");
+    const intro = el("placeIntro");
+    if (fromMap) intro.before(actions);
+    else intro.after(actions);
     el("readPlace").hidden = !fromMap;
     showIntroduction(!fromMap);
     if (fromMap) placeCard.querySelector("details").open = false;
