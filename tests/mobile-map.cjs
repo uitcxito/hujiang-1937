@@ -157,9 +157,9 @@ async function check() {
     assert(Math.abs((await pose())[0] - zoomed[0]) > 1);
     assert(await page.locator("#stick").isHidden());
 
-    // Compare horizontal metres per simulation second using the same full joystick deflection.
+    // Compare horizontal metres per simulation second using a slight joystick deflection.
     await page.tap("#home");
-    const forwardStick = { ...stick, y: stick.y - 30 };
+    const forwardStick = { ...stick, y: stick.y - 8 };
     const sprint = { ...await center("#sprint"), id: 2 };
     const walkSpeed = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(start => {
       const from = hujiang.player;

@@ -20,10 +20,17 @@ function bindCampusControls(screen, actions) {
     const radius = box.width * 0.31;
     const dx = (e.clientX - box.left - box.width / 2) / radius;
     const dy = (e.clientY - box.top - box.height / 2) / radius;
-    const magnitude = Math.max(1, Math.hypot(dx, dy));
+    const length = Math.hypot(dx, dy);
+    const magnitude = Math.max(1, length);
     axes.right = dx / magnitude;
     axes.forward = -dy / magnitude;
     knob.style.transform = "translate(" + axes.right * radius + "px," + -axes.forward * radius + "px)";
+    if (actions.mode() === "walk") {
+      // Ignore small finger jitter at rest; beyond it the stick sets direction only.
+      const gain = length * radius > 2 ? 1 / length : 0;
+      axes.right = dx * gain;
+      axes.forward = -dy * gain;
+    }
   }
   stick.onpointerdown = (e) => {
     if (stickId !== null || e.button !== 0) return;
