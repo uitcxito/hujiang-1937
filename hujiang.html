@@ -6765,7 +6765,6 @@ function explore() {
     if (selected) relocate(selected);
   };
   for (const id of ["walk", "home", "landHere"]) el(id).addEventListener("click", ambience.unlock);
-  if (touch.matches) el("quality").value = "0";
   quality();
   gateView();
   let last = performance.now();

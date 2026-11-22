@@ -21,7 +21,7 @@ async function check() {
     const pose = () => page.evaluate(() => hujiang.camera.position.toArray());
     const frame = () => page.evaluate(() => new Promise(requestAnimationFrame));
     const distance = (a, b) => Math.hypot(...a.map((v, i) => v - b[i]));
-    assert.equal(await page.inputValue("#quality"), "0");
+    assert.equal(await page.inputValue("#quality"), "1");
     assert(await page.locator("#stick").isVisible());
 
     // Ground anchors measured on the approved watercolor, independently of the runtime transform.
