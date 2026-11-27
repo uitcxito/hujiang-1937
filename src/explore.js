@@ -6,6 +6,22 @@ function explore() {
   const renderer = new T.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
   el("view").append(renderer.domElement);
   const screen = renderer.domElement;
+  const gl = renderer.getContext(), pendingFrames = [];
+  function clearPendingFrames() {
+    for (const fence of pendingFrames) gl.deleteSync(fence);
+    pendingFrames.length = 0;
+  }
+  // Poll without waiting. Input and movement keep advancing until the GPU can accept a fresh view.
+  function frameQueueFull() {
+    while (pendingFrames.length) {
+      const fence = pendingFrames[0];
+      if (gl.clientWaitSync(fence, 0, 0) === gl.TIMEOUT_EXPIRED) break;
+      gl.deleteSync(pendingFrames.shift());
+    }
+    return pendingFrames.length >= 2;
+  }
+  screen.addEventListener("webglcontextlost", () => { pendingFrames.length = 0; });
+  screen.addEventListener("webglcontextrestored", () => quality());
   screen.tabIndex = 0;
   renderer.outputColorSpace = T.SRGBColorSpace;
   renderer.toneMapping = T.ACESFilmicToneMapping;
@@ -24,7 +40,7 @@ function explore() {
   const shadowRight = new V().crossVectors(sun.up, sunDirection).normalize();
   const shadowUp = new V().crossVectors(sunDirection, shadowRight);
   const droneShadowFocus = new V();
-  sky(scene, sunDirection);
+  const skyDome = sky(scene, sunDirection);
   const { soil, river } = terrain(scene);
   const shrubPerches = riverGarden(scene);
   const architecture = new T.Group(), landmarks = new T.Group();
@@ -36,7 +52,7 @@ function explore() {
   scene.add(landmarks);
   landmarks.traverse(o => { if(o.isMesh) buildings.push(o); });
   dressAuditoriumPaths(scene);
-  const treeMeshes = vegetation(scene),
+  const trees = vegetation(scene, sun, camera),
     flightSpace = makeFlightSpace(architecture, treeTrunks, landmarks),
     blades = grass(scene);
   reflectCampusWindows(renderer,scene,landmarks);
@@ -153,6 +169,7 @@ function explore() {
     if (cancelRoute) clearRoute();
   }
   function setMode(next) {
+    clearPendingFrames();
     release();
     closePanels();
     mode = next;
@@ -291,7 +308,7 @@ function explore() {
     if (mode === "walk") {
       // Grass is traversable. A visible tree in front of a target blocks the pick.
       ray.far = Math.min(surfaceDistance, hit?.distance ?? Infinity);
-      const blocked = ray.intersectObjects(treeMeshes, false).length > 0;
+      const blocked = ray.intersectObjects(trees.trunks, false).length > 0;
       ray.far = Infinity;
       if (blocked) return;
     }
@@ -334,7 +351,13 @@ function explore() {
     setMode("walk");
   }
   function quality() {
+    clearPendingFrames();
     q = Number(el("quality").value);
+    trees.setHighQuality(q === 2);
+    // In high quality the leaf depth pass also masks expensive ground, water and sky pixels.
+    soil.renderOrder = q === 2 ? 2 : 0;
+    river.renderOrder = q === 2 ? 3 : 0;
+    skyDome.renderOrder = q === 2 ? 5 : -100;
     renderer.setPixelRatio(Math.min(devicePixelRatio, [0.8, 1.25, 1.75][q]));
     renderer.setSize(innerWidth, innerHeight);
     const resolution = Math.min([1024, 2048, 3072][q], renderer.capabilities.maxTextureSize);
@@ -680,7 +703,7 @@ function explore() {
     last = now;
     advance(dt);
     ambience.update(player, walkLook.yaw);
-    if (!dirty) return;
+    if (!dirty || frameQueueFull()) return;
     aim();
     updatePins();
     updateMap();
@@ -696,6 +719,10 @@ function explore() {
       lastArea = now;
     }
     renderer.render(scene, camera);
+    if (q === 2 && gl.fenceSync) {
+      const fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+      if (fence) pendingFrames.push(fence);
+    }
     dirty = false;
   }
   render(performance.now());

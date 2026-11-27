@@ -42,42 +42,72 @@ function grass(scene) {
   geom.setAttribute("normal", new T.Float32BufferAttribute(normals, 3));
   const material = new T.MeshLambertMaterial({ vertexColors: true, side: T.DoubleSide });
   material.onBeforeCompile = lightPlantCards;
-  const o = new T.InstancedMesh(geom, material, 11500);
-  scene.add(o);
-  o.receiveShadow = true;
-  o.frustumCulled = false;
-  let previous = "";
+  const candidates = [110, 260, 460];
+  const patch = new T.Group();
+  patch.visible = false;
+  scene.add(patch);
+  const tiles = Array.from({ length: 25 }, () => {
+    const mesh = new T.InstancedMesh(geom, material, candidates[2]);
+    mesh.receiveShadow = true;
+    mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);
+    mesh.boundingSphere = new T.Sphere();
+    mesh.count = 0;
+    patch.add(mesh);
+    return { mesh, x: NaN, z: NaN, quality: -1 };
+  });
+  geom.computeBoundingSphere();
+  // A clump can rotate and grow to 1.45 times its original size.
+  const clumpReach = 1.45 * (geom.boundingSphere.center.length() + geom.boundingSphere.radius);
+  const dummy = new T.Object3D();
+  function fillTile(tile, ix, iz, q) {
+    const mesh = tile.mesh;
+    let count = 0, minY = Infinity, maxY = -Infinity;
+    let seed = (Math.imul(ix, 92837111) ^ Math.imul(iz, 689287499)) >>> 0;
+    const random = () => (seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296;
+    for (let k = 0; k < candidates[q]; k++) {
+      const x = (ix + random()) * 8, z = (iz + random()) * 8;
+      const a = random() * 6.28, s = 0.7 + random() * 0.75;
+      if (surf(x, z) > 0.14 || shoreDistance(x, z) < 2.5) continue;
+      if (hallWalls.some((wall) => Math.abs(x - wall.x) < wall.w / 2 + 0.12 &&
+          Math.abs(z - wall.z) < wall.d / 2 + 0.12)) continue;
+      const y = groundY(x, z) - 0.012;
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+      dummy.position.set(x, y, z);
+      dummy.rotation.y = a;
+      dummy.scale.setScalar(s);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(count++, dummy.matrix);
+    }
+    mesh.count = count;
+    mesh.visible = count > 0;
+    if (count) {
+      mesh.boundingSphere.center.set(ix * 8 + 4, (minY + maxY) * 0.5, iz * 8 + 4);
+      mesh.boundingSphere.radius = Math.hypot(4, (maxY - minY) * 0.5, 4) + clumpReach;
+      mesh.instanceMatrix.clearUpdateRanges();
+      mesh.instanceMatrix.addUpdateRange(0, count * 16);
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+    tile.x = ix;
+    tile.z = iz;
+    tile.quality = q;
+  }
+  const slot = n => ((n % 5) + 5) % 5;
+  let lastX = NaN, lastZ = NaN, lastQuality = -1;
   return (pos, q, walk) => {
-    o.visible = walk;
+    patch.visible = walk;
     if (!walk) return;
-    const ix = Math.floor(pos.x / 8),
-      iz = Math.floor(pos.z / 8),
-      key = [ix, iz, q].join();
-    if (previous === key) return;
-    previous = key;
-    let count = 0;
-    const dummy = new T.Object3D();
-    for (let i = -2; i <= 2; i++)
-      for (let j = -2; j <= 2; j++) {
-        let seed = (Math.imul(ix + i, 92837111) ^ Math.imul(iz + j, 689287499)) >>> 0;
-        const random = () => (seed = (Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296;
-        for (let k = 0; k < [110, 260, 460][q]; k++) {
-          const x = (ix + i + random()) * 8,
-            z = (iz + j + random()) * 8,
-            a = random() * 6.28,
-            s = 0.7 + random() * 0.75;
-          if (surf(x, z) > 0.14 || shoreDistance(x, z) < 2.5) continue;
-          if (hallWalls.some((wall) => Math.abs(x - wall.x) < wall.w / 2 + 0.12 &&
-              Math.abs(z - wall.z) < wall.d / 2 + 0.12)) continue;
-          dummy.position.set(x, groundY(x, z) - 0.012, z);
-          dummy.rotation.y = a;
-          dummy.scale.setScalar(s);
-          dummy.updateMatrix();
-          o.setMatrixAt(count++, dummy.matrix);
-        }
+    const ix = Math.floor(pos.x / 8), iz = Math.floor(pos.z / 8);
+    if (ix === lastX && iz === lastZ && q === lastQuality) return;
+    // Every cell in a 5×5 window has a unique slot, including at negative coordinates.
+    for (let x = ix - 2; x <= ix + 2; x++)
+      for (let z = iz - 2; z <= iz + 2; z++) {
+        const tile = tiles[slot(x) * 5 + slot(z)];
+        if (tile.x !== x || tile.z !== z || tile.quality !== q) fillTile(tile, x, z, q);
       }
-    o.count = count;
-    o.instanceMatrix.needsUpdate = true;
+    lastX = ix;
+    lastZ = iz;
+    lastQuality = q;
   };
 }
 

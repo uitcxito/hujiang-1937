@@ -241,4 +241,5 @@ function sky(scene, sunDirection) {
   const dome = mesh(scene, new T.SphereGeometry(1, 48, 24), mat);
   dome.frustumCulled = false;
   dome.renderOrder = -100;
+  return dome;
 }
