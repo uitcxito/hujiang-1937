@@ -1,7 +1,18 @@
 // Rebuild the portable page using only Node.js standard modules.
 const fs = require("node:fs");
 const path = require("node:path");
-const read = (file) => fs.readFileSync(path.join(__dirname, file), "utf8");
+const read = (file) => fs.readFileSync(path.join(__dirname, file), "utf8").replace(/\r\n/g,"\n");
+const { gzipSync } = require("node:zlib");
+const modelDir = path.join(__dirname,"assets","models");
+const models = {};
+for (const name of ["auditorium","yates","gate","camphor","zelkova","maple"]) {
+  const bytes=fs.readFileSync(path.join(modelDir,name+".glb"));
+  if (bytes.toString("ascii",0,4)!=="glTF" || bytes.readUInt32LE(8)!==bytes.length)
+    throw new Error("Invalid GLB: "+name);
+  models[name]=gzipSync(bytes,{level:9}).toString("base64");
+}
+fs.writeFileSync(path.join(__dirname,"assets","model-data.js"),
+  "// Generated from assets/models by build.cjs.\nconst campusModelBytes = "+JSON.stringify(models)+";\n");
 // The same lossless files and credits drive the development and portable pages.
 const library = "试听/鸟鸣库";
 const birds = JSON.parse(read(library + "/catalog.json")).clips.map((clip) => {

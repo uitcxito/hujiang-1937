@@ -322,15 +322,12 @@ function cottage(s, g, base) {
   }
 }
 function buildSite(s, root) {
+  if (landmarkModels.has(s.id)) return placeLandmark(s, root);
   const base = groundY(s.x, s.z),
     g = sub(root, s.x, base, s.z);
   g.userData.site = s;
   // Compound and open buildings register their individual occupied parts.
   switch (s.style) {
-    case "gate":
-      return makeGate(s, g, base);
-    case "auditorium":
-      return hall(s, g, base);
     case "science":
       return scienceHall(s, g, base);
     case "library":
@@ -357,9 +354,6 @@ function buildSite(s, root) {
       return treat(s, g, base);
     case 133:
       greenhouse(s, g);
-      break;
-    case 153:
-      yates(s, g);
       break;
     case 154:
       makeTower(s, g);

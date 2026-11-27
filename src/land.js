@@ -110,10 +110,12 @@ function terrain(scene) {
   mask.generateMipmaps = true;
   mask.anisotropy = 8;
   const m = std(0xffffff);
+  const contact = groundContact();
   const noise =
     "float hash2(vec2 p){return fract(sin(dot(mod(p,173.0),vec2(41.37,73.17)))*4127.12);} float noise2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash2(i),hash2(i+vec2(1,0)),f.x),mix(hash2(i+vec2(0,1)),hash2(i+1.),f.x),f.y);}";
   m.onBeforeCompile = (sh) => {
     sh.uniforms.roadMask = { value: mask };
+    sh.uniforms.groundContact = { value: contact };
     sh.uniforms.soilPhoto = { value: scans.gravel_road_Diffuse };
     sh.uniforms.grassPhoto = { value: scans.sparse_grass_Diffuse };
     sh.vertexShader =
@@ -123,7 +125,7 @@ function terrain(scene) {
         "#include <begin_vertex>\nterrainXZ=position.xz;",
       );
     sh.fragmentShader =
-      "uniform sampler2D roadMask,soilPhoto,grassPhoto;varying vec2 terrainXZ;\n" +
+      "uniform sampler2D roadMask,soilPhoto,grassPhoto,groundContact;varying vec2 terrainXZ;\n" +
       noise +
       "\n" +
       sh.fragmentShader.replace(
@@ -137,7 +139,15 @@ function terrain(scene) {
  vec3 dust=texture2D(soilPhoto,p*.52).rgb, turf=texture2D(grassPhoto,p*.66).rgb;
  meadow*=clamp(.64+dot(turf,vec3(.28,.58,.14))*5.5,.52,1.46);
  path=mix(path,dust*vec3(1.38,1.45,1.39)+vec3(.070,.065,.050),.77);
- float road=smoothstep(.09,.94,mask.r+(.14*noise2(p*4.)-.07));vec3 ground=mix(meadow,path,road);
+ float shelter=1.-texture2D(groundContact,clamp(uv,0.,1.)).r;
+ float shoulder=1.-abs(mask.r*2.-1.);
+ float breakup=noise2(p*3.1)*.55+noise2(p*.76)*.45;
+ float road=smoothstep(.035,.92,mask.r+(breakup-.5)*(.21+shoulder*.42));
+ vec3 leafEarth=mix(vec3(.12,.085,.044),vec3(.24,.181,.096),breakup);
+ meadow=mix(meadow,leafEarth,smoothstep(.08,.70,shelter)*.78);
+ vec3 ground=mix(meadow,path,road);
+ ground=mix(ground,leafEarth,shoulder*(.15+.30*breakup));
+ ground*=1.-shelter*.52;
  ground=mix(ground,vec3(.32,.225,.153)+gravel*.04,mask.g);
  float shore=(1456.-((p.y/${SCALE}+370.)-86.)*475./630.-(p.x/${SCALE}+780.))*${SCALE * 0.8};
  diffuseColor.rgb=mix(vec3(.22,.19,.135)+gravel*.035,ground,smoothstep(-.8,3.7,shore));`,

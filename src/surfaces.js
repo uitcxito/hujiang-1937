@@ -32,10 +32,4 @@ async function prepareSurfaces() {
   brick.normalMap.repeat.copy(brick.map.repeat);
   brick.normalScale.set(0.43, 0.43);
   brick.bumpMap = null;
-  bark.map = scans.bark_brown_02_Diffuse;
-  bark.normalMap = scans.bark_brown_02_nor_gl;
-  bark.map.repeat.set(1.25, 2.5);
-  bark.normalMap.repeat.copy(bark.map.repeat);
-  bark.normalScale.set(0.42, 0.42);
-  bark.bumpMap = null;
 }
