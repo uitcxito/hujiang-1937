@@ -69,6 +69,14 @@ node --test --test-concurrency=1 "tests/*.cjs"
 
 测试覆盖步行寻路、触控与小地图、建筑与通行、无人机、光照、环境音和地点卡片。
 
+要复测高画质流畅度，可用同一台机器分别打开两个版本的离线页面，按下面的命令各跑三轮。脚本会走过校门、在礼堂北侧树林转头、驾驶无人机并旋转全校鸟瞰，记录实际显卡、绘制分辨率、平均帧率、P95 帧间隔，以及更新草地和阴影时的耗时。
+
+```sh
+node tools/performance.cjs hujiang.html --rounds 3 --output results.json --screenshots pictures
+```
+
+默认视口为 1600 × 1000，模拟设备像素比为 2，高画质实际绘制 2800 × 1750 像素。`renderedRafMs` 记录相邻两次实际绘制所对应的浏览器动画帧间隔，`frameMs` 记录渲染调用返回的间隔。双显卡 Windows 电脑可用 `CAMPUS_ADAPTER` 指定显卡的 LUID（十进制高位,低位），并从两份结果的 `graphics.gpu` 核对实际显卡。
+
 ## 课程与素材来源
 
 - 下载仓库后打开 `course/index.html`，可通过交互示例了解地图坐标换算、水塔建模、无人机避障和单文件打包。[校园源码漫游课程](course/index.html)

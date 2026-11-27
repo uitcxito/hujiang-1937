@@ -3,9 +3,6 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
-const [pageFile, output] = process.argv.slice(2);
-if (!pageFile || !output)
-  throw Error("Usage: node tools/art-review.cjs <page.html> <output-dir>");
 const poses = {
   auditorium: [
     [21, 1.73, -3],
@@ -43,6 +40,9 @@ async function pose(page, name) {
   );
 }
 async function run() {
+  const [pageFile, output] = process.argv.slice(2);
+  if (!pageFile || !output)
+    throw Error("Usage: node tools/art-review.cjs <page.html> <output-dir>");
   fs.mkdirSync(output, { recursive: true });
   const args = [];
   if (process.env.CAMPUS_ADAPTER)
@@ -91,7 +91,8 @@ async function run() {
     await browser.close();
   }
 }
-run().catch((e) => {
+module.exports = { poses, pose };
+if (require.main === module) run().catch((e) => {
   console.error(e);
   process.exitCode = 1;
 });

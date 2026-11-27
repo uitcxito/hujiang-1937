@@ -39,8 +39,57 @@ function individualBranches(shader) {
       );
 }
 
-function vegetation(scene) {
-  const stands = arborModels.map(() => new Map());
+// A pass owns its compacted instance attributes. Keep existing slots when the visible order is stable.
+function treeInstances(trees) {
+  const matrices = new T.InstancedBufferAttribute(new Float32Array(trees.length * 16), 16).setUsage(T.DynamicDrawUsage);
+  const poses = new T.InstancedBufferAttribute(new Float32Array(trees.length * 2), 2).setUsage(T.DynamicDrawUsage);
+  const slots = new Int32Array(trees.length).fill(-1);
+  return {
+    matrices, poses, count: 0,
+    select(frustum) {
+      let count = 0, changed = false;
+      for (let i = 0; i < trees.length; i++) {
+        const tree = trees[i];
+        if (!frustum.intersectsSphere(tree.bounds)) continue;
+        if (slots[count] !== i) {
+          slots[count] = i;
+          tree.transform.toArray(matrices.array, count * 16);
+          poses.setXY(count, tree.bendX, tree.bendZ);
+          changed = true;
+        }
+        count++;
+      }
+      if (changed) {
+        matrices.needsUpdate = true;
+        poses.needsUpdate = true;
+      }
+      this.count = count;
+    },
+  };
+}
+
+function leafPassMaterials(original) {
+  const color = original.clone();
+  color.onBeforeCompile = (shader, renderer) => {
+    original.onBeforeCompile(shader, renderer);
+    shader.vertexShader = "invariant gl_Position;\n" + shader.vertexShader;
+  };
+  const depth = original.clone();
+  depth.colorWrite = false;
+  depth.onBeforeCompile = (shader, renderer) => {
+    // Identical positions and alpha coverage in both passes, including at MSAA edges.
+    color.onBeforeCompile(shader, renderer);
+    const coverage = "#include <alphahash_fragment>";
+    const end = shader.fragmentShader.indexOf(coverage);
+    if (end < 0) throw Error("Leaf alpha coverage shader chunk is missing");
+    shader.fragmentShader = shader.fragmentShader.slice(0, end + coverage.length) +
+      "\n  gl_FragColor = vec4(0.);\n}";
+  };
+  return { color, depth };
+}
+
+function vegetation(scene, sun, mainCamera) {
+  const stands = arborModels.map(() => []);
   const dummy = new T.Object3D();
   const walkable = makeWalkSpace(obstacles, [], 0.38);
   const planting = campusTreeSites.concat(
@@ -62,11 +111,13 @@ function vegetation(scene) {
     const lean = (random() - 0.5) * 0.063;
     const transform = dummy.matrix.clone().multiply(new T.Matrix4().makeShear(0, 0, lean, 0, 0, 0));
     const direction = random() * Math.PI * 2, spread = 0.1 + random() * 0.17;
-    // A stand can leave the frustum as a unit. Its geometry, pose and material stay fixed.
-    const cell = Math.floor(x / 64) + "," + Math.floor(z / 64);
-    const stand = stands[index];
-    if (!stand.has(cell)) stand.set(cell, []);
-    stand.get(cell).push({ transform, bendX: Math.cos(direction) * spread, bendZ: Math.sin(direction) * spread });
+    // Branch rotation preserves the radial extent. Enclose the sheared, nonuniformly scaled crown.
+    const halfHeight = (form.top - form.bottom) / 2;
+    const bounds = new T.Sphere(
+      new V(0, form.bottom + halfHeight, 0).applyMatrix4(transform),
+      Math.hypot((form.radius + Math.abs(lean) * halfHeight) * Math.max(width, depth), halfHeight * size),
+    );
+    stands[index].push({ transform, bounds, bendX: Math.cos(direction) * spread, bendZ: Math.sin(direction) * spread });
     treeTrunks.push({
       x, z, r: form.trunkRadius * Math.max(width, depth),
       crownRadius: (form.radius + Math.abs(lean) * form.top) * Math.max(width, depth),
@@ -74,46 +125,93 @@ function vegetation(scene) {
     });
   }
 
-  const trunks = [], depthMaterials = new Map();
-  for (const [index, stand] of stands.entries()) {
+  const trunks = [], batches = [], depthMaterials = new Map();
+  const leafMaterials = new Map(), leafPasses = [];
+  for (const [index, trees] of stands.entries()) {
     const form = arborModels[index];
-    const halfHeight = (form.top - form.bottom) / 2;
-    // All branch poses rotate around the trunk axis, so one centred cylinder encloses every pose.
-    const sphere = new T.Sphere(
-      new V(0, form.bottom + halfHeight, 0), Math.hypot(form.radius, halfHeight),
-    );
-    for (const trees of stand.values()) {
-      const pose = new T.InstancedBufferAttribute(new Float32Array(trees.length * 2), 2);
-      trees.forEach((tree, i) => pose.setXY(i, tree.bendX, tree.bendZ));
-      for (const part of [form.wood, form.leaves]) {
-        // Each stand owns its instance attributes and shares the authored vertex/index buffers.
-        const geometry = new T.BufferGeometry();
-        geometry.setIndex(part.geometry.index);
-        Object.assign(geometry.attributes, part.geometry.attributes);
-        geometry.setAttribute("branchPose", pose);
-        geometry.boundingSphere = sphere;
-        const mat = part.material;
-        if (!depthMaterials.has(mat)) {
-          const depth = new T.MeshDepthMaterial({
-            depthPacking: T.RGBADepthPacking, map: mat.alphaTest ? mat.map : null,
-            alphaTest: mat.alphaTest, alphaHash: mat.alphaHash, side: mat.side,
-          });
-          // r160 enables derivatives for PBR materials; its WebGL 1 depth shader needs them explicitly.
-          if (depth.alphaHash) depth.extensions = { derivatives: true };
-          depth.onBeforeCompile = individualBranches;
-          depthMaterials.set(mat, depth);
-        }
-        const mesh = new T.InstancedMesh(geometry, mat, trees.length);
-        mesh.name = part === form.wood ? "Tree wood" : "Tree foliage";
-        mesh.castShadow = mesh.receiveShadow = true;
-        mesh.customDepthMaterial = depthMaterials.get(mat);
-        trees.forEach((tree, i) => mesh.setMatrixAt(i, tree.transform));
-        mesh.computeBoundingSphere();
-        mesh.boundingSphere.radius *= 1.04; // Include the small shear used for trunk lean.
-        scene.add(mesh);
-        if (part === form.wood) trunks.push(mesh);
+    const main = treeInstances(trees), shadow = treeInstances(trees), meshes = [];
+    const batchBounds = new T.Sphere();
+    for (const tree of trees) batchBounds.union(tree.bounds);
+    // Picking uses the full original wood population, independently of the last camera or cube face.
+    const pick = new T.InstancedMesh(form.wood.geometry, form.wood.material, trees.length);
+    trees.forEach((tree, i) => pick.setMatrixAt(i, tree.transform));
+    pick.boundingSphere = batchBounds;
+    trunks.push(pick);
+    for (const part of [form.wood, form.leaves]) {
+      const geometry = new T.BufferGeometry();
+      geometry.setIndex(part.geometry.index);
+      Object.assign(geometry.attributes, part.geometry.attributes);
+      geometry.setAttribute("branchPose", main.poses);
+      geometry.setAttribute("treeShadowMatrix", shadow.matrices);
+      geometry.setAttribute("treeShadowPose", shadow.poses);
+      const mat = part.material;
+      if (!depthMaterials.has(mat)) {
+        const depth = new T.MeshDepthMaterial({
+          depthPacking: T.RGBADepthPacking, map: mat.alphaTest ? mat.map : null,
+          alphaTest: mat.alphaTest, alphaHash: mat.alphaHash, side: mat.side,
+        });
+        if (depth.alphaHash) depth.extensions = { derivatives: true };
+        depth.onBeforeCompile = (shader) => {
+          individualBranches(shader);
+          shader.vertexShader = "attribute mat4 treeShadowMatrix;\n#define instanceMatrix treeShadowMatrix\n#define branchPose treeShadowPose\n" + shader.vertexShader;
+        };
+        depthMaterials.set(mat, depth);
+      }
+      const mesh = new T.InstancedMesh(geometry, mat, trees.length);
+      mesh.name = part === form.wood ? "Tree wood" : "Tree foliage";
+      mesh.boundingSphere = batchBounds;
+      mesh.frustumCulled = false; // Per-instance culling is done for each camera before the uploads.
+      mesh.castShadow = mesh.receiveShadow = true;
+      mesh.customDepthMaterial = depthMaterials.get(mat);
+      mesh.instanceMatrix = main.matrices;
+      mesh.onBeforeShadow = () => { mesh.count = shadow.count; };
+      mesh.onAfterShadow = () => { mesh.count = main.count; };
+      scene.add(mesh);
+      meshes.push(mesh);
+      if (part === form.leaves) {
+        if (!leafMaterials.has(mat)) leafMaterials.set(mat, leafPassMaterials(mat));
+        const { color, depth } = leafMaterials.get(mat);
+        const coverage = new T.InstancedMesh(geometry, depth, trees.length);
+        coverage.name = "Leaf coverage prepass";
+        coverage.instanceMatrix = main.matrices;
+        coverage.boundingSphere = batchBounds;
+        coverage.frustumCulled = false;
+        coverage.receiveShadow = true;
+        coverage.visible = false;
+        coverage.renderOrder = 1;
+        scene.add(coverage);
+        meshes.push(coverage);
+        leafPasses.push({ coverage, mesh, color, original: mat });
       }
     }
+    batches.push({ main, shadow, meshes });
   }
-  return trunks;
+
+  const frustum = new T.Frustum(), viewProjection = new T.Matrix4();
+  let highQuality = false, previousPass = "reflection";
+  // Three calls this before collecting the render list, including once per reflection cube face.
+  scene.onBeforeRender = (renderer, _scene, camera) => {
+    const pass = camera !== mainCamera ? "reflection" : highQuality ? "prepass" : "single";
+    if (pass !== previousPass) {
+      const usePrepass = pass === "prepass";
+      for (const { coverage, mesh, color, original } of leafPasses) {
+        coverage.visible = usePrepass;
+        color.depthFunc = usePrepass ? T.EqualDepth : original.depthFunc;
+        color.depthWrite = usePrepass ? false : original.depthWrite;
+        mesh.material = pass === "reflection" ? original : color;
+        mesh.renderOrder = usePrepass ? 4 : 0;
+      }
+      previousPass = pass;
+    }
+    frustum.setFromProjectionMatrix(viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    const updateShadow = renderer.shadowMap.enabled && (renderer.shadowMap.autoUpdate || renderer.shadowMap.needsUpdate)
+      && sun.castShadow && (sun.shadow.autoUpdate || sun.shadow.needsUpdate);
+    if (updateShadow) sun.shadow.updateMatrices(sun);
+    for (const { main, shadow, meshes } of batches) {
+      main.select(frustum);
+      if (updateShadow) shadow.select(sun.shadow.getFrustum());
+      for (const mesh of meshes) mesh.count = main.count;
+    }
+  };
+  return { trunks, setHighQuality(value) { highQuality = value; } };
 }
