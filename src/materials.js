@@ -22,7 +22,7 @@ function texture(c, colour = true) {
   return t;
 }
 function std(color, props = {}) {
-  return new T.MeshStandardMaterial({ color, roughness: 0.9, ...props });
+  return new T.MeshStandardMaterial({ color, roughness: 0.9, envMapIntensity: .19, ...props });
 }
 function grain(ctx, amount) {
   const im = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);

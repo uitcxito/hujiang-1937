@@ -2,7 +2,7 @@
 function flightSurface(x, z) {
   return Math.max(groundY(x, z), riverLevel);
 }
-function makeFlightSpace(architecture, trees) {
+function makeFlightSpace(architecture, trees, landmarks) {
   const bounds = new T.Box2().setFromPoints(boundary.map(([u, v]) => new T.Vector2(...point(u, v))));
   bounds.expandByScalar(110);
   bounds.min.floor();
@@ -29,6 +29,12 @@ function makeFlightSpace(architecture, trees) {
     box.copy(part.geometry.boundingBox).applyMatrix4(part.matrixWorld);
     mark(box.min.x, box.min.z, box.max.x, box.max.z, box.max.y);
   });
+  for (const group of landmarks?.children || []) {
+    for(const [x,z,w,d,h] of group.userData.roofs){
+      const cx=group.position.x+x,cz=group.position.z+z;
+      mark(cx-w/2,cz-d/2,cx+w/2,cz+d/2,group.position.y+h);
+    }
+  }
   for (const tree of trees) {
     const r = tree.crownRadius;
     for (let dz = -Math.ceil(r); dz <= Math.ceil(r); dz++) {

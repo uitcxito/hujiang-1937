@@ -16,7 +16,9 @@ function explore() {
   scene.add(new T.HemisphereLight(0xe2efff, 0xb7a58b, 1.55));
   // Early summer morning, with the light coming across the avenue from the river.
   const sunDirection = new V(0.89, 0.43, 0.4).normalize();
+  morningReflections(renderer, scene, sunDirection);
   const sun = new T.DirectionalLight(0xffe4bc, 3.95);
+  sun.position.copy(sunDirection).multiplyScalar(90);
   scene.add(sun, sun.target);
   sun.castShadow = true;
   const shadowRight = new V().crossVectors(sun.up, sunDirection).normalize();
@@ -25,15 +27,22 @@ function explore() {
   sky(scene, sunDirection);
   const { soil, river } = terrain(scene);
   const shrubPerches = riverGarden(scene);
-  const architecture = new T.Group();
-  for (const s of sites.filter((s) => s.style !== "landmark")) buildSite(s, architecture);
+  const architecture = new T.Group(), landmarks = new T.Group();
+  for (const s of sites.filter((s) => s.style !== "landmark"))
+    buildSite(s, landmarkModels.has(s.id) ? landmarks : architecture);
   collectTreads(architecture);
   bake(architecture, scene);
   const buildings = scene.children.filter((o) => o.geometry?.getAttribute("siteId"));
+  scene.add(landmarks);
+  landmarks.traverse(o => { if(o.isMesh) buildings.push(o); });
+  dressAuditoriumPaths(scene);
   const trees = vegetation(scene),
-    flightSpace = makeFlightSpace(architecture, treeTrunks),
+    flightSpace = makeFlightSpace(architecture, treeTrunks, landmarks),
     blades = grass(scene);
-  const treeMeshes = scene.children.filter((object) => object.isInstancedMesh && object.castShadow);
+  const treeMeshes = scene.children.filter(o => o.name === "Tree wood");
+  const hallSite=byId.get(121);
+  trees(new V(hallSite.x-18,5.6,hallSite.z+7.5),1);
+  reflectCampusWindows(renderer,scene,landmarks);
   const gate = byId.get(190),
     player = new V(),
     drone = new V(),
@@ -290,7 +299,8 @@ function explore() {
       if (blocked) return;
     }
     if (hit && hit.distance < surfaceDistance) {
-      if (mode !== "walk" || hit.distance <= 80) card(byId.get(hit.object.geometry.getAttribute("siteId").getX(hit.face.a)));
+      if (mode !== "walk" || hit.distance <= 80)
+        card(byId.get(hit.object.userData.siteId ?? hit.object.geometry.getAttribute("siteId").getX(hit.face.a)));
       return;
     }
     if (mode !== "walk" || !Number.isFinite(surfaceDistance)) return;
@@ -725,7 +735,7 @@ function explore() {
 }
 window.addEventListener("load", async () => {
   try {
-    await prepareSurfaces();
+    await Promise.all([prepareSurfaces(), prepareModels()]);
     explore();
   } catch (error) {
     console.error(error);
