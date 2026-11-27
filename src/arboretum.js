@@ -16,51 +16,6 @@ const studyTrees = new Map([
   ["18.19,-17.4", 1],
 ]);
 
-function distantCrown(index, form) {
-  const geo = new T.PlaneGeometry(form.extent, form.extent);
-  geo.translate(0, form.centerY, 0);
-  geo.setAttribute(
-    "crownFrame",
-    new T.Float32BufferAttribute(Array.from({ length: 4 }, () => [form.centerY, index]).flat(), 2),
-  );
-  return geo;
-}
-
-// The view and shadow passes select their own orthographic portrait of the same tree.
-function faceCrown(shader) {
-  shader.vertexShader =
-    "attribute vec2 crownFrame;\n" +
-    shader.vertexShader
-      .replace(
-        "#include <uv_vertex>",
-        `
-    #include <uv_vertex>
-    mat4 treeMatrix = modelMatrix * instanceMatrix;
-    vec3 center = (treeMatrix * vec4(0., crownFrame.x, 0., 1.)).xyz;
-    vec3 eye = -vec3(dot(viewMatrix[0].xyz,viewMatrix[3].xyz),dot(viewMatrix[1].xyz,viewMatrix[3].xyz),dot(viewMatrix[2].xyz,viewMatrix[3].xyz));
-    vec3 backward = vec3(viewMatrix[0].z,viewMatrix[1].z,viewMatrix[2].z);
-    vec3 sight = projectionMatrix[2].w == 0. ? backward : normalize(eye-center);
-    vec3 localX=normalize(treeMatrix[0].xyz),localZ=normalize(treeMatrix[2].xyz);
-    float facingX=dot(localX,sight),facingZ=dot(localZ,sight);
-    bool side=abs(facingX)>abs(facingZ), topView=sight.y>.875;
-    float frame=topView?4.:(side?1.:0.)+(sight.y>.34?2.:0.);
-    float tile=crownFrame.y*5.+frame;
-    vec2 tex=uv;
-    if(!topView && (side?facingX:facingZ)<0.) tex.x=1.-tex.x;
-    vMapUv=(vec2(mod(tile,8.),7.-floor(tile/8.))+mix(vec2(.003),vec2(.997),tex))/8.;
-    vec3 right=topView?localX:normalize(cross(vec3(0.,1.,0.),sight));
-    vec3 up=topView?-localZ:normalize(cross(sight,right));
-    float widthScale=length(side?treeMatrix[2].xyz:treeMatrix[0].xyz);
-    float heightScale=length(topView?treeMatrix[2].xyz:treeMatrix[1].xyz);
-    vec3 surface=center+right*position.x*widthScale+up*(position.y-crownFrame.x)*heightScale;
-  `,
-      )
-      .replace(
-        "#include <project_vertex>",
-        "vec4 mvPosition=viewMatrix*vec4(surface,1.);gl_Position=projectionMatrix*mvPosition;",
-      );
-}
-
 function individualBranches(shader) {
   shader.vertexShader =
     `
@@ -85,7 +40,7 @@ function individualBranches(shader) {
 }
 
 function vegetation(scene) {
-  const individuals = arborModels.map(() => []);
+  const stands = arborModels.map(() => new Map());
   const dummy = new T.Object3D();
   const walkable = makeWalkSpace(obstacles, [], 0.38);
   const planting = campusTreeSites.concat(
@@ -98,126 +53,67 @@ function vegetation(scene) {
       return seed / 4294967296;
     };
     const index = curated ?? studyTrees.get([x, z].join()) ?? Math.floor(random() * 9);
-    const form = arborModels[index],
-      width = size * (0.84 + random() * 0.24),
-      depth = size * (0.87 + random() * 0.21);
+    const form = arborModels[index];
+    const width = size * (0.84 + random() * 0.24), depth = size * (0.87 + random() * 0.21);
     dummy.position.set(x, groundY(x, z), z);
     dummy.rotation.set(0, random() * Math.PI * 2, 0);
     dummy.scale.set(width, size, depth);
     dummy.updateMatrix();
-    // Individual lean applies equally to branches, foliage, roots and the matching distant silhouette.
     const lean = (random() - 0.5) * 0.063;
     const transform = dummy.matrix.clone().multiply(new T.Matrix4().makeShear(0, 0, lean, 0, 0, 0));
-    const direction = random() * Math.PI * 2,
-      spread = 0.1 + random() * 0.17;
-    individuals[index].push({
-      x,
-      z,
-      y: dummy.position.y + form.centerY * size,
-      matrix: transform,
-      bendX: Math.cos(direction) * spread,
-      bendZ: Math.sin(direction) * spread,
-      near: null,
-    });
+    const direction = random() * Math.PI * 2, spread = 0.1 + random() * 0.17;
+    // A stand can leave the frustum as a unit. Its geometry, pose and material stay fixed.
+    const cell = Math.floor(x / 64) + "," + Math.floor(z / 64);
+    const stand = stands[index];
+    if (!stand.has(cell)) stand.set(cell, []);
+    stand.get(cell).push({ transform, bendX: Math.cos(direction) * spread, bendZ: Math.sin(direction) * spread });
     treeTrunks.push({
-      x,
-      z,
-      r: form.trunkRadius * Math.max(width, depth),
+      x, z, r: form.trunkRadius * Math.max(width, depth),
       crownRadius: (form.radius + Math.abs(lean) * form.top) * Math.max(width, depth),
-      top: dummy.position.y + size * form.top,
-      species: form.species,
-      form: form.form,
+      top: dummy.position.y + size * form.top, species: form.species, form: form.form,
     });
   }
-  const impostor = new T.MeshBasicMaterial({
-    map: crownAtlas,
-    alphaTest: 0.32,
-    alphaToCoverage: true,
-    side: T.DoubleSide,
-    toneMapped: false,
-  });
-  const depth = new T.MeshDepthMaterial({
-    map: crownAtlas,
-    alphaTest: 0.32,
-    side: T.DoubleSide,
-    depthPacking: T.RGBADepthPacking,
-  });
-  impostor.onBeforeCompile = depth.onBeforeCompile = faceCrown;
-  const branchDepths = new Map();
-  function batch(geom, mat, count, part) {
-    const m = new T.InstancedMesh(geom, mat, count);
-    m.name = part;
-    m.castShadow = true;
-    m.receiveShadow = part !== "Distant crown";
-    if (part === "Distant crown") m.customDepthMaterial = depth;
-    else {
-      if (!branchDepths.has(mat)) {
-        const caster = new T.MeshDepthMaterial({
-          depthPacking: T.RGBADepthPacking,
-          map: mat.alphaTest ? mat.map : null,
-          alphaTest: mat.alphaTest,
-          side: mat.side,
-        });
-        caster.onBeforeCompile = individualBranches;
-        branchDepths.set(mat, caster);
-      }
-      m.customDepthMaterial = branchDepths.get(mat);
-    }
-    m.instanceMatrix.setUsage(T.DynamicDrawUsage);
-    scene.add(m);
-    return m;
-  }
-  const batches = individuals.map((list, i) => {
-    const model = arborModels[i];
-    const pose = new T.InstancedBufferAttribute(new Float32Array(list.length * 2), 2);
-    pose.setUsage(T.DynamicDrawUsage);
-    model.wood.geometry.setAttribute("branchPose", pose);
-    model.leaves.geometry.setAttribute("branchPose", pose);
-    return [
-      batch(model.wood.geometry, model.wood.material, list.length, "Tree wood"),
-      batch(model.leaves.geometry, model.leaves.material, list.length, "Tree foliage"),
-      batch(distantCrown(i, model), impostor, list.length, "Distant crown"),
-    ];
-  });
-  const last = new V(Infinity, Infinity, Infinity);
-  let level = -1;
-  return (position, quality) => {
-    if (level === quality && last.distanceToSquared(position) < 2.25) return false;
-    last.copy(position);
-    level = quality;
-    let any = false;
-    for (const [i, list] of individuals.entries()) {
-      let changed = false;
-      for (const t of list) {
-        const limit = [17, 27, 42][quality] + (t.near ? 3 : 0);
-        const near =
-          (t.x - position.x) ** 2 + (t.z - position.z) ** 2 + (t.y - position.y) ** 2 < limit * limit;
-        if (t.near !== near) {
-          changed = true;
-          t.near = near;
+
+  const trunks = [], depthMaterials = new Map();
+  for (const [index, stand] of stands.entries()) {
+    const form = arborModels[index];
+    const halfHeight = (form.top - form.bottom) / 2;
+    // All branch poses rotate around the trunk axis, so one centred cylinder encloses every pose.
+    const sphere = new T.Sphere(
+      new V(0, form.bottom + halfHeight, 0), Math.hypot(form.radius, halfHeight),
+    );
+    for (const trees of stand.values()) {
+      const pose = new T.InstancedBufferAttribute(new Float32Array(trees.length * 2), 2);
+      trees.forEach((tree, i) => pose.setXY(i, tree.bendX, tree.bendZ));
+      for (const part of [form.wood, form.leaves]) {
+        // Each stand owns its instance attributes and shares the authored vertex/index buffers.
+        const geometry = new T.BufferGeometry();
+        geometry.setIndex(part.geometry.index);
+        Object.assign(geometry.attributes, part.geometry.attributes);
+        geometry.setAttribute("branchPose", pose);
+        geometry.boundingSphere = sphere;
+        const mat = part.material;
+        if (!depthMaterials.has(mat)) {
+          const depth = new T.MeshDepthMaterial({
+            depthPacking: T.RGBADepthPacking, map: mat.alphaTest ? mat.map : null,
+            alphaTest: mat.alphaTest, alphaHash: mat.alphaHash, side: mat.side,
+          });
+          // r160 enables derivatives for PBR materials; its WebGL 1 depth shader needs them explicitly.
+          if (depth.alphaHash) depth.extensions = { derivatives: true };
+          depth.onBeforeCompile = individualBranches;
+          depthMaterials.set(mat, depth);
         }
-      }
-      if (!changed) continue;
-      any = true;
-      const [wood, leaves, far] = batches[i];
-      let n = 0,
-        f = 0;
-      for (const t of list) {
-        if (t.near) {
-          wood.geometry.attributes.branchPose.setXY(n, t.bendX, t.bendZ);
-          wood.setMatrixAt(n, t.matrix);
-          leaves.setMatrixAt(n++, t.matrix);
-        } else far.setMatrixAt(f++, t.matrix);
-      }
-      wood.count = leaves.count = n;
-      wood.geometry.attributes.branchPose.needsUpdate = true;
-      far.count = f;
-      for (const mesh of batches[i]) {
-        mesh.visible = mesh.count > 0;
-        mesh.instanceMatrix.needsUpdate = true;
-        if (mesh.count) mesh.computeBoundingSphere();
+        const mesh = new T.InstancedMesh(geometry, mat, trees.length);
+        mesh.name = part === form.wood ? "Tree wood" : "Tree foliage";
+        mesh.castShadow = mesh.receiveShadow = true;
+        mesh.customDepthMaterial = depthMaterials.get(mat);
+        trees.forEach((tree, i) => mesh.setMatrixAt(i, tree.transform));
+        mesh.computeBoundingSphere();
+        mesh.boundingSphere.radius *= 1.04; // Include the small shear used for trunk lean.
+        scene.add(mesh);
+        if (part === form.wood) trunks.push(mesh);
       }
     }
-    return any;
-  };
+  }
+  return trunks;
 }

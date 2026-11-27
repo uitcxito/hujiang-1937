@@ -11,12 +11,8 @@ for (const name of ["auditorium","yates","gate","camphor","zelkova","maple"]) {
     throw new Error("Invalid GLB: "+name);
   models[name]=gzipSync(bytes,{level:9}).toString("base64");
 }
-const canopies=JSON.parse(read("assets/models/canopies.json"));
-const atlas=fs.readFileSync(path.join(modelDir,"canopies.webp")).toString("base64");
 fs.writeFileSync(path.join(__dirname,"assets","model-data.js"),
-  "// Generated from assets/models by build.cjs.\nconst campusModelBytes = "+JSON.stringify(models)+";\n"+
-  "const campusCanopies = "+JSON.stringify(canopies)+";\n"+
-  "const campusCanopyImage = \"data:image/webp;base64,"+atlas+"\";\n");
+  "// Generated from assets/models by build.cjs.\nconst campusModelBytes = "+JSON.stringify(models)+";\n");
 // The same lossless files and credits drive the development and portable pages.
 const library = "试听/鸟鸣库";
 const birds = JSON.parse(read(library + "/catalog.json")).clips.map((clip) => {

@@ -20,6 +20,7 @@ function inPolygon(x, z, poly) {
   return yes;
 }
 function grass(scene) {
+  const hallWalls = obstacles.filter((wall) => wall.id === 121);
   const geom = new T.BufferGeometry(),
     p = [],
     col = [],
@@ -66,6 +67,8 @@ function grass(scene) {
             a = random() * 6.28,
             s = 0.7 + random() * 0.75;
           if (surf(x, z) > 0.14 || shoreDistance(x, z) < 2.5) continue;
+          if (hallWalls.some((wall) => Math.abs(x - wall.x) < wall.w / 2 + 0.12 &&
+              Math.abs(z - wall.z) < wall.d / 2 + 0.12)) continue;
           dummy.position.set(x, groundY(x, z) - 0.012, z);
           dummy.rotation.y = a;
           dummy.scale.setScalar(s);

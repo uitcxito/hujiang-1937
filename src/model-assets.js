@@ -1,7 +1,7 @@
 // All binary buffers are local. Both entry points use the same classic scripts under file://.
 const landmarkModels = new Map();
 const arborModels = [];
-let crownAtlas;
+const treeSpecies = ["camphor", "zelkova", "maple"];
 
 async function prepareModels() {
   const loader = new T.GLTFLoader();
@@ -18,13 +18,6 @@ async function prepareModels() {
       }
     }),
   );
-  const image = new Image();
-  image.src = campusCanopyImage;
-  await image.decode();
-  crownAtlas = new T.Texture(image);
-  crownAtlas.colorSpace = T.SRGBColorSpace;
-  crownAtlas.anisotropy = 8;
-  crownAtlas.needsUpdate = true;
   for (const root of models) {
     root.traverse((node) => {
       if (node.isMesh) {
@@ -46,18 +39,25 @@ async function prepareModels() {
         });
       }
       if (node.userData.species) {
-        const index = campusCanopies.findIndex(
-          (meta) => meta.species === node.userData.species && meta.form === node.userData.form,
-        );
+        const { species, form, trunkRadius } = node.userData;
+        const speciesIndex = treeSpecies.indexOf(species);
+        const index = speciesIndex * 3 + form;
         const wood = node.children.find((o) => o.isMesh && o.material.name.endsWith(" bark"));
         const leaves = node.children.find((o) => o.isMesh && o.material.name.endsWith(" leaves"));
-        if (index < 0 || !wood || !leaves) throw new Error("树种模型缺少枝叶 " + node.name);
-        arborModels[index] = {
-          ...campusCanopies[index],
-          wood,
-          leaves,
-          trunkRadius: node.userData.trunkRadius,
-        };
+        if (speciesIndex < 0 || !Number.isInteger(form) || form < 0 || form > 2 ||
+            arborModels[index] || !wood || !leaves) {
+          throw new Error("树种模型或枝架编号无效 " + node.name);
+        }
+        let radiusSq = 0, bottom = Infinity, top = -Infinity;
+        for (const mesh of [wood, leaves]) {
+          const pos = mesh.geometry.getAttribute("position");
+          for (let i = 0; i < pos.count; i++) {
+            radiusSq = Math.max(radiusSq, pos.getX(i) ** 2 + pos.getZ(i) ** 2);
+            bottom = Math.min(bottom, pos.getY(i));
+            top = Math.max(top, pos.getY(i));
+          }
+        }
+        arborModels[index] = { species, form, wood, leaves, trunkRadius, radius: Math.sqrt(radiusSq), bottom, top };
       }
     });
   }
@@ -66,8 +66,10 @@ async function prepareModels() {
 }
 
 function prepareLeafMaterial(material) {
-  material.alphaTest = 0.29;
-  material.alphaToCoverage = true;
+  // A distant spray occupies a fraction of a pixel. Object-space alpha hashing preserves
+  // its filtered coverage, including in the reflection and the single-sample shadow map.
+  material.alphaTest = 1 / 255;
+  material.alphaHash = true;
   material.roughness = 0.88;
   material.envMapIntensity = 0.18;
   material.onBeforeCompile = (shader) => {

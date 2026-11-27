@@ -12,6 +12,8 @@
 
 以上长度来自图上描线与既有模型。归一化校图采用每像素 0.4826 米的估算比例。档案中的建筑面积另有定义，未用作占地或单边实测值。[1937 年校园平面图](https://dag.usst.edu.cn/2025/0527/c14228a342128/page.htm)
 
+窗洞的石窗台伸至玻璃后方，侧壁和拱顶收至窗框。礼堂与思魏堂各按入口标高设置室内地板，两翼之间保留露天院落。地板高度随模型门槛推定。
+
 ## 初夏树木
 
 | 树种 | 基础形态 | 识别细节与在场景中的证据 |
@@ -20,7 +22,9 @@
 | 榉树 | 高位帚冠、低叉扇冠、窄冠直立 | 主枝向上分叉，较浅的斑驳树皮，叶缘有锯齿。作为上海地区的解释性补景。[上海数字植物志](https://shflora.ibiodiversity.net/Pages/Zelkova_serrata.html) |
 | 三角枫 | 多干层冠、高干疏冠、低位偏冠 | 树冠分层，细枝、对生三裂叶和较平滑的树皮在步行距离可见。初夏采用绿叶。作为解释性补景。[上海数字植物志](https://shflora.ibiodiversity.net/Pages/Acer_buergerianum.html) |
 
-每株按地图坐标生成固定种子。种子选择枝架，改变冠幅、朝向、倾斜和不同方向的上部枝条展开角。主干、枝梢、叶簇和投影共用同一变形，树根与原落点对齐。近处显示三维树干和树冠，远处在五张由同株模型烘焙的视图中选择与相机方向相符的一张。水杉未列入校园种植清单。
+每株按地图坐标生成固定种子。种子选择枝架，改变冠幅、朝向、倾斜和不同方向的上部枝条展开角。进退、升空和切换画质时，主干、枝梢、叶簇和投影一直使用同一套三维网格与单株变形。相机视野之外的林块可跳过绘制。水杉未列入校园种植清单。
+
+当细叶在远处小于一个像素时，材质按叶图的像素覆盖率采样。枝叶、玻璃中的倒影和地面投影共用这种处理，让远景仍能读出树冠的疏密。
 
 沿用基线的 519 个布置点，调整了礼堂西门正前方一株的位置以让出双联入口，并在北侧林带补植三株。道路中心线和两翼占地取自原校图。礼堂路肩的碎石、稀草和林下裸土属于环境补景。
 
@@ -28,7 +32,7 @@
 
 | 资源 | 来源与许可 | 使用范围 |
 | --- | --- | --- |
-| 三栋建筑、九个树形、枝叶、砖石、瓦面、树冠图集和入口门扇 | 本项目原创。原创部分仅授权随沪江大学 1937 校园项目展示与分发。单独提取或用于其他项目，须另行获得授权。 | 离线漫游、项目网站及本项目的对照图。 |
+| 三栋建筑、九个树形、枝叶、砖石、瓦面、树形图鉴和入口门扇 | 本项目原创。原创部分仅授权随沪江大学 1937 校园项目展示与分发。单独提取或用于其他项目，须另行获得授权。 | 离线漫游、项目网站及本项目的对照图。 |
 | 香樟树皮的颜色与法线 | 复用仓库已收录的 Poly Haven 扫描，CC0 1.0。[Bark Brown 02](https://polyhaven.com/a/bark_brown_02) · [许可](https://polyhaven.com/license) | 嵌入香樟 GLB。原扫描继续按 CC0 使用。 |
 | 门柱“滬江大學”四字 | 取 Noto Serif CJK SC Regular 的栅格字形，字体按 SIL Open Font License 1.1 分发。[字体与许可](https://github.com/notofonts/noto-cjk/tree/main/Serif) | 门牌纹理，模型内仅含像素。 |
 | GLTFLoader 与所用的 BufferGeometryUtils | Three.js r160，MIT，沿用项目内的 Three.js 实例。[上游 r160 源码](https://github.com/mrdoob/three.js/blob/r160/examples/jsm/loaders/GLTFLoader.js) · [本地许可](../vendor/THREE-LICENSE.txt) | 本地经典脚本，开发入口与离线版共用。 |
@@ -36,15 +40,14 @@
 
 ## 复建
 
-直接打开仓库中的 `hujiang.html` 即可离线漫游。日常打包只需在仓库根目录执行 `node build.cjs`。它校验六个 GLB 的文件头和长度，将压缩后的模型、树冠图集和所有脚本内嵌。开发入口也从本地资源脚本解析字节。
+直接打开仓库中的 `hujiang.html` 即可离线漫游。日常打包只需在仓库根目录执行 `node build.cjs`。它校验六个 GLB 的文件头和长度，将压缩后的模型和所有脚本内嵌。开发入口也从本地资源脚本解析字节。
 
 改动美术源后，准备 Blender 4.5.9 LTS、带 Pillow 和 NumPy 的 Python、Node.js、Playwright 与浏览器。将 `HUJIANG_CJK_FONT` 设为 NotoSerifCJKsc-Regular.otf 的完整路径。下面的 `texture-work` 是可自行指定的中间目录。
 
 ```sh
 python art/textures.py texture-work
 blender --background --factory-startup --python-exit-code 1 --python art/export.py -- texture-work assets/models
-node tools/bake-canopies.cjs
 node build.cjs
 ```
 
-烘焙工具会同时更新九株树形对照图。五组新旧截图的固定机位和复拍命令见[美术验收](../验收/美术升级/README.md)。
+执行 `node tools/render-tree-gallery.cjs` 可从 GLB 重新拍摄九株树形与叶形图鉴。五组新旧截图的固定机位和复拍命令见[美术验收](../验收/美术升级/README.md)。

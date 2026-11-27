@@ -171,7 +171,7 @@ def oculus(part, f, cx, sill, diameter):
                 ],
                 mat,
             )
-    part.face([point(a, r * 0.76, -0.216) for a in angles], "Glass")
+    part.face([point(a, r * 0.76, -0.21) for a in angles], "Glass")
     block(part, f, cx, cy - r * 0.75, -0.18, 0.044, r * 1.50, 0.055, "Window lead")
 
 
@@ -238,18 +238,25 @@ def wall(part, f, w, h, openings, plinth=True):
             0.09,
         )
         ring(part, f, cx, sill, ow - 0.07, oh - 0.04, 0.075, abs(recess) + 0.03, "Sill", shape, 0.012)
-        for s in [-1, 1]:
-            start = edge[0][1]
-            pts = [
-                f.p(cx + s * ow / 2, sill, 0),
-                f.p(cx + s * ow / 2, sill + start, 0),
-                f.p(cx + s * ow / 2, sill + start, recess),
-                f.p(cx + s * ow / 2, sill, recess),
-            ]
-            part.face(pts if s > 0 else pts[::-1], "Sill")
+        # Continue both jambs and every segment of the arch to the plane of the glazing.
+        lining = [(ow / 2, 0), *reversed(edge), (-ow / 2, 0)]
+        for (a, y), (b, yy) in zip(lining, lining[1:]):
+            part.face(
+                [
+                    f.p(cx + a, sill + y),
+                    f.p(cx + b, sill + yy),
+                    f.p(cx + b, sill + yy, recess),
+                    f.p(cx + a, sill + y, recess),
+                ],
+                "Sill",
+            )
         if door:
+            # The threshold meets the back of the landing and passes under the door leaf.
+            block(part, f, cx, sill - 0.084, recess / 2, ow, 0.080, abs(recess) + 0.04, "Limestone")
             continue
-        block(part, f, cx, sill - 0.105, 0.028, ow + 0.31, 0.105, 0.37, "Limestone")
+        # Keep the projecting nose and extend the same stone to just behind the pane.
+        front, back = 0.213, recess - 0.028
+        block(part, f, cx, sill - 0.105, (front + back) / 2, ow + 0.31, 0.105, front - back, "Limestone")
         block(part, f, cx, sill - 0.16, -0.025, ow + 0.18, 0.058, 0.21, "Sill")
     if plinth:
         block(part, f, 0, 0.02, -0.025, w, 0.49, 0.14, "Sill")
@@ -457,6 +464,9 @@ def auditorium():
         wall(p, flank, 15.05, 8.75, windows)
         block(p, flank, 0, 3.84, 0.04, 15.05, 0.14, 0.23, "Limestone")
     roof(p, 8.78, -7.35, 15.05, 13.45, 8.75, 4.42, "z")
+    # Opaque floors follow the two occupied wings, leaving the L-shaped courtyard outside.
+    block(p, Frame(0, 7.5), 0, 0.30, 0, 30.90, 0.28, 14.90, "Timber")
+    block(p, Frame(8.78, -7.35), 0, 0.10, 0, 13.35, 0.22, 14.95, "Timber")
     obstacles = [
         [-0.0, 7.5, 30.10, 15, 10.4],
         [8.78, -7.35, 13.45, 15.05, 8.75],

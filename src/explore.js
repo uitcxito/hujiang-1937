@@ -36,12 +36,9 @@ function explore() {
   scene.add(landmarks);
   landmarks.traverse(o => { if(o.isMesh) buildings.push(o); });
   dressAuditoriumPaths(scene);
-  const trees = vegetation(scene),
+  const treeMeshes = vegetation(scene),
     flightSpace = makeFlightSpace(architecture, treeTrunks, landmarks),
     blades = grass(scene);
-  const treeMeshes = scene.children.filter(o => o.name === "Tree wood");
-  const hallSite=byId.get(121);
-  trees(new V(hallSite.x-18,5.6,hallSite.z+7.5),1);
   reflectCampusWindows(renderer,scene,landmarks);
   const gate = byId.get(190),
     player = new V(),
@@ -294,7 +291,7 @@ function explore() {
     if (mode === "walk") {
       // Grass is traversable. A visible tree in front of a target blocks the pick.
       ray.far = Math.min(surfaceDistance, hit?.distance ?? Infinity);
-      const blocked = ray.intersectObjects(treeMeshes.filter((tree) => tree.visible), false).length > 0;
+      const blocked = ray.intersectObjects(treeMeshes, false).length > 0;
       ray.far = Infinity;
       if (blocked) return;
     }
@@ -687,7 +684,6 @@ function explore() {
     aim();
     updatePins();
     updateMap();
-    if (trees(camera.position, q)) renderer.shadowMap.needsUpdate = true;
     blades(camera.position, q, camera.position.y - groundY(camera.position.x, camera.position.z) < 8);
     setupShadows();
     if (mode === "drone") {
